@@ -1,0 +1,70 @@
+<p-toolbar styleClass="p-toolbar p-component mb-0 py-2">
+    <h3 class="m-0 flex align-items-center">Vehículos</h3>
+</p-toolbar>
+
+
+<div class="card mt-4   ">
+    <p-table [scrollable]="true" scrollHeight="400px" styleClass="mt-4">
+
+
+        <ng-template #caption>
+            <div class="flex justify-between items-center flex-column sm:flex-row">
+                <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogVehicle()"></button>
+                <p-iconfield iconPosition="left" class="ml-auto">
+                    <p-inputicon>
+                        <i class="pi pi-search"></i>
+                    </p-inputicon>
+                    <input pInputText type="text"  placeholder="Buscar..." />
+                </p-iconfield>
+            </div>
+        </ng-template>
+
+
+        <ng-template #header>
+            <tr>
+                <th>Placa</th>
+                <th>Marca</th>
+                <th>Color</th>
+                <th>Propietario</th>
+                <th>Compañia</th>
+                <th>Chofer</th>
+            </tr>
+        </ng-template>
+        <ng-template #body>
+            <tr>
+                
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>            
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="6">No existen registros.</td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="loadingbody">
+            <tr>
+                <td colspan="6">No existen registros</td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>
+
+
+
+<p-dialog header="Agregar Vehículo" [(visible)]="dialogVehicle" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '30vw' }" [modal]="true">
+    
+    <ng-template #footer>
+        <p-button label="Guardar" icon="pi pi-save" (click)="closeDialogVehicle()"/>
+    </ng-template>
+</p-dialog>
+
+
+
+
+
