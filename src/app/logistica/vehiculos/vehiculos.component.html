@@ -14,7 +14,7 @@
                     <p-inputicon>
                         <i class="pi pi-search"></i>
                     </p-inputicon>
-                    <input pInputText type="text"  placeholder="Buscar..." />
+                    <input pInputText type="text" placeholder="Buscar..." />
                 </p-iconfield>
             </div>
         </ng-template>
@@ -32,14 +32,14 @@
         </ng-template>
         <ng-template #body>
             <tr>
-                
+
                 <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
                 <td></td>
-                <td></td>            
+                <td></td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
@@ -57,14 +57,41 @@
 
 
 
-<p-dialog header="Agregar Vehículo" [(visible)]="dialogVehicle" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '30vw' }" [modal]="true">
+<p-dialog header="Agregar Vehículo" [(visible)]="dialogVehicle" [breakpoints]="{ '960px': '75vw' }"
+    [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false">
     
-    <ng-template #footer>
-        <p-button label="Guardar" icon="pi pi-save" (click)="closeDialogVehicle()"/>
-    </ng-template>
+    <form class="p-fluid">
+        
+        <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap gap-4">
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="placa" class="text-sm">Placa</label>
+                    <input pInputText id="placa" type="text" class="w-full" />
+                </div>
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="marca" class="text-sm">Marca</label>
+                    <input pInputText id="marca" type="text" class="w-full" />
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-4">
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="color" class="text-sm">Color</label>
+                    <input pInputText id="color" type="text" class="w-full" />
+                </div>
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="compania" class="text-sm">Compañía</label>
+                    <p-dropdown id="compania" optionLabel="nombreCompañia" placeholder="Seleccione la compañía"
+                        [showClear]="true" [appendTo]="'body'" [filter]="true" filterPlaceholder="Buscar compañía"
+                        class="w-full">
+                    </p-dropdown>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex justify-end mt-4">
+            <button pButton label="Registrar" icon="pi pi-save" type="submit" 
+                    class="p-button-primary"></button>
+        </div>
+    </form>
 </p-dialog>
-
-
-
-
-
