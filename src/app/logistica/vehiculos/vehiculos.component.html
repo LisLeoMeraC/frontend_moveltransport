@@ -19,7 +19,6 @@
             </div>
         </ng-template>
 
-
         <ng-template #header>
             <tr>
                 <th>Placa</th>
@@ -58,26 +57,26 @@
 
 
 <p-dialog header="Agregar Vehículo" [(visible)]="dialogVehicle" [breakpoints]="{ '960px': '75vw' }"
-    [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false">
+    [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false" (onhide)="closeDialogVehicle()">
     
     <form class="p-fluid">
-        
+
         <div class="flex flex-col gap-4">
             <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="placa" class="text-sm">Placa</label>
-                    <input pInputText id="placa" type="text" class="w-full" />
+                    <input pInputText id="placa" type="text" class="w-full" autocomplete="off" />
                 </div>
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="marca" class="text-sm">Marca</label>
-                    <input pInputText id="marca" type="text" class="w-full" />
+                    <input pInputText id="marca" type="text" class="w-full" autocomplete="off" />
                 </div>
             </div>
 
             <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="color" class="text-sm">Color</label>
-                    <input pInputText id="color" type="text" class="w-full" />
+                    <input pInputText id="color" type="text" class="w-full" autocomplete="off" />
                 </div>
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="compania" class="text-sm">Compañía</label>
@@ -87,9 +86,33 @@
                     </p-dropdown>
                 </div>
             </div>
+
+
+            <div class="flex flex-wrap gap-4">
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="compania" class="text-sm">Propietario</label>
+                    <p-dropdown id="propietario" optionLabel="propietario" placeholder="Seleccione el propietario"
+                        [showClear]="true" [appendTo]="'body'" [filter]="true" filterPlaceholder="Buscar propietario"
+                        class="w-full">
+                    </p-dropdown>
+                </div>
+
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="Chofer" class="text-sm">Chofer por Defecto</label>
+                    <p-dropdown id="chofer" optionLabel="chofer" placeholder="Seleccione el chofer"
+                        [showClear]="true" [appendTo]="'body'" [filter]="true" filterPlaceholder="Buscar chofer"
+                        class="w-full">
+                    </p-dropdown>
+                </div>
+
+            </div>
+
         </div>
 
         <div class="flex justify-end mt-4">
+            <button pButton label="Cancelar" icon="pi pi-times" (click)="closeDialogVehicle()"
+                class="p-button-secondary mr-2"></button>
+
             <button pButton label="Registrar" icon="pi pi-save" type="submit" 
                     class="p-button-primary"></button>
         </div>
