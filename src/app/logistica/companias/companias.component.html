@@ -53,3 +53,75 @@
     </p-table>
 </div>
 
+
+
+<p-dialog header="Agregar Compañia" [(visible)]="dialogCompany" [breakpoints]="{ '960px': '75vw' }"
+    [style]="{ width: '40vw' }" [modal]="true" [draggable]="false" [resizable]="false">
+
+    <form class="p-fluid" [formGroup]="registerFormCompany" (ngSubmit)="onSubmitCompany()">
+
+        <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap gap-4">
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="compania" class="text-sm">Tipo De Compañia</label>
+                    <p-dropdown id="identificationTypes" [options]="companyTypes" optionLabel="label"
+                        optionValue="value" placeholder="Seleccione el tipo" formControlName="tipoIdentificacion"
+                        [showClear]="true" [appendTo]="'body'" class="w-full">
+                    </p-dropdown>
+                </div>
+
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="compania" class="text-sm">Tipo Identificación</label>
+                    <p-dropdown id="identificationTypes" [options]="identificationTypes" optionLabel="label"
+                        optionValue="value" placeholder="Seleccione el tipo" formControlName="tipoIdentificacion"
+                        [showClear]="true" [appendTo]="'body'" class="w-full">
+                    </p-dropdown>
+                </div>
+
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="identificacion" class="text-sm">Identificación</label>
+                    <input pInputText id="identificacion" type="text" class="w-full" autocomplete="off"
+                        formControlName="identificacion" maxlength="13" (keypress)="onKeyPressIdentificacion($event)"
+                        />
+                    <div class="flex flex-col gap-1">
+                        <small *ngIf="showNumberOnlyWarning" class="p-error animate-fade">
+                            ⚠ Solo se permiten números para este tipo de identificación
+                        </small>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="flex flex-wrap gap-4">
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="nombre" class="text-sm">Nombre</label>
+                    <input pInputText id="nombre" type="text" class="w-full" autocomplete="off"
+                        formControlName="nombre" />
+                </div>
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="direccion" class="text-sm">Dirección</label>
+                    <input pInputText id="direccion" type="text" class="w-full" autocomplete="off"
+                        formControlName="direccion" />
+                </div>
+            </div>
+
+
+            <div class="flex flex-wrap gap-4">
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="telefono" class="text-sm">Teléfono</label>
+                    <input pInputText id="telefono" type="text" class="w-full" autocomplete="off"
+                        formControlName="telefono" />
+                </div>
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="email" class="text-sm">Email</label>
+                    <input pInputText id="email" type="text" class="w-full" autocomplete="off"
+                        formControlName="email" />
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-end mt-4">
+
+            <button pButton label="Registrar" icon="pi pi-save" type="submit" class="p-button-primary"></button>
+        </div>
+    </form>
+</p-dialog>

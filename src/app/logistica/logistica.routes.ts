@@ -8,10 +8,11 @@ import { FletesComponent } from "./fletes/fletes.component";
 import { LiquidacionesComponent } from "./liquidaciones/liquidaciones.component";
 
 export default [
-    {path: 'vehiculos', data: { breadcrumb: 'Vehiculos' }, component: VehiculosComponent },
-    {path: 'companias', data: { breadcrumb: 'Compania' }, component: CompaniasComponent},
-    {path:'conductores', data: { breadcrumb: 'Conductores' }, component: ConductoresComponent},
-    {path:'fletes', data: { breadcrumb: 'Fletes' }, component: FletesComponent},
-    {path:'liquidaciones', data: { breadcrumb: 'Liquidaciones' }, component: LiquidacionesComponent},
-    { path: '**', redirectTo: '/notfound' }
+    { path: '', redirectTo: 'vehiculos', pathMatch: 'full' },
+    { path: 'vehiculos', data: { breadcrumb: 'Vehiculos' }, component: VehiculosComponent },
+    { path: 'companias', data: { breadcrumb: 'Compania' }, component: CompaniasComponent },
+    { path: 'conductores', data: { breadcrumb: 'Conductores' }, component: ConductoresComponent },
+    { path: 'fletes', data: { breadcrumb: 'Fletes' }, component: FletesComponent },
+    { path: 'liquidaciones', data: { breadcrumb: 'Liquidaciones' }, component: LiquidacionesComponent },
+    { path: '**', redirectTo: '/app/notfound' }
 ] as Routes;
