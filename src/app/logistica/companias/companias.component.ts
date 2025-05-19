@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, effect, inject, OnInit } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -12,22 +12,29 @@ import { Toolbar, ToolbarModule } from 'primeng/toolbar';
 import { CompanyService } from '../../pages/service/company.service';
 import { MessageService } from 'primeng/api';
 import { IdentificationType } from '../../pages/models/company';
+import { ToastModule } from 'primeng/toast';
 
 @Component({
   selector: 'app-companias',
   standalone: true,
   imports: [CommonModule, ToolbarModule, TableModule, InputTextModule, IconFieldModule, InputIconModule, ButtonModule, ReactiveFormsModule,
-    DialogModule, DropdownModule],
+    DialogModule, DropdownModule, DropdownModule, ToastModule],
   templateUrl: './companias.component.html',
-  styleUrl: './companias.component.scss'
+  styleUrl: './companias.component.scss',
+  providers: [MessageService]
 })
 export class CompaniasComponent implements OnInit {
-  
+
   showNumberOnlyWarning = false;
-  
   dialogCompany: boolean = false;
   registerFormCompany: FormGroup;
+
   private companyService = inject(CompanyService);
+  private messageService = inject(MessageService);
+
+  companies = this.companyService.companiesList;
+  isLoading = this.companyService.isLoading;
+  hasError = this.companyService.hasError;
 
   identificationTypes = this.companyService.getIdentificationTypes();
   companyTypes = this.companyService.getCompanyTypes();
@@ -48,13 +55,32 @@ export class CompaniasComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void { }
+  ngOnInit(): void {
+
+    this.loadCompanies();
+
+    // Escuchamos cambios en el error
+    effect(() => {
+      const error = this.hasError();
+      if (error) {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: error
+        });
+      }
+    });
+  }
+
+  loadCompanies() {
+    this.companyService.loadCompanies();
+  }
 
 
   validarIdentificacion(control: AbstractControl): ValidationErrors | null {
     const tipoIdentificacion = this.registerFormCompany?.get('tipoIdentificacion')?.value;
     const value = control.value;
-    
+
     if (!value) return null;
 
     if (tipoIdentificacion === IdentificationType.passport) {
@@ -66,12 +92,12 @@ export class CompaniasComponent implements OnInit {
 
   onKeyPressIdentificacion(event: KeyboardEvent) {
     const tipoIdentificacion = this.registerFormCompany.get('tipoIdentificacion')?.value;
-    
-    if (tipoIdentificacion && 
-        [IdentificationType.ruc, IdentificationType.dni].includes(tipoIdentificacion)) {
+
+    if (tipoIdentificacion &&
+      [IdentificationType.ruc, IdentificationType.dni].includes(tipoIdentificacion)) {
       const pattern = /[0-9]/;
       const inputChar = String.fromCharCode(event.charCode);
-      
+
       if (!pattern.test(inputChar)) {
         this.showNumberOnlyWarning = true;
         setTimeout(() => this.showNumberOnlyWarning = false, 2000);

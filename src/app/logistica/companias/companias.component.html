@@ -3,7 +3,7 @@
 </p-toolbar>
 
 <div class="card mt-4   ">
-    <p-table [scrollable]="true" scrollHeight="400px" styleClass="mt-4">
+    <p-table [scrollable]="true" scrollHeight="400px" styleClass="mt-4" [value]="companies()" [loading]="isLoading()"   >
 
 
         <ng-template #caption>
@@ -28,16 +28,20 @@
                 <th>Email</th>
             </tr>
         </ng-template>
-        <ng-template #body>
+        <ng-template #body let-company>
             <tr>
 
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
+                <td>{{company.subject.name}}</td>
+                <td>{{company.subject.identificationType | titlecase}}</td>
+                <td>{{company.subject.identification}}</td>
+                <td>{{company.subject.address}}</td>
+                <td>{{company.subject.phone}}</td>
+                <td>{{company.subject.email || 'N/A'}}</td>
+                <td>
+                    <span [class]="'company-badge status-' + (company.isEnabled ? 'active' : 'inactive')">
+                        {{company.isEnabled ? 'Activo' : 'Inactivo'}}
+                    </span>
+                </td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">

@@ -10,3 +10,26 @@ export enum CompanyType {
   carrier = 'carrier'
 }
 
+
+export interface CompanyResponse {
+  statusCode: number;
+  message: string;
+  data: Company[];
+}
+
+export interface Company {
+  id: string;
+  subjectId: string;
+  type: CompanyType;
+  isEnabled: boolean;
+  subject: {
+    id: string;
+    identification: string;
+    identificationType: IdentificationType;
+    name: string;
+    createdAt: string;
+    address: string;
+    phone: string;
+    email?: string;
+  };
+}
