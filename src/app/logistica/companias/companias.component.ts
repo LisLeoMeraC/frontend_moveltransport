@@ -33,6 +33,7 @@ export class CompaniasComponent implements OnInit {
   private messageService = inject(MessageService);
 
   companies = this.companyService.companiesList;
+  
   isLoading = this.companyService.isLoading;
   hasError = this.companyService.hasError;
 
@@ -41,23 +42,15 @@ export class CompaniasComponent implements OnInit {
 
   constructor(private fb: FormBuilder) {
     this.registerFormCompany = this.fb.group({
+      tipoCompania: [null, Validators.required],
       tipoIdentificacion: [null, Validators.required],
-      identificacion: ['', Validators.required, Validators.maxLength(13), this.validarIdentificacion.bind(this)],
+      identificacion: ['', [Validators.required, Validators.maxLength(13), this.validarIdentificacion.bind(this)]],
       nombre: [null, Validators.required],
       direccion: [null, Validators.required],
       telefono: [null, Validators.required],
       email: [null, Validators.email],
     });
 
-    this.registerFormCompany.get('tipoIdentificacion')?.valueChanges.subscribe(() => {
-      this.registerFormCompany.get('identificacion')?.reset();
-      this.showNumberOnlyWarning = false;
-    });
-  }
-
-  ngOnInit(): void {
-
-    this.loadCompanies();
 
     // Escuchamos cambios en el error
     effect(() => {
@@ -70,6 +63,15 @@ export class CompaniasComponent implements OnInit {
         });
       }
     });
+
+    this.registerFormCompany.get('tipoIdentificacion')?.valueChanges.subscribe(() => {
+      this.registerFormCompany.get('identificacion')?.reset();
+      this.showNumberOnlyWarning = false;
+    });
+  }
+
+  ngOnInit(): void {
+
   }
 
   loadCompanies() {
@@ -107,6 +109,41 @@ export class CompaniasComponent implements OnInit {
   }
 
 
+
+  onSubmitCompany() {
+    if (this.registerFormCompany.invalid) {
+      // Marca todos los campos como touched para mostrar errores
+      this.registerFormCompany.markAllAsTouched();
+      this.messageService.add({
+        severity: 'error',
+        summary: 'Error',
+        detail: 'Por favor complete todos los campos requeridos'
+      });
+      return;
+    }
+
+    const formValue = this.registerFormCompany.value;
+
+    const companyData = {
+      identification: formValue.identificacion,
+      identificationType: formValue.tipoIdentificacion,
+      name: formValue.nombre,
+      address: formValue.direccion,
+      email: formValue.email || undefined, // Envía undefined si email es null
+      phone: formValue.telefono,
+      type: formValue.tipoCompania // Asegúrate de agregar este campo al formulario
+    };
+
+    this.companyService.registerCompany(companyData).subscribe({
+      next: () => {
+        this.dialogCompany = false;
+        this.registerFormCompany.reset();
+      }
+      // El error ya se maneja en el servicio
+    });
+  }
+
+
   openDialogCompany() {
     this.registerFormCompany.reset();
     this.dialogCompany = true;
@@ -117,10 +154,5 @@ export class CompaniasComponent implements OnInit {
     this.dialogCompany = false;
   }
 
-  onSubmitCompany() { }
-
-
-
-
-
+  
 }

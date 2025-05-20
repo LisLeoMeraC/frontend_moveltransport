@@ -11,13 +11,17 @@ export enum CompanyType {
 }
 
 
-export interface CompanyResponse {
-  statusCode: number;
-  message: string;
-  data: Company[];
-}
+export interface ApiResponse<T> 
+  {
+    statusCode: number;
+    message: string[];
+    error?: string;
+    data?: T;
 
-export interface Company {
+  }
+
+  
+export interface CompanyResponse {
   id: string;
   subjectId: string;
   type: CompanyType;
