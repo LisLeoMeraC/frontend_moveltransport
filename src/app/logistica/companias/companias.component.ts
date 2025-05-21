@@ -74,9 +74,7 @@ export class CompaniasComponent implements OnInit {
 
   }
 
-  loadCompanies() {
-    this.companyService.loadCompanies();
-  }
+  
 
 
   validarIdentificacion(control: AbstractControl): ValidationErrors | null {

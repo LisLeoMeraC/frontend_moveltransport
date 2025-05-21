@@ -20,38 +20,9 @@ export class CompanyService {
   readonly isLoading = this.loading.asReadonly();
   readonly hasError = this.error.asReadonly();
 
+  
+
   constructor(private http: HttpClient, private messageService: MessageService) { }
-
-  loadCompanies(): void {
-    this.loading.set(true);
-    this.error.set(null);
-
-    this.http.get<ApiResponse<CompanyResponse[]>>(`${this.baseUrl}/company/enabled`)
-      .pipe(
-        tap({
-          next: (response) => {
-            if (response.statusCode >= 200 && response.statusCode < 300) {
-              // Éxito: actualiza datos sin mostrar mensaje
-              this.companies.set(response.data || []);
-            } else {
-              // Error: muestra mensaje
-              const errorMessage = this.formatErrorMessage(response);
-              this.error.set(errorMessage);
-              this.messageService.showError(errorMessage);
-            }
-            this.loading.set(false);
-          },
-          error: (err) => {
-            // Error de conexión/red
-            const errorMessage = this.getErrorMessage(err);
-            this.error.set(errorMessage);
-            this.messageService.showError(errorMessage);
-            this.loading.set(false);
-          }
-        })
-      )
-      .subscribe();
-  }
 
 
 
@@ -73,7 +44,7 @@ export class CompanyService {
           next: (response) => {
             if (response.statusCode >= 200 && response.statusCode < 300) {
               // Actualiza la lista de compañías después de registrar una nueva
-              this.loadCompanies();
+              //this.loadCompanies();
             } else {
               const errorMessage = this.formatErrorMessage(response);
               this.error.set(errorMessage);
@@ -91,9 +62,7 @@ export class CompanyService {
       );
   }
 
-
-
-
+  
   private formatErrorMessage(response: ApiResponse<any>): string {
     // Maneja mensajes de error del backend
     if (response.error) {
@@ -121,6 +90,11 @@ export class CompanyService {
     }
     return error.message || 'Error al conectar con el servidor';
   }
+
+
+  
+
+
 
 
 

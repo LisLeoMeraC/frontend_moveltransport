@@ -20,6 +20,11 @@ export interface ApiResponse<T>
 
   }
 
+
+  
+
+
+
   
 export interface CompanyResponse {
   id: string;
