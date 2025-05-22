@@ -1,7 +1,7 @@
 import { Injectable, signal } from '@angular/core';
-import { ApiResponse, CompanyResponse, CompanyType, IdentificationType } from '../models/company';
+import { ApiResponse, CompanyResponse, CompanyType, IdentificationType, Pagination } from '../models/company';
 import { environment } from '../../../environments/environment';
-import { HttpClient } from '@angular/common/http';
+import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
 import { MessageService } from './message.service';
 
@@ -15,11 +15,18 @@ export class CompanyService {
   private loading = signal<boolean>(false);
   private error = signal<string | null>(null);
 
+   private pagination = signal<Pagination>({
+    currentPage: 1,
+    pageSize: 5,
+    totalPages: 1,
+    totalRecords: 0
+  })
+
   // Exponemos las señales como señales de solo lectura
   readonly companiesList = this.companies.asReadonly();
   readonly isLoading = this.loading.asReadonly();
   readonly hasError = this.error.asReadonly();
-
+  readonly paginationData = this.pagination.asReadonly();
   
 
   constructor(private http: HttpClient, private messageService: MessageService) { }
@@ -45,6 +52,41 @@ export class CompanyService {
             if (response.statusCode >= 200 && response.statusCode < 300) {
               // Actualiza la lista de compañías después de registrar una nueva
               //this.loadCompanies();
+            } else {
+              const errorMessage = this.formatErrorMessage(response);
+              this.error.set(errorMessage);
+              this.messageService.showError(errorMessage);
+            }
+            this.loading.set(false);
+          },
+          error: (err) => {
+            const errorMessage = this.getErrorMessage(err);
+            this.error.set(errorMessage);
+            this.messageService.showError(errorMessage);
+            this.loading.set(false);
+          }
+        })
+      );
+  }
+
+
+  loadCompanies(page: number = 1, limit: number = 5): Observable<ApiResponse<CompanyResponse[]>> {
+    this.loading.set(true);
+    this.error.set(null);
+
+    const params = new HttpParams()
+      .set('page', page.toString())
+      .set('limit', limit.toString());
+
+    return this.http.get<ApiResponse<CompanyResponse[]>>(`${this.baseUrl}/company`, { params })
+      .pipe(
+        tap({
+          next: (response) => {
+            if (response.statusCode >= 200 && response.statusCode < 300) {
+              this.companies.set(response.data || []);
+              if (response.pagination) {
+                this.pagination.set(response.pagination);
+              }
             } else {
               const errorMessage = this.formatErrorMessage(response);
               this.error.set(errorMessage);

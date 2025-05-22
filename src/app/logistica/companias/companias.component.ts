@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, effect, inject, OnInit } from '@angular/core';
+import { Component, effect, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -13,15 +13,21 @@ import { CompanyService } from '../../pages/service/company.service';
 import { MessageService } from 'primeng/api';
 import { IdentificationType } from '../../pages/models/company';
 import { ToastModule } from 'primeng/toast';
+import { MatPaginator, MatPaginatorIntl, MatPaginatorModule } from '@angular/material/paginator';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { getSpanishPaginatorIntl } from '../../config/getSpanishPaginatorIntl';
 
 @Component({
   selector: 'app-companias',
   standalone: true,
   imports: [CommonModule, ToolbarModule, TableModule, InputTextModule, IconFieldModule, InputIconModule, ButtonModule, ReactiveFormsModule,
-    DialogModule, DropdownModule, DropdownModule, ToastModule],
+    DialogModule, DropdownModule, DropdownModule, ToastModule, MatPaginatorModule, MatProgressSpinnerModule],
   templateUrl: './companias.component.html',
   styleUrl: './companias.component.scss',
-  providers: [MessageService]
+  providers: [
+    MessageService,
+    { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() }
+  ]
 })
 export class CompaniasComponent implements OnInit {
 
@@ -33,12 +39,16 @@ export class CompaniasComponent implements OnInit {
   private messageService = inject(MessageService);
 
   companies = this.companyService.companiesList;
-  
   isLoading = this.companyService.isLoading;
   hasError = this.companyService.hasError;
+  pagination = this.companyService.paginationData;
+  pageSize = signal(5);
+
 
   identificationTypes = this.companyService.getIdentificationTypes();
   companyTypes = this.companyService.getCompanyTypes();
+
+  @ViewChild(MatPaginator) paginator!: MatPaginator;
 
   constructor(private fb: FormBuilder) {
     this.registerFormCompany = this.fb.group({
@@ -52,7 +62,6 @@ export class CompaniasComponent implements OnInit {
     });
 
 
-    // Escuchamos cambios en el error
     effect(() => {
       const error = this.hasError();
       if (error) {
@@ -71,10 +80,26 @@ export class CompaniasComponent implements OnInit {
   }
 
   ngOnInit(): void {
-
+    this.loadCompanies();
   }
 
-  
+  ngAfterViewInit(): void {
+    this.paginator.page.subscribe((event) => {
+      this.pageSize.set(event.pageSize);
+      const newPage = event.pageSize !== this.pagination().pageSize
+        ? 1: event.pageIndex + 1;
+      this.loadCompanies(newPage, event.pageSize);
+    });
+  }
+
+  loadCompanies(page: number = 1, limit: number = this.pageSize()): void {
+    this.companyService.loadCompanies(page, limit).subscribe(() => {
+      if (this.paginator) {
+        this.paginator.pageIndex = page - 1;
+        this.paginator.pageSize = limit;
+      }
+    });
+  }
 
 
   validarIdentificacion(control: AbstractControl): ValidationErrors | null {
@@ -110,7 +135,6 @@ export class CompaniasComponent implements OnInit {
 
   onSubmitCompany() {
     if (this.registerFormCompany.invalid) {
-      // Marca todos los campos como touched para mostrar errores
       this.registerFormCompany.markAllAsTouched();
       this.messageService.add({
         severity: 'error',
@@ -127,17 +151,18 @@ export class CompaniasComponent implements OnInit {
       identificationType: formValue.tipoIdentificacion,
       name: formValue.nombre,
       address: formValue.direccion,
-      email: formValue.email || undefined, // Envía undefined si email es null
+      email: formValue.email || undefined,
       phone: formValue.telefono,
-      type: formValue.tipoCompania // Asegúrate de agregar este campo al formulario
+      type: formValue.tipoCompania
     };
 
     this.companyService.registerCompany(companyData).subscribe({
       next: () => {
         this.dialogCompany = false;
         this.registerFormCompany.reset();
+        this.loadCompanies();
       }
-      // El error ya se maneja en el servicio
+      
     });
   }
 
@@ -152,5 +177,5 @@ export class CompaniasComponent implements OnInit {
     this.dialogCompany = false;
   }
 
-  
+
 }
