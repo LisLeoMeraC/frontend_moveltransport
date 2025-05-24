@@ -7,7 +7,8 @@ export enum IdentificationType {
 
 export enum CompanyType {
   client = 'client',
-  carrier = 'carrier'
+  carrier = 'carrier',
+  both = 'both'
 }
 
 

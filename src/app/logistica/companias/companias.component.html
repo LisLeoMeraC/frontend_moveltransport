@@ -1,14 +1,23 @@
+<p-toast></p-toast>
 <p-toolbar styleClass="p-toolbar p-component mb-0 py-2">
     <h3 class="m-0 flex align-items-center">Compañias</h3>
 </p-toolbar>
 
 <div class="card mt-4   ">
-    <p-table [scrollable]="true" scrollHeight="400px" styleClass="mt-4" [value]="companies()" [loading]="isLoading()" >
+    <p-table [scrollable]="true" scrollHeight="400px" styleClass="mt-4" [value]="companies()" [loading]="isLoading()">
 
 
         <ng-template #caption>
             <div class="flex justify-between items-center flex-column sm:flex-row">
                 <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogCompany()"></button>
+
+
+                <div class="flex-1 flex justify-center">
+                    <p-selectbutton [options]="typeCompany" optionLabel="name" optionValue="value"
+                        [(ngModel)]="selectedType" (onChange)="onTypeChange($event)">
+                    </p-selectbutton>
+                </div>
+
                 <p-iconfield iconPosition="left" class="ml-auto">
                     <p-inputicon>
                         <i class="pi pi-search"></i>
@@ -26,6 +35,7 @@
                 <th>Dirección</th>
                 <th>Teléfono</th>
                 <th>Email</th>
+                <th>Acciones</th>
             </tr>
         </ng-template>
         <ng-template #body let-company>
@@ -37,28 +47,31 @@
                 <td>{{company.subject.address}}</td>
                 <td>{{company.subject.phone}}</td>
                 <td>{{company.subject.email || 'N/A'}}</td>
+                <td>
+                    <button pButton pRipple type="button" icon="pi pi-pencil" (click)="openDialogCompany(company)"
+                        class="p-danger- mb-2 mr-2"></button>
+                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2"></button>
+                </td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="6">No existen registros.</td>
+                <td colspan="7">No existen registros.</td>
             </tr>
         </ng-template>
-        
+
     </p-table>
-     <mat-paginator [length]="pagination().totalRecords"
-               [pageSize]="pageSize()"
-               [pageIndex]="pagination().currentPage - 1"
-               [pageSizeOptions]="[5, 10, 25, 100]"
-               showFirstLastButtons
-               aria-label="Select page">
-</mat-paginator>
+    <mat-paginator [length]="pagination().totalRecords" [pageSize]="pageSize()"
+        [pageIndex]="pagination().currentPage - 1" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons
+        aria-label="Select page">
+    </mat-paginator>
 </div>
 
 
 
-<p-dialog header="Agregar Compañia" [(visible)]="dialogCompany" [breakpoints]="{ '960px': '75vw' }"
-    [style]="{ width: '40vw' }" [modal]="true" [draggable]="false" [resizable]="false">
+<p-dialog [header]="editMode ? 'Editar Compañía' : 'Agregar Compañía'" [(visible)]="dialogCompany"
+    [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '40vw' }" [modal]="true" [draggable]="false"
+    [resizable]="false">
 
     <form class="p-fluid" [formGroup]="registerFormCompany" (ngSubmit)="onSubmitCompany()">
 
@@ -66,30 +79,25 @@
             <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="compania" class="text-sm">Tipo De Compañia</label>
-                    <p-dropdown id="identificationTypes" [options]="companyTypes" optionLabel="label"
-                        optionValue="value" placeholder="Seleccione el tipo" formControlName="tipoCompania"
-                        [showClear]="true" [appendTo]="'body'" class="w-full">
+                    <p-dropdown id="companyType" [options]="companyTypes" optionLabel="label" optionValue="value"
+                        placeholder="Seleccione el tipo" formControlName="type" [showClear]="true" [appendTo]="'body'"
+                        class="w-full">
                     </p-dropdown>
                 </div>
 
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="compania" class="text-sm">Tipo Identificación</label>
                     <p-dropdown id="identificationTypes" [options]="identificationTypes" optionLabel="label"
-                        optionValue="value" placeholder="Seleccione el tipo" formControlName="tipoIdentificacion"
-                        [showClear]="true" [appendTo]="'body'" class="w-full">
+                        optionValue="value" placeholder="Seleccione el tipo" formControlName="identificationType"
+                        [showClear]="true" [appendTo]="'body'" class="w-full" [disabled]="editMode">
                     </p-dropdown>
                 </div>
 
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="identificacion" class="text-sm">Identificación</label>
                     <input pInputText id="identificacion" type="text" class="w-full" autocomplete="off"
-                        formControlName="identificacion" maxlength="13" (keypress)="onKeyPressIdentificacion($event)"
-                        />
-                    <div class="flex flex-col gap-1">
-                        <small *ngIf="showNumberOnlyWarning" class="p-error animate-fade">
-                            ⚠ Solo se permiten números para este tipo de identificación
-                        </small>
-                    </div>
+                        formControlName="identification" maxlength="13" (keypress)="onKeyPressIdentificacion($event)" [disabled]="editMode"
+                         />
                 </div>
 
             </div>
@@ -98,12 +106,12 @@
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="nombre" class="text-sm">Nombre</label>
                     <input pInputText id="nombre" type="text" class="w-full" autocomplete="off"
-                        formControlName="nombre" />
+                        formControlName="name" />
                 </div>
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="direccion" class="text-sm">Dirección</label>
                     <input pInputText id="direccion" type="text" class="w-full" autocomplete="off"
-                        formControlName="direccion" />
+                        formControlName="address" />
                 </div>
             </div>
 
@@ -111,8 +119,8 @@
             <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="telefono" class="text-sm">Teléfono</label>
-                    <input pInputText id="telefono" type="text" class="w-full" autocomplete="off"
-                        formControlName="telefono" />
+                    <input pInputText id="telefono" type="text" class="w-full" autocomplete="off" maxlength="10"
+                        formControlName="phone" />
                 </div>
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="email" class="text-sm">Email</label>
@@ -123,7 +131,8 @@
         </div>
         <div class="flex justify-end mt-4">
 
-            <button pButton label="Registrar" icon="pi pi-save" type="submit" class="p-button-primary"></button>
+            <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit"
+                class="p-button-primary"></button>
         </div>
     </form>
 </p-dialog>
