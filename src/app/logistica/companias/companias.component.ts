@@ -3,12 +3,9 @@ import { Component, effect, inject, OnInit, signal, ViewChild } from '@angular/c
 import { FormGroup, FormBuilder, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors, FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { Dropdown, DropdownModule } from 'primeng/dropdown';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
-import { Table, TableModule } from 'primeng/table';
-import { Toolbar, ToolbarModule } from 'primeng/toolbar';
 import { CompanyService } from '../../pages/service/company.service';
 import { MessageService } from 'primeng/api';
 import { CompanyResponse, IdentificationType } from '../../pages/models/company';
@@ -17,12 +14,16 @@ import { MatPaginator, MatPaginatorIntl, MatPaginatorModule } from '@angular/mat
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { getSpanishPaginatorIntl } from '../../config/getSpanishPaginatorIntl';
 import { SelectButtonModule } from 'primeng/selectbutton';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { ToolbarModule } from 'primeng/toolbar';
+import { TableModule } from 'primeng/table';
+import { DropdownModule } from 'primeng/dropdown';
 
 @Component({
   selector: 'app-companias',
   standalone: true,
   imports: [CommonModule, ToolbarModule, TableModule, InputTextModule, IconFieldModule, InputIconModule, ButtonModule, ReactiveFormsModule,
-    DialogModule, DropdownModule, DropdownModule, ToastModule, MatPaginatorModule, MatProgressSpinnerModule, SelectButtonModule, FormsModule],
+    DialogModule, DropdownModule, ToastModule, MatPaginatorModule, MatProgressSpinnerModule, SelectButtonModule, FormsModule],
   templateUrl: './companias.component.html',
   styleUrl: './companias.component.scss',
   providers: [
@@ -37,6 +38,8 @@ export class CompaniasComponent implements OnInit {
   registerFormCompany: FormGroup;
 
   private companyService = inject(CompanyService);
+  private destroy$ = new Subject<void>();
+  private searchSubject = new Subject<string>();
 
   companies = this.companyService.companiesList;
   isLoading = this.companyService.isLoading;
@@ -49,6 +52,14 @@ export class CompaniasComponent implements OnInit {
   //Para editarr una compañia
   editMode = false;
   companyId: string | null = null;
+
+  //Para buscar compañias
+  searchTerm: string = '';
+
+  //Para eliminar compañia
+  dialogDeleteCompany: boolean = false;
+  companyToDelete: CompanyResponse | null = null;
+
 
 
   identificationTypes = this.companyService.getIdentificationTypes();
@@ -84,6 +95,19 @@ export class CompaniasComponent implements OnInit {
       this.registerFormCompany.get('identification')?.reset();
       this.showNumberOnlyWarning = false;
     });
+
+
+    this.searchSubject.pipe(
+      takeUntil(this.destroy$),
+      debounceTime(2000), // 3 segundos de retardo
+      distinctUntilChanged() // Solo emite si el valor cambió
+    ).subscribe(term => {
+      if (term.trim() === '') {
+        this.loadCompanies(1, this.pageSize(), this.selectedType);
+      } else {
+        this.searchCompanies(term, 1, this.pageSize(), this.selectedType);
+      }
+    });
   }
 
   ngOnInit(): void {
@@ -102,7 +126,78 @@ export class CompaniasComponent implements OnInit {
       this.pageSize.set(event.pageSize);
       const newPage = event.pageSize !== this.pagination().pageSize
         ? 1 : event.pageIndex + 1;
-      this.loadCompanies(newPage, event.pageSize, this.selectedType);
+      if (this.searchTerm.trim() === '') {
+        this.loadCompanies(newPage, event.pageSize, this.selectedType);
+      } else {
+        this.searchCompanies(this.searchTerm, newPage, event.pageSize, this.selectedType);
+      }
+    });
+  }
+
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
+  }
+
+
+  onSearchChange(): void {
+    // Resetear siempre a la primera página al cambiar el término de búsqueda
+    this.searchSubject.next(this.searchTerm);
+
+  }
+
+  searchCompanies(term: string, page: number = 1, limit: number = this.pageSize(), type?: string): void {
+    this.companyService.searchCompanies(term, page, limit, type).subscribe(() => {
+      if (this.paginator) {
+        // Resetear el paginador solo si es una nueva búsqueda (página 1)
+        if (page === 1) {
+          this.paginator.pageIndex = 0;
+        }
+        // Actualizar el tamaño de página si es diferente
+        if (limit !== this.paginator.pageSize) {
+          this.paginator.pageSize = limit;
+        }
+      }
+    });
+  }
+
+  confirmDeleteCompany(company: CompanyResponse): void {
+    this.companyToDelete = company;
+    this.dialogDeleteCompany = true;
+  }
+
+  deleteCompany(): void {
+    if (!this.companyToDelete) return;
+
+    this.companyService.deleteCompany(this.companyToDelete.id).subscribe({
+      next: (response) => {
+        this.messageService.add({
+          severity: 'success',
+          summary: 'Éxito',
+          detail: 'Compañía eliminada correctamente',
+          life: 5000
+        });
+
+        // Recargar la lista de compañías
+        if (this.searchTerm.trim() === '') {
+          this.loadCompanies(this.pagination().currentPage, this.pageSize(), this.selectedType);
+        } else {
+          this.searchCompanies(this.searchTerm, this.pagination().currentPage, this.pageSize(), this.selectedType);
+        }
+      },
+      error: (err) => {
+        this.messageService.add({
+          severity: 'error',
+          summary: 'Error',
+          detail: 'No se pudo eliminar la compañía',
+          life: 5000
+        });
+      },
+      complete: () => {
+        this.dialogDeleteCompany = false;
+        this.companyToDelete = null;
+      }
     });
   }
 
@@ -121,6 +216,8 @@ export class CompaniasComponent implements OnInit {
       this.loadCompanies(1, this.pageSize(), event.value);
     }
   }
+
+
 
 
 
@@ -220,7 +317,6 @@ export class CompaniasComponent implements OnInit {
     this.companyId = company?.id || null;
 
     if (company) {
-      console.log('Datos de la compañía recibidos para edición:', JSON.stringify(company, null, 2));
 
       const formData = {
         type: company.type,
@@ -232,15 +328,9 @@ export class CompaniasComponent implements OnInit {
         email: company.subject.email || null
       };
 
-      console.log('Datos que se asignarán al formulario:', JSON.stringify(formData, null, 2));
 
       setTimeout(() => {
         this.registerFormCompany.patchValue(formData, { emitEvent: false });
-
-        
-        
-        // Verificar los valores actuales del formulario después del patch
-        console.log('Valores actuales del formulario:', JSON.stringify(this.registerFormCompany.value, null, 2));
       });
     }
 

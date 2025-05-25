@@ -22,7 +22,7 @@
                     <p-inputicon>
                         <i class="pi pi-search"></i>
                     </p-inputicon>
-                    <input pInputText type="text" placeholder="Buscar..." />
+                    <input pInputText type="text" placeholder="Buscar..." [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" />
                 </p-iconfield>
             </div>
         </ng-template>
@@ -50,7 +50,7 @@
                 <td>
                     <button pButton pRipple type="button" icon="pi pi-pencil" (click)="openDialogCompany(company)"
                         class="p-danger- mb-2 mr-2"></button>
-                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2"></button>
+                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2" (click)="confirmDeleteCompany(company)"></button>
                 </td>
             </tr>
         </ng-template>
@@ -63,7 +63,7 @@
     </p-table>
     <mat-paginator [length]="pagination().totalRecords" [pageSize]="pageSize()"
         [pageIndex]="pagination().currentPage - 1" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons
-        aria-label="Select page">
+        aria-label="Select page" >
     </mat-paginator>
 </div>
 
@@ -89,15 +89,14 @@
                     <label for="compania" class="text-sm">Tipo Identificación</label>
                     <p-dropdown id="identificationTypes" [options]="identificationTypes" optionLabel="label"
                         optionValue="value" placeholder="Seleccione el tipo" formControlName="identificationType"
-                        [showClear]="true" [appendTo]="'body'" class="w-full" [disabled]="editMode">
+                        [showClear]="true" [appendTo]="'body'" class="w-full">
                     </p-dropdown>
                 </div>
 
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="identificacion" class="text-sm">Identificación</label>
                     <input pInputText id="identificacion" type="text" class="w-full" autocomplete="off"
-                        formControlName="identification" maxlength="13" (keypress)="onKeyPressIdentificacion($event)" [disabled]="editMode"
-                         />
+                        formControlName="identification" maxlength="13" (keypress)="onKeyPressIdentificacion($event)"/>
                 </div>
 
             </div>
@@ -135,4 +134,44 @@
                 class="p-button-primary"></button>
         </div>
     </form>
+</p-dialog>
+
+
+<p-dialog
+  [(visible)]="dialogDeleteCompany"
+  [modal]="true"
+  [closable]="false"
+  [style]="{ width: '100%', maxWidth: '400px' }"
+  header="Confirmación requerida"
+>
+  <div class="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
+    <div class="flex items-start gap-3">
+      <i class="pi pi-exclamation-circle text-yellow-600 text-2xl mt-1"></i>
+      <div>
+        <p class="text-sm text-gray-800 leading-relaxed">
+          Estás a punto de eliminar la compañía
+          <span class="font-semibold text-red-600">{{ companyToDelete?.subject?.name }}</span>.
+          Esta acción no se puede deshacer. ¿Deseas continuar?
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <ng-template pTemplate="footer">
+    <div class="flex justify-end gap-2 pt-3">
+      <button
+        pButton
+        label="Cancelar"
+        class="p-button-secondary p-button-sm"
+        (click)="dialogDeleteCompany = false"
+      ></button>
+      <button
+        pButton
+        label="Eliminar"
+        icon="pi pi-trash"
+        class="p-button-sm p-button-danger"
+        (click)="deleteCompany()"
+      ></button>
+    </div>
+  </ng-template>
 </p-dialog>
