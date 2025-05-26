@@ -35,9 +35,9 @@ export class CompanyService {
     identification: string;
     identificationType: IdentificationType;
     name: string;
-    address: string;
+    address?: string;
     email?: string;
-    phone: string;
+    phone?: string;
     type: CompanyType;
   }): Observable<ApiResponse<CompanyResponse>> {
     this.loading.set(true);

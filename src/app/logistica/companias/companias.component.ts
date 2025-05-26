@@ -61,7 +61,7 @@ export class CompaniasComponent implements OnInit {
   companyToDelete: CompanyResponse | null = null;
 
 
-  isSubmitted = false;
+  isSubmitted = true;
   isDeleting = false;
 
 
@@ -76,8 +76,8 @@ export class CompaniasComponent implements OnInit {
       identificationType: [null, Validators.required],
       identification: ['', [Validators.required, Validators.maxLength(13), this.validarIdentificacion.bind(this)]],
       name: [null, Validators.required],
-      address: [null, Validators.required],
-      phone: [null, [Validators.required, Validators.maxLength(10)]],
+      address: [null],
+      phone: [null, [ Validators.maxLength(10)]],
       email: [null, Validators.email],
     });
 
@@ -277,9 +277,9 @@ export class CompaniasComponent implements OnInit {
     // Datos comunes a ambas operaciones
     let companyData: any = {
       name: formValue.name,
-      address: formValue.address,
+      address: formValue.address || undefined,
       email: formValue.email || undefined,
-      phone: formValue.phone,
+      phone: formValue.phone || undefined,
       type: formValue.type
     };
 
@@ -325,6 +325,7 @@ export class CompaniasComponent implements OnInit {
     this.registerFormCompany.reset();
     this.editMode = !!company;
     this.companyId = company?.id || null;
+    this.isSubmitted = false;
 
     if (company) {
 

@@ -40,8 +40,8 @@ export interface CompanyResponse {
     identificationType: IdentificationType;
     name: string;
     createdAt: string;
-    address: string;
-    phone: string;
+    address?: string;
+    phone?: string;
     email?: string;
   };
 }
