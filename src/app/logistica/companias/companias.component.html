@@ -171,7 +171,7 @@
         label="Eliminar"
         icon="pi pi-trash"
         class="p-button-sm p-button-danger"
-        (click)="deleteCompany()"
+        (click)="deleteCompany()" [disabled]="isDeleting"
       ></button>
     </div>
   </ng-template>

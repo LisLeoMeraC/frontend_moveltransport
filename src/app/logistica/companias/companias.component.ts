@@ -62,6 +62,7 @@ export class CompaniasComponent implements OnInit {
 
 
   isSubmitted = false;
+  isDeleting = false;
 
 
   identificationTypes = this.companyService.getIdentificationTypes();
@@ -171,6 +172,7 @@ export class CompaniasComponent implements OnInit {
 
   deleteCompany(): void {
     if (!this.companyToDelete) return;
+    this.isDeleting = true;
 
     this.companyService.deleteCompany(this.companyToDelete.id).subscribe({
       next: (response) => {
@@ -180,6 +182,7 @@ export class CompaniasComponent implements OnInit {
           detail: 'Compañía eliminada correctamente',
           life: 5000
         });
+        this.isDeleting = false;
 
         // Recargar la lista de compañías
         if (this.searchTerm.trim() === '') {
@@ -198,6 +201,7 @@ export class CompaniasComponent implements OnInit {
       },
       complete: () => {
         this.dialogDeleteCompany = false;
+        this.isDeleting = false;
         this.companyToDelete = null;
       }
     });
