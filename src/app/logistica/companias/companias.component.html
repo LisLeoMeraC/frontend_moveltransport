@@ -4,7 +4,7 @@
 </p-toolbar>
 
 <div class="card mt-4   ">
-    <p-table [scrollable]="true" scrollHeight="400px" styleClass="mt-4" [value]="companies()" [loading]="isLoading()">
+    <p-table [scrollable]="true" scrollHeight="550px" styleClass="mt-4" [value]="companies()" [loading]="isLoading()">
 
 
         <ng-template #caption>
@@ -27,27 +27,28 @@
             </div>
         </ng-template>
 
-        <ng-template #header>
+        <ng-template pTemplate="header">
             <tr>
-                <th>Razón Social</th>
-                <th>Tipo Identificación</th>
-                <th>Nro. Identificación</th>
-                <th>Dirección</th>
-                <th>Teléfono</th>
-                <th>Email</th>
-                <th>Acciones</th>
+                <th class="text-center">Razón Social</th>
+                <th class="text-center">Tipo Identificación</th>
+                <th class="text-center">Nro. Identificación</th>
+                <th class="text-center">Dirección</th>
+                <th class="text-center">Teléfono</th>
+                <th class="text-center">Email</th>
+                <th class="text-center">Acciones</th>
             </tr>
         </ng-template>
-        <ng-template #body let-company>
+        <ng-template pTemplate="body" let-company>
             <tr>
-
-                <td>{{company.subject.name}}</td>
-                <td>{{company.subject.identificationType | titlecase}}</td>
-                <td>{{company.subject.identification}}</td>
-                <td>{{company.subject.address}}</td>
-                <td>{{company.subject.phone}}</td>
-                <td>{{company.subject.email || 'N/A'}}</td>
-                <td>
+                <td class="text-center">{{ company.subject.name }}</td>
+                <td class="text-center">
+                    {{ company.subject.identificationType === 'dni' ? 'Cédula' : (company.subject.identificationType | titlecase) }}
+                </td>
+                <td class="text-center">{{ company.subject.identification }}</td>
+                <td class="text-center">{{ company.subject.address }}</td>
+                <td class="text-center">{{ company.subject.phone }}</td>
+                <td class="text-center">{{ company.subject.email || 'N/A' }}</td>
+                <td class="text-center">
                     <button pButton pRipple type="button" icon="pi pi-pencil" (click)="openDialogCompany(company)"
                         class="p-danger- mb-2 mr-2"></button>
                     <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2" (click)="confirmDeleteCompany(company)"></button>
@@ -131,7 +132,7 @@
         <div class="flex justify-end mt-4">
 
             <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit"
-                class="p-button-primary"></button>
+                class="p-button-primary" [disabled]="isSubmitted || registerFormCompany.invalid"></button>
         </div>
     </form>
 </p-dialog>

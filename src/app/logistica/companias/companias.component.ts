@@ -61,6 +61,8 @@ export class CompaniasComponent implements OnInit {
   companyToDelete: CompanyResponse | null = null;
 
 
+  isSubmitted = false;
+
 
   identificationTypes = this.companyService.getIdentificationTypes();
   companyTypes = this.companyService.getCompanyTypes();
@@ -264,6 +266,8 @@ export class CompaniasComponent implements OnInit {
       return;
     }
 
+    this.isSubmitted = true;
+
     const formValue = this.registerFormCompany.value;
 
     // Datos comunes a ambas operaciones
@@ -304,9 +308,11 @@ export class CompaniasComponent implements OnInit {
         this.editMode = false;
         this.companyId = null;
         this.loadCompanies();
+        this.isSubmitted = false;
       },
       error: (err) => {
         console.error('Error en el componente:', err);
+        this.isSubmitted = false;
       }
     });
   }

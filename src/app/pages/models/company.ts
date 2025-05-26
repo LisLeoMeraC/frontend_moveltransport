@@ -11,7 +11,6 @@ export enum CompanyType {
   both = 'both'
 }
 
-
 export interface ApiResponse<T> 
   {
     statusCode: number;
@@ -22,7 +21,6 @@ export interface ApiResponse<T>
 
   }
 
-
 export interface Pagination {
   currentPage: number;
   pageSize: number;
@@ -31,9 +29,6 @@ export interface Pagination {
 }
 
 
-
-
-  
 export interface CompanyResponse {
   id: string;
   subjectId: string;
