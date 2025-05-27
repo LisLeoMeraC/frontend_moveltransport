@@ -1,0 +1,151 @@
+<p-toast></p-toast>
+<p-toolbar styleClass="p-toolbar p-component mb-0 py-2">
+    <h3 class="m-0 flex align-items-center">Propietarios de Vehículos</h3>
+</p-toolbar>
+
+<div class="card mt-4   ">
+    <p-table [scrollable]="true" scrollHeight="550px" styleClass="mt-4" [value]="vehicleOwners()"
+        [loading]="isLoading()">
+
+
+        <ng-template #caption>
+            <div class="flex justify-between items-center flex-column sm:flex-row">
+                <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogVehicleOwner()"></button>
+
+
+                <div class="flex-1 flex justify-center">
+
+                </div>
+
+                <p-iconfield iconPosition="left" class="ml-auto">
+                    <p-inputicon>
+                        <i class="pi pi-search"></i>
+                    </p-inputicon>
+                    <input pInputText type="text" placeholder="Buscar..." />
+                </p-iconfield>
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+            <tr>
+                <th class="text-center">Nombre</th>
+                <th class="text-center">Tipo Identificación</th>
+                <th class="text-center">Nro. Identificación</th>
+                <th class="text-center">Dirección</th>
+                <th class="text-center">Teléfono</th>
+                <th class="text-center">Email</th>
+                <th class="text-center">Acciones</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-vehicleOwner>
+            <tr>
+                <td class="text-center">{{ vehicleOwner.subject.name }}</td>
+                <td class="text-center">
+                    {{ vehicleOwner.subject.identificationType === 'dni' ? 'Cédula' :
+                    (vehicleOwner.subject.identificationType | titlecase) }}
+                </td>
+                <td class="text-center">{{ vehicleOwner.subject.identification }}</td>
+                <td class="text-center">{{ vehicleOwner.subject.address }}</td>
+                <td class="text-center">{{ vehicleOwner.subject.phone }}</td>
+                <td class="text-center">{{ vehicleOwner.subject.email || 'N/A' }}</td>
+                <td class="text-center">
+                    <button pButton pRipple type="button" icon="pi pi-pencil" class="p-danger- mb-2 mr-2" (click)="openDialogVehicleOwner(vehicleOwner)"></button>
+                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2"></button>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="7">No existen registros.</td>
+            </tr>
+        </ng-template>
+
+    </p-table>
+    <mat-paginator [length]="pagination().totalRecords" [pageSize]="pageSize()"
+        [pageIndex]="pagination().currentPage - 1" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons
+        aria-label="Select page">
+    </mat-paginator>
+</div>
+
+
+
+<p-dialog [header]="editMode ? 'Editar Propietario' : 'Agregar Propietario'" [(visible)]="dialogVehicleOwner"
+    [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '35vw' }" [modal]="true" [draggable]="false"
+    [resizable]="false">
+
+    <form class="p-fluid" [formGroup]="registerFormVehicleOwner" (ngSubmit)="onSubmitVehicleOwner()">
+
+        <div class="flex flex-col gap-4">
+            <div class="flex flex-wrap gap-4">
+
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="identificacion" class="text-sm">Identificación</label>
+                    <input pInputText id="identificacion" type="text" class="w-full" autocomplete="off"
+                        formControlName="identification" maxlength="13" (keypress)="onKeyPressIdentificacion($event)"/>
+                    <small *ngIf="isSearching" class="text-blue-500">
+                        <i class="pi pi-spinner pi-spin"></i> Buscando información...
+                    </small>
+                    <small *ngIf="isExistingOwner" class="text-green-500">
+                        <i class="pi pi-check"></i> Propietario encontrado
+                    </small>
+                </div>
+
+                
+
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="compania" class="text-sm">Tipo Identificación</label>
+                    <p-dropdown id="identificationTypes" [options]="identificationTypes" optionLabel="label"
+                        optionValue="value" placeholder="Seleccione el tipo" formControlName="identificationType"
+                        [showClear]="true" [appendTo]="'body'" class="w-full">
+                    </p-dropdown>
+                </div>
+
+                
+            </div>
+
+            <div class="flex flex-wrap gap-4">
+
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="nombre" class="text-sm">Nombre</label>
+                    <input pInputText id="nombre" type="text" class="w-full" autocomplete="off"
+                        formControlName="name" />
+                </div>
+            
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="direccion" class="text-sm">Dirección</label>
+                    <input pInputText id="direccion" type="text" class="w-full" autocomplete="off"
+                        formControlName="address" />
+                </div>
+
+               
+
+            </div>
+
+            <div class="flex flex-wrap gap-4">
+
+                 <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="telefono" class="text-sm">Teléfono</label>
+                    <input pInputText id="telefono" type="text" class="w-full" autocomplete="off" maxlength="10"
+                        formControlName="phone" />
+                </div>
+                
+                <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="email" class="text-sm">Email</label>
+                    <input pInputText id="email" type="text" class="w-full" autocomplete="off"
+                        formControlName="email" />
+                </div>
+
+                  
+
+            </div>
+        </div>
+        <div class="flex justify-end mt-4">
+
+            <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit"
+                class="p-button-primary" [disabled]="isSubmitted"></button>
+        </div>
+    </form>
+</p-dialog>
+
+
+

@@ -1,5 +1,5 @@
 import { Injectable, signal } from '@angular/core';
-import { ApiResponse, CompanyResponse, CompanyType, IdentificationType, Pagination } from '../models/company';
+import { ApiResponse, CompanyData, CompanyResponse, CompanyType, IdentificationType, Pagination } from '../models/company';
 import { environment } from '../../../environments/environment';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
@@ -26,30 +26,17 @@ export class CompanyService {
   readonly hasError = this.error.asReadonly();
   readonly paginationData = this.pagination.asReadonly();
 
-
   constructor(private http: HttpClient, private messageService: MessageService) { }
 
   //metodo para registrar compañia
-
-  registerCompany(companyData: {
-    identification: string;
-    identificationType: IdentificationType;
-    name: string;
-    address?: string;
-    email?: string;
-    phone?: string;
-    type: CompanyType;
-  }): Observable<ApiResponse<CompanyResponse>> {
+  registerCompany(companyData: CompanyData): Observable<ApiResponse<CompanyResponse>> {
     this.loading.set(true);
     this.error.set(null);
-
-
     return this.http.post<ApiResponse<CompanyResponse>>(`${this.baseUrl}/company`, companyData).pipe(
       tap({
         next: (response) => {
-          if (response.statusCode >= 200 && response.statusCode < 300) {
-            console.log('Compañía registrada');
-          } else {
+          if (response.statusCode >= 200 && response.statusCode < 300) {} 
+          else {
             const errorMessage = this.formatErrorMessage(response);
             this.error.set(errorMessage);
             this.messageService.add({
@@ -84,14 +71,8 @@ export class CompanyService {
   return this.http.delete<ApiResponse<any>>(`${this.baseUrl}/company/${id}`).pipe(
     tap({
       next: (response) => {
-        if (response.statusCode >= 200 && response.statusCode < 300) {
-          this.messageService.add({
-            severity: 'success',
-            summary: 'Éxito',
-            detail: 'Compañía eliminada correctamente',
-            life: 5000
-          });
-        } else {
+        if (response.statusCode >= 200 && response.statusCode < 300) {} 
+        else {
           const errorMessage = this.formatErrorMessage(response);
           this.error.set(errorMessage);
         }
@@ -165,24 +146,15 @@ export class CompanyService {
 
   //metodo para editar compañia
   updateCompany(
-    id: string,
-    companyData: {
-      name: string;
-      address: string;
-      email?: string;
-      phone: string;
-      type: CompanyType;
-    }
-  ): Observable<ApiResponse<CompanyResponse>> {
+    id: string, companyData:CompanyData): Observable<ApiResponse<CompanyResponse>> {
     this.loading.set(true);
     this.error.set(null);
 
     return this.http.put<ApiResponse<CompanyResponse>>(`${this.baseUrl}/company/${id}`, companyData).pipe(
       tap({
         next: (response) => {
-          if (response.statusCode >= 200 && response.statusCode < 300) {
-            console.log('Compañía actualizada');
-          } else {
+          if (response.statusCode >= 200 && response.statusCode < 300) {} 
+          else {
             const errorMessage = this.formatErrorMessage(response);
             this.error.set(errorMessage);
             this.messageService.add({
@@ -208,7 +180,6 @@ export class CompanyService {
       })
     );
   }
-
 
   searchCompanies(
     term: string,

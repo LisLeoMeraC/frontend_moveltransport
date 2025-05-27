@@ -29,21 +29,22 @@ export class AppMenu {
             {
                 label: 'Administración',
                 items: [
-                    { label: 'Compañias', icon: 'pi pi-building-columns', routerLink: ['/app/logistica/companias'] },
-                    { label: 'Conductores', icon: 'pi pi-users', routerLink: ['/app/logistica/conductores'] },
-                    { label: 'Vehiculos', icon: 'pi pi-car', routerLink: ['/app/logistica/vehiculos'] },
+                    { label: 'Compañias', icon: 'pi pi-building-columns', routerLink: ['/app/logistics/company'] },
+                    { label: 'Propietarios', icon: 'pi pi-users', routerLink: ['/app/logistics/vehicle-owner'] },
+                    { label: 'Conductores', icon: 'pi pi-users', routerLink: ['/app/logistics/conductores'] },
+                    { label: 'Vehiculos', icon: 'pi pi-car', routerLink: ['/app/logistics/vehiculos'] },
                 ]
             },
             {
                 label: 'Operaciones',
                 items: [
-                    { label: 'Fletes', icon: 'pi pi-truck', routerLink: ['/app/logistica/fletes'] },
+                    { label: 'Fletes', icon: 'pi pi-truck', routerLink: ['/app/logistics/fletes'] },
                 ]
             },
             {
                 label: 'Finanzas',
                 items: [
-                    { label: 'Liquidaciones', icon: 'pi pi-receipt', routerLink: ['/app/logistica/liquidaciones'] }
+                    { label: 'Liquidaciones', icon: 'pi pi-receipt', routerLink: ['/app/logistics/liquidaciones'] }
                 ]
             }
         ];

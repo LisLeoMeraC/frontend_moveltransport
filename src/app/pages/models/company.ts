@@ -29,6 +29,17 @@ export interface Pagination {
 }
 
 
+export interface CompanyData{
+  identification: string;
+  identificationType: IdentificationType;
+  name: string;
+  adrress?: string;
+  phone?: string;
+  email?: string;
+  type: CompanyType;
+}
+
+
 export interface CompanyResponse {
   id: string;
   subjectId: string;

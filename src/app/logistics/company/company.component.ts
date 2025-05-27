@@ -20,18 +20,18 @@ import { TableModule } from 'primeng/table';
 import { DropdownModule } from 'primeng/dropdown';
 
 @Component({
-  selector: 'app-companias',
+  selector: 'app-company',
   standalone: true,
   imports: [CommonModule, ToolbarModule, TableModule, InputTextModule, IconFieldModule, InputIconModule, ButtonModule, ReactiveFormsModule,
     DialogModule, DropdownModule, ToastModule, MatPaginatorModule, MatProgressSpinnerModule, SelectButtonModule, FormsModule],
-  templateUrl: './companias.component.html',
-  styleUrl: './companias.component.scss',
+  templateUrl: './company.component.html',
+  styleUrl: './company.component.scss',
   providers: [
     MessageService,
     { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() }
   ]
 })
-export class CompaniasComponent implements OnInit {
+export class CompanyComponent implements OnInit {
 
   showNumberOnlyWarning = false;
   dialogCompany: boolean = false;

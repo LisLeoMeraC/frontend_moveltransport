@@ -37,8 +37,8 @@ export const appRoutes: Routes = [
                 loadChildren: () => import('./app/pages/pages.routes')
             },
             {
-                path: 'logistica',
-                loadChildren: () => import('./app/logistica/logistica.routes')
+                path: 'logistics',
+                loadChildren: () => import('./app/logistics/logistics.routes')
             },
             {
                 path: 'landing',
