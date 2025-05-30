@@ -271,15 +271,14 @@ export class CompanyComponent implements OnInit {
     }
 
     this.isSubmitted = true;
-
     const formValue = this.registerFormCompany.value;
 
     // Datos comunes a ambas operaciones
     let companyData: any = {
       name: formValue.name,
-      address: formValue.address || undefined,
-      email: formValue.email || undefined,
-      phone: formValue.phone || undefined,
+      address: formValue.address || null,
+      email: formValue.email || null,
+      phone: formValue.phone || null,
       type: formValue.type
     };
 

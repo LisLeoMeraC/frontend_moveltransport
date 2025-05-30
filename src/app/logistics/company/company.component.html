@@ -3,19 +3,14 @@
     <h3 class="m-0 flex align-items-center">Compañias</h3>
 </p-toolbar>
 
-<div class="card mt-4   ">
+<div class="card mt-4">
     <p-table [scrollable]="true" scrollHeight="550px" styleClass="mt-4" [value]="companies()" [loading]="isLoading()">
-
-
         <ng-template #caption>
             <div class="flex justify-between items-center flex-column sm:flex-row">
                 <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogCompany()"></button>
 
-
                 <div class="flex-1 flex justify-center">
-                    <p-selectbutton [options]="typeCompany" optionLabel="name" optionValue="value"
-                        [(ngModel)]="selectedType" (onChange)="onTypeChange($event)">
-                    </p-selectbutton>
+                    <p-selectbutton [options]="typeCompany" optionLabel="name" optionValue="value" [(ngModel)]="selectedType" (onChange)="onTypeChange($event)"> </p-selectbutton>
                 </div>
 
                 <p-iconfield iconPosition="left" class="ml-auto">
@@ -44,13 +39,12 @@
                 <td class="text-center">
                     {{ company.subject.identificationType === 'dni' ? 'Cédula' : (company.subject.identificationType | titlecase) }}
                 </td>
-                <td class="text-center">{{ company.subject.identification }}</td>
-                <td class="text-center">{{ company.subject.address }}</td>
-                <td class="text-center">{{ company.subject.phone }}</td>
-                <td class="text-center">{{ company.subject.email || 'N/A' }}</td>
+                <td class="text-center">{{ company.subject.identification || '-- --' }}</td>
+                <td class="text-center">{{ company.subject.address || '-- --' }}</td>
+                <td class="text-center">{{ company.subject.phone || '-- --' }}</td>
+                <td class="text-center">{{ company.subject.email || '-- --' }}</td>
                 <td class="text-center">
-                    <button pButton pRipple type="button" icon="pi pi-pencil" (click)="openDialogCompany(company)"
-                        class="p-danger- mb-2 mr-2"></button>
+                    <button pButton pRipple type="button" icon="pi pi-pencil" (click)="openDialogCompany(company)" class="p-danger- mb-2 mr-2"></button>
                     <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2" (click)="confirmDeleteCompany(company)"></button>
                 </td>
             </tr>
@@ -60,119 +54,87 @@
                 <td colspan="7">No existen registros.</td>
             </tr>
         </ng-template>
-
     </p-table>
-    <mat-paginator [length]="pagination().totalRecords" [pageSize]="pageSize()"
-        [pageIndex]="pagination().currentPage - 1" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons
-        aria-label="Select page" >
-    </mat-paginator>
+    <mat-paginator [length]="pagination().totalRecords" [pageSize]="pageSize()" [pageIndex]="pagination().currentPage - 1" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons aria-label="Select page"> </mat-paginator>
 </div>
 
-
-
-<p-dialog [header]="editMode ? 'Editar Compañía' : 'Agregar Compañía'" [(visible)]="dialogCompany"
-    [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '40vw' }" [modal]="true" [draggable]="false"
-    [resizable]="false">
-
+<p-dialog [header]="editMode ? 'Editar Compañía' : 'Agregar Compañía'" [(visible)]="dialogCompany" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '40vw' }" [modal]="true" [draggable]="false" [resizable]="false">
     <form class="p-fluid" [formGroup]="registerFormCompany" (ngSubmit)="onSubmitCompany()">
-
         <div class="flex flex-col gap-4">
             <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="compania" class="text-sm">Tipo De Compañia</label>
-                    <p-dropdown id="companyType" [options]="companyTypes" optionLabel="label" optionValue="value"
-                        placeholder="Seleccione el tipo" formControlName="type" [showClear]="true" [appendTo]="'body'"
-                        class="w-full">
-                    </p-dropdown>
+                    <p-dropdown id="companyType" [options]="companyTypes" optionLabel="label" optionValue="value" placeholder="Seleccione el tipo" formControlName="type" [showClear]="true" [appendTo]="'body'" class="w-full"> </p-dropdown>
                 </div>
 
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="compania" class="text-sm">Tipo Identificación</label>
-                    <p-dropdown id="identificationTypes" [options]="identificationTypes" optionLabel="label"
-                        optionValue="value" placeholder="Seleccione el tipo" formControlName="identificationType"
-                        [showClear]="true" [appendTo]="'body'" class="w-full">
+                    <p-dropdown
+                        id="identificationTypes"
+                        [options]="identificationTypes"
+                        optionLabel="label"
+                        optionValue="value"
+                        placeholder="Seleccione el tipo"
+                        formControlName="identificationType"
+                        [showClear]="true"
+                        [appendTo]="'body'"
+                        class="w-full"
+                    >
                     </p-dropdown>
                 </div>
 
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="identificacion" class="text-sm">Identificación</label>
-                    <input pInputText id="identificacion" type="text" class="w-full" autocomplete="off"
-                        formControlName="identification" maxlength="13" (keypress)="onKeyPressIdentificacion($event)"/>
+                    <input pInputText id="identificacion" type="text" class="w-full" autocomplete="off" formControlName="identification" maxlength="13" (keypress)="onKeyPressIdentificacion($event)" />
                 </div>
-
             </div>
 
             <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="nombre" class="text-sm">Nombre</label>
-                    <input pInputText id="nombre" type="text" class="w-full" autocomplete="off"
-                        formControlName="name" />
+                    <input pInputText id="nombre" type="text" class="w-full" autocomplete="off" formControlName="name" />
                 </div>
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="direccion" class="text-sm">Dirección</label>
-                    <input pInputText id="direccion" type="text" class="w-full" autocomplete="off"
-                        formControlName="address" />
+                    <input pInputText id="direccion" type="text" class="w-full" autocomplete="off" formControlName="address" />
                 </div>
             </div>
-
 
             <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="telefono" class="text-sm">Teléfono</label>
-                    <input pInputText id="telefono" type="text" class="w-full" autocomplete="off" maxlength="10"
-                        formControlName="phone" />
+                    <input pInputText id="telefono" type="text" class="w-full" autocomplete="off" maxlength="10" formControlName="phone" />
                 </div>
                 <div class="flex flex-col grow basis-0 gap-1">
                     <label for="email" class="text-sm">Email</label>
-                    <input pInputText id="email" type="text" class="w-full" autocomplete="off"
-                        formControlName="email" />
+                    <input pInputText id="email" type="text" class="w-full" autocomplete="off" formControlName="email" />
                 </div>
             </div>
         </div>
         <div class="flex justify-end mt-4">
-
-            <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit"
-                class="p-button-primary" [disabled]="isSubmitted"></button>
+            <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary" [disabled]="isSubmitted"></button>
         </div>
     </form>
 </p-dialog>
 
-
-<p-dialog
-  [(visible)]="dialogDeleteCompany"
-  [modal]="true"
-  [closable]="false"
-  [style]="{ width: '100%', maxWidth: '400px' }"
-  header="Confirmación requerida"
->
-  <div class="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
-    <div class="flex items-start gap-3">
-      <i class="pi pi-exclamation-circle text-yellow-600 text-2xl mt-1"></i>
-      <div>
-        <p class="text-sm text-gray-800 leading-relaxed">
-          Estás a punto de eliminar la compañía
-          <span class="font-semibold text-red-600">{{ companyToDelete?.subject?.name }}</span>.
-          Esta acción no se puede deshacer. ¿Deseas continuar?
-        </p>
-      </div>
+<p-dialog [(visible)]="dialogDeleteCompany" [modal]="true" [closable]="false" [style]="{ width: '100%', maxWidth: '400px' }" header="Confirmación requerida">
+    <div class="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
+        <div class="flex items-start gap-3">
+            <i class="pi pi-exclamation-circle text-yellow-600 text-2xl mt-1"></i>
+            <div>
+                <p class="text-sm text-gray-800 leading-relaxed">
+                    Estás a punto de eliminar la compañía
+                    <span class="font-semibold text-red-600">{{ companyToDelete?.subject?.name }}</span
+                    >. Esta acción no se puede deshacer. ¿Deseas continuar?
+                </p>
+            </div>
+        </div>
     </div>
-  </div>
 
-  <ng-template pTemplate="footer">
-    <div class="flex justify-end gap-2 pt-3">
-      <button
-        pButton
-        label="Cancelar"
-        class="p-button-secondary p-button-sm"
-        (click)="dialogDeleteCompany = false"
-      ></button>
-      <button
-        pButton
-        label="Eliminar"
-        icon="pi pi-trash"
-        class="p-button-sm p-button-danger"
-        (click)="deleteCompany()" [disabled]="isDeleting"
-      ></button>
-    </div>
-  </ng-template>
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-2 pt-3">
+            <button pButton label="Cancelar" class="p-button-secondary p-button-sm" (click)="dialogDeleteCompany = false"></button>
+            <button pButton  label="Eliminar" icon="pi pi-trash" class="p-button-sm p-button-danger" (click)="deleteCompany()" [disabled]="isDeleting"></button>
+        </div>
+    </ng-template>
 </p-dialog>
