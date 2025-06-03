@@ -63,6 +63,15 @@
         <div class="flex flex-col gap-4">
             <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col grow basis-0 gap-1">
+                    <label for="identificacion" class="text-sm">Identificación</label>
+                    <div class="flex gap-2">
+                        <input pInputText id="identificacion" type="text" class="w-full" autocomplete="off" formControlName="identification" maxlength="13" (keypress)="onKeyPressIdentificacion($event)" />
+                        <button pButton type="button" icon="pi pi-search" class="p-button-primary74m" (click)="buscarIdentificacion()" [disabled]="editMode" pTooltip="Buscar" tooltipPosition="top"></button>
+                        <button pButton type="button" icon="pi pi-times" class="p-button-danger" (click)="limpiarIdentificacion()" [disabled]="editMode" pTooltip="Limpiar" tooltipPosition="top"></button>
+                    </div>
+                </div>
+
+                <div class="flex flex-col grow basis-0 gap-1">
                     <label for="compania" class="text-sm">Tipo De Compañia</label>
                     <p-dropdown id="companyType" [options]="companyTypes" optionLabel="label" optionValue="value" placeholder="Seleccione el tipo" formControlName="type" [showClear]="true" [appendTo]="'body'" class="w-full"> </p-dropdown>
                 </div>
@@ -81,11 +90,6 @@
                         class="w-full"
                     >
                     </p-dropdown>
-                </div>
-
-                <div class="flex flex-col grow basis-0 gap-1">
-                    <label for="identificacion" class="text-sm">Identificación</label>
-                    <input pInputText id="identificacion" type="text" class="w-full" autocomplete="off" formControlName="identification" maxlength="13" (keypress)="onKeyPressIdentificacion($event)" />
                 </div>
             </div>
 
@@ -134,7 +138,7 @@
     <ng-template pTemplate="footer">
         <div class="flex justify-end gap-2 pt-3">
             <button pButton label="Cancelar" class="p-button-secondary p-button-sm" (click)="dialogDeleteCompany = false"></button>
-            <button pButton  label="Eliminar" icon="pi pi-trash" class="p-button-sm p-button-danger" (click)="deleteCompany()" [disabled]="isDeleting"></button>
+            <button pButton label="Eliminar" icon="pi pi-trash" class="p-button-sm p-button-danger" (click)="deleteCompany()" [disabled]="isDeleting"></button>
         </div>
     </ng-template>
 </p-dialog>
