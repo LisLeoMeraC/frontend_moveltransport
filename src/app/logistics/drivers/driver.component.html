@@ -3,12 +3,11 @@
     <h3 class="m-0 flex align-items-center">Conductores</h3>
 </p-toolbar>
 
-
 <div class="card mt-4">
-    <p-table [scrollable]="true" scrollHeight="550px" styleClass="mt-4" >
+    <p-table [scrollable]="true" scrollHeight="550px" styleClass="mt-4" [value]="drivers()" [loading]="isLoading()">
         <ng-template #caption>
             <div class="flex justify-between items-center flex-column sm:flex-row">
-                <button pButton label="Agregar" icon="pi pi-plus"></button>
+                <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogDriver()"></button>
 
                 <p-iconfield iconPosition="left" class="ml-auto">
                     <p-inputicon>
@@ -23,32 +22,92 @@
             <tr>
                 <th class="text-center">Chofer</th>
                 <th class="text-center">Licencia</th>
-                <th class="text-center">Nro. Identificación</th>
                 <th class="text-center">Alias</th>
                 <th class="text-center">Teléfono</th>
                 <th class="text-center">Compañia</th>
                 <th class="text-center">Acciones</th>
             </tr>
         </ng-template>
-        <ng-template pTemplate="body" let-company>
+        <ng-template pTemplate="body" let-driver>
             <tr>
-                <td class="text-center"></td>
-                <td class="text-center"></td>
-                <td class="text-center"></td>
-                <td class="text-center"></td>
-                <td class="text-center"></td>
-                <td class="text-center"></td>
+                <td class="text-center">{{ driver.name || '-- --' }}</td>
+                <td class="text-center">{{ driver.licenseNumber || '-- --' }}</td>
+                <td class="text-center">{{ driver.alias || '-- --' }}</td>
+                <td class="text-center"> {{ driver.phone || '-- --' }}</td>
+                <td class="text-center">{{ driver.company?.subject.name || '-- --' }}</td>
                 <td class="text-center">
-                    <button pButton pRipple type="button" icon="pi pi-pencil"  class="p-danger- mb-2 mr-2"></button>
+                    <button pButton pRipple type="button" icon="pi pi-pencil" class="p-danger- mb-2 mr-2"></button>
                     <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2"></button>
                 </td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="7">No existen registros.</td>
+                <td colspan="6  ">No existen registros.</td>
             </tr>
         </ng-template>
     </p-table>
     <mat-paginator [length]="pagination().totalRecords" [pageSize]="pageSize()" [pageIndex]="pagination().currentPage - 1" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons aria-label="Select page"> </mat-paginator>
+
 </div>
+
+<p-dialog header="Agregar Conductor" [(visible)]="dialogDriver" [breakpoints]="{ '960px': '75vw' }" 
+          [style]="{ width: '22vw' }" [modal]="true" [draggable]="false" [resizable]="false">
+    <form class="p-fluid" [formGroup]="FormDriver" (ngSubmit)="onSubmitDriver()">
+    <div class="flex flex-col gap-4">
+        <!-- Nombre -->
+        <div class="flex flex-col gap-1">
+            <label for="nombre" class="text-sm">Nombre</label>
+            <input pInputText id="nombre" type="text" class="w-full" autocomplete="off" formControlName="name" />
+        </div>
+
+        <!-- Alias -->
+        <div class="flex flex-col gap-1">
+            <label for="alias" class="text-sm">Alias</label>
+            <input pInputText id="alias" type="text" class="w-full" autocomplete="off" formControlName="alias" />
+        </div>
+
+        <!-- Nro. Celular -->
+        <div class="flex flex-col gap-1">
+            <label for="phone" class="text-sm">Nro. Celular</label>
+            <input pInputText id="phone" type="text" class="w-full" autocomplete="off" formControlName="phone" />
+        </div>
+
+        <!-- Compañía -->
+        <div class="flex flex-col gap-1">
+            <label for="compania" class="text-sm">Compañía</label>
+            <p-dropdown
+                id="compania"
+                [options]="carriers()"
+                optionLabel="subject.name"
+                formControlName="companyId"
+                [optionValue]="'id'"
+                placeholder="Seleccione la compañía"
+                [showClear]="true"
+                [appendTo]="'body'"
+                [filter]="true"
+                filterPlaceholder="Buscar compañía"
+                [loading]="isLoading()"
+                class="w-full"
+            >
+                <ng-template pTemplate="empty" *ngIf="!isLoading()">
+                    <div class="p-2">
+                        {{ hasError() || 'No se encontraron compañías' }}
+                    </div>
+                </ng-template>
+            </p-dropdown>
+        </div>
+
+        <!-- Nro. Licencia -->
+        <div class="flex flex-col gap-1">
+            <label for="licenseNumber" class="text-sm">Nro. Licencia</label>
+            <input pInputText id="licenseNumber" type="text" class="w-full" autocomplete="off" formControlName="licenseNumber" />
+        </div>
+    </div>
+
+    <!-- Botón de enviar -->
+    <div class="flex justify-end mt-4">
+        <button pButton icon="pi pi-save" type="submit" class="p-button-primary"></button>
+    </div>
+</form>
+</p-dialog>
