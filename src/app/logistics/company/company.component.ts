@@ -110,19 +110,13 @@ export class CompanyComponent implements OnInit {
             this.showNumberOnlyWarning = false;
         });
 
-        this.searchSubject
-            .pipe(
-                takeUntil(this.destroy$),
-                debounceTime(2000),
-                distinctUntilChanged()
-            )
-            .subscribe((term) => {
-                if (term.trim() === '') {
-                    this.loadCompanies(1, this.pageSize(), this.selectedType);
-                } else {
-                    this.searchCompanies(term, 1, this.pageSize(), this.selectedType);
-                }
-            });
+        this.searchSubject.pipe(takeUntil(this.destroy$), debounceTime(2000), distinctUntilChanged()).subscribe((term) => {
+            if (term.trim() === '') {
+                this.loadCompanies(1, this.pageSize(), this.selectedType);
+            } else {
+                this.searchCompanies(term, 1, this.pageSize(), this.selectedType);
+            }
+        });
     }
 
     ngOnInit(): void {
@@ -215,7 +209,7 @@ export class CompanyComponent implements OnInit {
     }
 
     loadCompanies(page: number = 1, limit: number = this.pageSize(), type?: string): void {
-        this.companyService.loadCompanies(page, limit, type).subscribe(() => {
+        this.companyService.loadCompanies(true,page, limit, type).subscribe(() => {
             if (this.paginator) {
                 this.paginator.pageIndex = page - 1;
                 this.paginator.pageSize = limit;
@@ -379,7 +373,6 @@ export class CompanyComponent implements OnInit {
 
                     this.habilitarControles(false);
                     this.registerFormCompany.get('type')?.enable();
-
                 } else {
                     this.messageService.add({
                         severity: 'info',

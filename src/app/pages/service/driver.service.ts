@@ -35,8 +35,10 @@ export class DriverService {
     loadDrivers(page: number = 1, limit: number = 5): Observable<ApiResponse<DriverResponse[]>> {
         this.loading.set(true);
         this.error.set(null);
-
-        let params = new HttpParams().set('page', page.toString()).set('limit', limit.toString());
+        
+        let params = new HttpParams()
+        .set('page', page.toString())
+        .set('limit', limit.toString()).set('includeCompany', 'true');
 
         return this.http.get<ApiResponse<DriverResponse[]>>(`${this.baseUrl}/driver/enabled`, { params }).pipe(
             tap({
@@ -163,6 +165,77 @@ export class DriverService {
             })
         );
     }
+    searchDrivers(term: string, page: number = 1, limit: number = 5): Observable<ApiResponse<DriverResponse[]>> {
+        this.loading.set(true);
+        this.error.set(null);
+        
+        let params = new HttpParams()
+            .set('page', page.toString())
+            .set('limit', limit.toString())
+            .set('term', term)
+            .set('includeCompany', 'true');
+
+        return this.http.get<ApiResponse<DriverResponse[]>>(`${this.baseUrl}/driver/search`, { params }).pipe(
+            tap({
+                next: (response) => {
+                    if (response.statusCode >= 200 && response.statusCode < 300) {
+                        this.drivers.set(response.data || []);
+                        if (response.pagination) {
+                            this.pagination.set(response.pagination);
+                        }
+                    } else {
+                        const errorMessage = this.formatErrorMessage(response);
+                        this.error.set(errorMessage);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: errorMessage,
+                            life: 5000
+                        });
+                    }
+                    this.loading.set(false);
+                },
+                error: (err) => {
+                    const errorMessage = this.getErrorMessage(err);
+                    this.error.set(errorMessage);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: errorMessage,
+                        life: 5000
+                    });
+                    this.loading.set(false);
+                }
+            })
+        );
+    }
+
+    deleteDriver(id: string): Observable<ApiResponse<any>> {
+            this.loading.set(true);
+            this.error.set(null);
+    
+            return this.http.delete<ApiResponse<any>>(`${this.baseUrl}/driver/${id}`).pipe(
+                tap({
+                    next: (response) => {
+                        if (response.statusCode >= 200 && response.statusCode < 300) {
+                        } else {
+                            const errorMessage = this.formatErrorMessage(response);
+                            this.error.set(errorMessage);
+                        }
+                        this.loading.set(false);
+                    },
+                    error: (err) => {
+                        const errorMessage = this.getErrorMessage(err);
+                        this.error.set(errorMessage);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: errorMessage,
+                            life: 5000
+                        });
+                        this.loading.set(false);
+                    }
+                })
+            );
+        }
 }
-
-

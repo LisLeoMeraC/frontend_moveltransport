@@ -97,8 +97,8 @@ export class CompanyService {
 
     //metodo para cargar compañias
 
-    loadCompanies(page: number = 1, limit: number = 5, type?: string): Observable<ApiResponse<CompanyResponse[]>> {
-        this.loading.set(true);
+    loadCompanies(status: boolean, page: number = 1, limit: number = 5, type?: string): Observable<ApiResponse<CompanyResponse[]>> {
+        this.loading.set(status);
         this.error.set(null);
 
         let params = new HttpParams().set('page', page.toString()).set('limit', limit.toString());

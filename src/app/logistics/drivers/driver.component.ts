@@ -2,7 +2,7 @@ import { CommonModule } from '@angular/common';
 import { Component, effect, inject, OnInit, signal, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatPaginator, MatPaginatorIntl, MatPaginatorModule } from '@angular/material/paginator';
-import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatProgressSpinner, MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -17,8 +17,9 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { getSpanishPaginatorIntl } from '../../config/getSpanishPaginatorIntl';
 import { CompanyService } from '../../pages/service/company.service';
 import { CompanyResponse } from '../../pages/models/company';
-import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 import { DriverService } from '../../pages/service/driver.service';
+import { DriverResponse } from '../../pages/models/driver';
 
 @Component({
     selector: 'app-drivers',
@@ -54,17 +55,25 @@ export class DriverComponent implements OnInit {
     private searchSubject = new Subject<string>();
 
     carriers = this.companyService.companiesList;
-    drivers=this.driverService.driversList;
+    drivers = this.driverService.driversList;
     isLoading = this.companyService.isLoading;
     hasError = this.companyService.hasError;
     pagination = this.companyService.paginationData;
     pageSize = signal(5);
 
     //para editar un conductor
-    editMode=false;
-    driverId:string| null = null;
+    editMode = false;
+    driverId: string | null = null;
 
-     isSubmitted = true;
+    //para buscar un conductor
+    searchTerm: string = '';
+
+    //Para eliminar un conductor
+    dialogDeleteDriver: boolean = false;
+    driverToDelete: DriverResponse | null = null;
+
+    isSubmitted = true;
+    isDeleting = false;
 
     @ViewChild(MatPaginator) paginator!: MatPaginator;
 
@@ -91,29 +100,103 @@ export class DriverComponent implements OnInit {
                 });
             }
         });
+
+        this.searchSubject.pipe(takeUntil(this.destroy$), debounceTime(2000), distinctUntilChanged()).subscribe((term) => {
+            if (term.trim() === '') {
+                this.loadDrivers(1, this.pageSize());
+            } else {
+                this.searchDrivers(term, 1, this.pageSize());
+            }
+        });
     }
 
     ngOnInit(): void {
-      this.loadDrivers();
+        this.loadDrivers();
     }
 
     ngAfterViewInit(): void {
         this.paginator.page.subscribe((event) => {
             this.pageSize.set(event.pageSize);
             const newPage = event.pageSize !== this.pagination().pageSize ? 1 : event.pageIndex + 1;
+            if (this.searchTerm.trim() === '') {
                 this.loadDrivers(newPage, event.pageSize);
+            } else {
+                this.searchDrivers(this.searchTerm, newPage, event.pageSize);
+            }
         });
     }
 
-    
+    onSearchChange(): void {
+        // Resetear siempre a la primera página al cambiar el término de búsqueda
+        this.searchSubject.next(this.searchTerm);
+    }
+
+    searchDrivers(term: string, page: number = 1, limit: number = this.pageSize()): void {
+        this.driverService.searchDrivers(term, page, limit).subscribe(() => {
+            if (this.paginator) {
+                // Resetear el paginador solo si es una nueva búsqueda (página 1)
+                if (page === 1) {
+                    this.paginator.pageIndex = 0;
+                }
+                // Actualizar el tamaño de página si es diferente
+                if (limit !== this.paginator.pageSize) {
+                    this.paginator.pageSize = limit;
+                }
+            }
+        });
+    }
+
+    confirmDeleteDriver(driver: DriverResponse): void {
+        this.driverToDelete = driver;
+        this.dialogDeleteDriver = true;
+    }
+
+    deleteDriver(): void {
+        if (!this.driverToDelete) return;
+        this.isDeleting = true;
+
+        this.driverService.deleteDriver(this.driverToDelete.id).subscribe({
+            next: (response) => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Conductor eliminado correctamente',
+                    life: 5000
+                });
+                this.isDeleting = false;
+
+                // Recargar la lista de compañías
+                if (this.searchTerm.trim() === '') {
+                    this.loadDrivers(this.pagination().currentPage, this.pageSize());
+                } else {
+                    this.searchDrivers(this.searchTerm, this.pagination().currentPage, this.pageSize());
+                }
+            },
+            error: (err) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo eliminar la compañía',
+                    life: 5000
+                });
+            },
+            complete: () => {
+                this.dialogDeleteDriver = false;
+                this.isDeleting = false;
+                this.driverToDelete = null;
+            }
+        });
+    }
+
+
+
     ngOnDestroy(): void {
         this.destroy$.next();
         this.destroy$.complete();
     }
 
-
     loadCompanies(page: number = 1, limit: number = this.pageSize(), type: 'carrier'): void {
-        this.companyService.loadCompanies(page, limit, type).subscribe(() => {
+        this.companyService.loadCompanies(false, page, limit, type).subscribe(() => {
             if (this.paginator) {
                 this.paginator.pageIndex = page - 1;
                 this.paginator.pageSize = limit;
@@ -166,7 +249,7 @@ export class DriverComponent implements OnInit {
         };
 
         // Solo incluir identificación si NO estamos en modo edición
-        
+
         console.log('JSON enviado:', JSON.stringify(driverData, null, 2));
         const operation = this.editMode && this.driverId ? this.driverService.updateDriver(this.driverId, driverData) : this.driverService.registerDriver(driverData);
 
