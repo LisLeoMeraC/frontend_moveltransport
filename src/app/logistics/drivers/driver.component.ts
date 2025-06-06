@@ -46,6 +46,8 @@ import { DriverResponse } from '../../pages/models/driver';
     providers: [MessageService, { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() }]
 })
 export class DriverComponent implements OnInit {
+    showNumberOnlyWarning = false;
+
     dialogDriver: boolean = false;
     FormDriver: FormGroup;
 
@@ -56,9 +58,9 @@ export class DriverComponent implements OnInit {
 
     carriers = this.companyService.companiesList;
     drivers = this.driverService.driversList;
-    isLoading = this.companyService.isLoading;
-    hasError = this.companyService.hasError;
-    pagination = this.companyService.paginationData;
+    isLoading = this.driverService.isLoading;
+    hasError = this.driverService.hasError;
+    pagination = this.driverService.paginationData;
     pageSize = signal(5);
 
     //para editar un conductor
@@ -73,6 +75,7 @@ export class DriverComponent implements OnInit {
     driverToDelete: DriverResponse | null = null;
 
     isSubmitted = true;
+
     isDeleting = false;
 
     @ViewChild(MatPaginator) paginator!: MatPaginator;
@@ -82,10 +85,10 @@ export class DriverComponent implements OnInit {
         private messageService: MessageService
     ) {
         this.FormDriver = this.fb.group({
-            licenseNumber: [null, Validators.required],
+            licenseNumber: [null],
             name: [null, Validators.required],
-            alias: [null, Validators.required],
-            phone: [null, Validators.required],
+            alias: [null],
+            phone: [null],
             companyId: [null, Validators.required]
         });
 
@@ -188,8 +191,6 @@ export class DriverComponent implements OnInit {
         });
     }
 
-
-
     ngOnDestroy(): void {
         this.destroy$.next();
         this.destroy$.complete();
@@ -213,15 +214,48 @@ export class DriverComponent implements OnInit {
         });
     }
 
-    openDialogDriver() {
-        this.dialogDriver = true;
+    openDialogDriver(driver?: DriverResponse) {
         this.FormDriver.reset();
+        this.editMode = !!driver;
+        this.driverId = driver?.id || null;
+        this.isSubmitted = false;
+        this.dialogDriver = true;
         this.loadCompanies(1, this.pageSize(), 'carrier');
+
+        if (driver) {
+            const formData = {
+                licenseNumber: driver.licenseNumber,
+                name: driver.name,
+                alias: driver.alias || null,
+                phone: driver.phone || null,
+                companyId: driver.companyId
+            };
+            setTimeout(() => {
+                this.FormDriver.patchValue(formData, { emitEvent: false });
+            });
+        }
     }
 
     closeDialogDriver() {
         this.dialogDriver = false;
         this.FormDriver.reset();
+    }
+
+    onKeyPressLicensePhone(event: KeyboardEvent) {
+        // Permitir solo números en los campos licenseNumber y phone
+        const allowedFields = ['licenseNumber', 'phone'];
+        const target = event.target as HTMLInputElement;
+        if (target && allowedFields.includes(target.getAttribute('formControlName') || '')) {
+            const pattern = /[0-9]/;
+            const inputChar = String.fromCharCode(event.charCode);
+
+            if (!pattern.test(inputChar)) {
+            this.showNumberOnlyWarning = true;
+            setTimeout(() => (this.showNumberOnlyWarning = false), 2000);
+            event.preventDefault();
+            }
+        }
+            
     }
 
     onSubmitDriver() {
@@ -238,19 +272,20 @@ export class DriverComponent implements OnInit {
 
         this.isSubmitted = true;
         const formValue = this.FormDriver.value;
-
-        // Datos comunes a ambas operaciones
         let driverData: any = {
             name: formValue.name,
             alias: formValue.alias || null,
             phone: formValue.phone || null,
-            licenseNumber: formValue.licenseNumber || null,
             companyId: formValue.companyId
         };
+        if (!this.editMode) {
+            driverData = {
+                ...driverData,
+                licenseNumber: formValue.licenseNumber || null
+            };
+        }
 
-        // Solo incluir identificación si NO estamos en modo edición
-
-        console.log('JSON enviado:', JSON.stringify(driverData, null, 2));
+        console.log(JSON.stringify(driverData));
         const operation = this.editMode && this.driverId ? this.driverService.updateDriver(this.driverId, driverData) : this.driverService.registerDriver(driverData);
 
         operation.subscribe({

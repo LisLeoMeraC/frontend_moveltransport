@@ -18,7 +18,6 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TableModule } from 'primeng/table';
 import { DropdownModule } from 'primeng/dropdown';
-import { StarFillIcon } from 'primeng/icons';
 
 @Component({
     selector: 'app-company',
