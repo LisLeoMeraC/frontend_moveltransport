@@ -32,7 +32,7 @@ export class AppMenu {
                     { label: 'Compañias', icon: 'pi pi-building-columns', routerLink: ['/app/logistics/company'] },
                     { label: 'Propietarios', icon: 'pi pi-users', routerLink: ['/app/logistics/vehicle-owner'] },
                     { label: 'Conductores', icon: 'pi pi-users', routerLink: ['/app/logistics/drivers'] },
-                    { label: 'Vehiculos', icon: 'pi pi-car', routerLink: ['/app/logistics/vehiculos'] },
+                    { label: 'Vehiculos', icon: 'pi pi-car', routerLink: ['/app/logistics/vehicle'] },
                 ]
             },
             {

@@ -10,15 +10,15 @@ import { TableModule } from 'primeng/table';
 import { ToolbarModule } from 'primeng/toolbar';
 
 @Component({
-  selector: 'app-vehiculos',
+  selector: 'app-vehicle',
   standalone: true,
   imports: [CommonModule,ToolbarModule,TableModule,InputTextModule,IconFieldModule,InputIconModule,ButtonModule,
     DialogModule, DropdownModule
   ],
-  templateUrl: './vehiculos.component.html',
-  styleUrl: './vehiculos.component.scss'
+  templateUrl: './vehicle.component.html',
+  styleUrl: './vehicle.component.scss'
 })
-export class VehiculosComponent {
+export class VehicleComponent {
 
   dialogVehicle:boolean=false;
 

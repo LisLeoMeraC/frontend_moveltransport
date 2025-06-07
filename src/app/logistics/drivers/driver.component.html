@@ -58,7 +58,7 @@
 
          <div class="flex flex-col gap-1">
             <label for="licenseNumber" class="text-sm">Nro. Licencia</label>
-            <input pInputText id="licenseNumber" type="text" class="w-full" autocomplete="off" formControlName="licenseNumber" (keypress)="onKeyPressLicensePhone($event)" maxlength="10"/>
+            <input pInputText id="licenseNumber" type="text" class="w-full" autocomplete="off" formControlName="licenseNumber" (keypress)="onKeyPressLicensePhone($event)" maxlength="10" />
         </div>
 
         <div class="flex flex-col gap-1">
@@ -106,7 +106,7 @@
     </div>
 
     <div class="flex justify-end mt-4">
-        <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary"></button>
+        <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary" [disabled]="isSubmitted"></button>
     </div>
 </form>
 </p-dialog>

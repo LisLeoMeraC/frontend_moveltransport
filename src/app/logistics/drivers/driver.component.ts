@@ -16,7 +16,6 @@ import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { getSpanishPaginatorIntl } from '../../config/getSpanishPaginatorIntl';
 import { CompanyService } from '../../pages/service/company.service';
-import { CompanyResponse } from '../../pages/models/company';
 import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 import { DriverService } from '../../pages/service/driver.service';
 import { DriverResponse } from '../../pages/models/driver';
@@ -85,11 +84,11 @@ export class DriverComponent implements OnInit {
         private messageService: MessageService
     ) {
         this.FormDriver = this.fb.group({
-            licenseNumber: [null],
+            licenseNumber: [null, Validators.required],
             name: [null, Validators.required],
             alias: [null],
             phone: [null],
-            companyId: [null, Validators.required]
+            companyId: [null]
         });
 
         effect(() => {
@@ -221,6 +220,11 @@ export class DriverComponent implements OnInit {
         this.isSubmitted = false;
         this.dialogDriver = true;
         this.loadCompanies(1, this.pageSize(), 'carrier');
+        if (this.editMode) {
+            this.FormDriver.get('licenseNumber')?.disable();
+        } else {
+            this.FormDriver.get('licenseNumber')?.enable();
+        }
 
         if (driver) {
             const formData = {
@@ -250,26 +254,29 @@ export class DriverComponent implements OnInit {
             const inputChar = String.fromCharCode(event.charCode);
 
             if (!pattern.test(inputChar)) {
-            this.showNumberOnlyWarning = true;
-            setTimeout(() => (this.showNumberOnlyWarning = false), 2000);
-            event.preventDefault();
+                this.showNumberOnlyWarning = true;
+                setTimeout(() => (this.showNumberOnlyWarning = false), 2000);
+                event.preventDefault();
             }
         }
-            
     }
 
     onSubmitDriver() {
-        if (this.FormDriver.invalid) {
-            this.FormDriver.markAllAsTouched();
+        const nameControl = this.FormDriver.get('name');
+        const licenseNumberControl = this.FormDriver.get('licenseNumber');
+        if ((nameControl && nameControl.invalid) || (licenseNumberControl && licenseNumberControl.invalid)) {
+            if (nameControl) {
+                nameControl.markAsTouched();
+            }
+            licenseNumberControl?.markAsTouched();
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',
-                detail: 'Por favor complete todos los campos requeridos',
+                detail: 'Por favor complete los campos requeridos',
                 life: 5000
             });
             return;
         }
-
         this.isSubmitted = true;
         const formValue = this.FormDriver.value;
         let driverData: any = {

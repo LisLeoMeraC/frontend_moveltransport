@@ -1,6 +1,6 @@
 import { Routes } from "@angular/router";
 import { HomeLogisticaComponent } from "./home-logistica/home-logistica.component";
-import { VehiculosComponent } from "./vehiculos/vehiculos.component";
+import { VehicleComponent } from "./vehicle/vehicle.component";
 import { Component } from "@angular/core";
 import { CompanyComponent } from "./company/company.component";
 import { DriverComponent } from "./drivers/driver.component";
@@ -11,7 +11,7 @@ import { VehicleOwnerComponent } from "./vehicle-owner/vehicle-owner.component";
 export default [
     { path: '', redirectTo: 'vehiculos', pathMatch: 'full' },
     {path:'vehicle-owner', data: { breadcrumb: 'Propietarios' }, component: VehicleOwnerComponent},
-    { path: 'vehiculos', data: { breadcrumb: 'Vehiculos' }, component: VehiculosComponent },
+    { path: 'vehicle', data: { breadcrumb: 'Vehiculos' }, component: VehicleComponent },
     { path: 'company', data: { breadcrumb: 'Compania' }, component: CompanyComponent },
     { path: 'drivers', data: { breadcrumb: 'Conductores' }, component: DriverComponent },
     { path: 'fletes', data: { breadcrumb: 'Fletes' }, component: FletesComponent },

@@ -69,8 +69,8 @@ export class VehicleOwnerComponent implements OnInit {
     private searchSubject = new Subject<string>();
     searchTerm: string = '';
 
-     dialogDeleteVehicleOwner: boolean = false;
-     vehicleOwnerToDelete: VehicleOwnerResponse | null = null; 
+    dialogDeleteVehicleOwner: boolean = false;
+    vehicleOwnerToDelete: VehicleOwnerResponse | null = null;
 
     identificationTypes = this.vehicleOwnerService.getIdentificationTypes();
 
@@ -80,12 +80,12 @@ export class VehicleOwnerComponent implements OnInit {
     ) {
         this.registerFormVehicleOwner = this.fb.group({
             identification: ['', [Validators.required, Validators.maxLength(13), this.validarIdentificacion.bind(this)]],
-            identificationType: [null, Validators.required],
-            name: [null, Validators.required],
-            address: [null],
-            phone: [null, [Validators.maxLength(10)]],
-            email: [null, Validators.email]
-        });
+            identificationType: ['', Validators.required],
+            name: ['', Validators.required],
+            address: [''],
+            phone: [''],
+            email: ['', Validators.email]
+        }); 
 
         effect(() => {
             const error = this.hasError();
@@ -176,19 +176,10 @@ export class VehicleOwnerComponent implements OnInit {
     }
 
     onSubmitVehicleOwner() {
-        if (this.registerFormVehicleOwner.invalid) {
-            this.registerFormVehicleOwner.markAllAsTouched();
-            this.messageService.add({
-                severity: 'error',
-                summary: 'Error',
-                detail: 'Por favor complete todos los campos requeridos',
-                life: 5000
-            });
-            return;
+        if (!this.checkFormValidity()) {
+           return;
         }
-
         this.isSubmitted = true;
-
         const formValue = this.registerFormVehicleOwner.value;
 
         // Datos comunes a ambas operaciones
@@ -207,7 +198,7 @@ export class VehicleOwnerComponent implements OnInit {
                 identificationType: formValue.identificationType
             };
         }
-
+        this.dialogVehicleOwner = false;
         const operation = this.editMode && this.vehicleOwnerId ? this.vehicleOwnerService.updateVehicleOwner(this.vehicleOwnerId, vehicleOwnerData) : this.vehicleOwnerService.registerVehicleOwner(vehicleOwnerData);
 
         operation.subscribe({
@@ -230,6 +221,47 @@ export class VehicleOwnerComponent implements OnInit {
                 this.isSubmitted = false;
             }
         });
+    }
+
+    checkFormValidity(): boolean {
+        const requiredFields = ['identification', 'identificationType', 'name'];
+        let isValid = true;
+        let invalidFields = [];
+
+        requiredFields.forEach((field) => {
+            const control = this.registerFormVehicleOwner.get(field);
+            if (control && control.invalid) {
+                control.markAsTouched();
+                isValid = false;
+                invalidFields.push(field);
+            }
+        });
+
+        const emailControl = this.registerFormVehicleOwner.get('email');
+        if (emailControl && emailControl.invalid) {
+            emailControl.markAsTouched();
+            isValid = false;
+            invalidFields.push('email (formato inválido)');
+        }
+
+        const phoneControl = this.registerFormVehicleOwner.get('phone');
+        if (phoneControl && phoneControl.invalid) {
+            phoneControl.markAsTouched();
+            isValid = false;
+            invalidFields.push('teléfono (máx. 13 caracteres)');
+        }
+
+        if (!isValid) {
+            const errorMessage = invalidFields.length > 1 ? `Corrija los siguientes campos: ${invalidFields.join(', ')}` : `Corrija el campo: ${invalidFields[0]}`;
+
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: errorMessage,
+                life: 5000
+            });
+        }
+        return isValid;
     }
 
     openDialogVehicleOwner(vehhicleOwner?: VehicleOwnerResponse) {
@@ -374,42 +406,42 @@ export class VehicleOwnerComponent implements OnInit {
     confirmDeleteVehicleOwner(vehicleOwner: VehicleOwnerResponse): void {
         this.vehicleOwnerToDelete = vehicleOwner;
         this.dialogDeleteVehicleOwner = true;
-      }
-    
-      deleteVehicleOwner(): void {
+    }
+
+    deleteVehicleOwner(): void {
         if (!this.vehicleOwnerToDelete) return;
         this.isDeleting = true;
-    
+
         this.vehicleOwnerService.deleteCompany(this.vehicleOwnerToDelete.id).subscribe({
-          next: (response) => {
-            this.messageService.add({
-              severity: 'success',
-              summary: 'Éxito',
-              detail: 'Propietario eliminado correctamente',
-              life: 5000
-            });
-            this.isDeleting = false;
-    
-            // Recargar la lista de compañías
-            if (this.searchTerm.trim() === '') {
-              this.loadVehicleOwners(this.pagination().currentPage, this.pageSize());
-            } else {
-              this.searchVehicleOwner(this.searchTerm, this.pagination().currentPage, this.pageSize());
+            next: (response) => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Propietario eliminado correctamente',
+                    life: 5000
+                });
+                this.isDeleting = false;
+
+                // Recargar la lista de compañías
+                if (this.searchTerm.trim() === '') {
+                    this.loadVehicleOwners(this.pagination().currentPage, this.pageSize());
+                } else {
+                    this.searchVehicleOwner(this.searchTerm, this.pagination().currentPage, this.pageSize());
+                }
+            },
+            error: (err) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo eliminar al Propietario',
+                    life: 5000
+                });
+            },
+            complete: () => {
+                this.dialogDeleteVehicleOwner = false;
+                this.isDeleting = false;
+                this.vehicleOwnerToDelete = null;
             }
-          },
-          error: (err) => {
-            this.messageService.add({
-              severity: 'error',
-              summary: 'Error',
-              detail: 'No se pudo eliminar al Propietario',
-              life: 5000
-            });
-          },
-          complete: () => {
-            this.dialogDeleteVehicleOwner = false;
-            this.isDeleting = false;
-            this.vehicleOwnerToDelete = null;
-          }
         });
-      }
+    }
 }

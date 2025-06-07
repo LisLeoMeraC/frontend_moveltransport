@@ -224,7 +224,7 @@ export class CompanyService {
     }
 
     searchByIdentification(identification: string): Observable<ApiResponse<any>> {
-        return this.http.get<ApiResponse<any>>(`${this.baseUrl}/subject/identification/${identification}`).pipe(
+        return this.http.get<ApiResponse<any>>(`${this.baseUrl}/company/identification/${identification}`).pipe(
             tap({
                 next: (response) => {
                     if (response.statusCode !== 200) {

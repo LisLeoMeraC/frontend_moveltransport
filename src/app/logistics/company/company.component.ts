@@ -60,6 +60,8 @@ export class CompanyComponent implements OnInit {
 
     selectedType: string | undefined;
 
+    hasSearchedIdentification: boolean = false;
+
     //Para editarr una compañia
     editMode = false;
     companyId: string | null = null;
@@ -84,13 +86,13 @@ export class CompanyComponent implements OnInit {
         private messageService: MessageService
     ) {
         this.registerFormCompany = this.fb.group({
-            type: [null, Validators.required],
-            identificationType: [null, Validators.required],
+            type: ['', Validators.required],
+            identificationType: ['', Validators.required],
             identification: ['', [Validators.required, Validators.maxLength(13), this.validarIdentificacion.bind(this)]],
-            name: [null, Validators.required],
-            address: [null],
-            phone: [null, [Validators.maxLength(10)]],
-            email: [null, Validators.email]
+            name: ['', Validators.required],
+            address: [''],
+            phone: [''],
+            email: ['', Validators.email]
         });
 
         effect(() => {
@@ -208,7 +210,7 @@ export class CompanyComponent implements OnInit {
     }
 
     loadCompanies(page: number = 1, limit: number = this.pageSize(), type?: string): void {
-        this.companyService.loadCompanies(true,page, limit, type).subscribe(() => {
+        this.companyService.loadCompanies(true, page, limit, type).subscribe(() => {
             if (this.paginator) {
                 this.paginator.pageIndex = page - 1;
                 this.paginator.pageSize = limit;
@@ -253,19 +255,27 @@ export class CompanyComponent implements OnInit {
     }
 
     onSubmitCompany() {
-        if (this.registerFormCompany.invalid) {
-            this.registerFormCompany.markAllAsTouched();
+        if (!this.hasSearchedIdentification) {
             this.messageService.add({
-                severity: 'error',
-                summary: 'Error',
-                detail: 'Por favor complete todos los campos requeridos',
+                severity: 'warn',
+                summary: 'Advertencia',
+                detail: 'Por favor busque si existe un registro con ese número de cédula antes de continuar',
                 life: 5000
             });
             return;
         }
 
+        console.log(JSON.stringify(this.registerFormCompany.value, null, 2));
+        console.log('value:', this.registerFormCompany.value);
+        console.log('rawValue:', this.registerFormCompany.getRawValue());
+
+        // Validar el formulario antes de continuar
+        if (!this.checkFormValidity()) {
+            return;
+        }
+
         this.isSubmitted = true;
-        const formValue = this.registerFormCompany.value;
+        const formValue = this.registerFormCompany.getRawValue();
 
         // Datos comunes a ambas operaciones
         let companyData: any = {
@@ -285,12 +295,11 @@ export class CompanyComponent implements OnInit {
             };
         }
 
-        console.log('JSON enviado:', JSON.stringify(companyData, null, 2));
+        // Siempre ejecutar la operación, aunque los datos no hayan cambiado
         const operation = this.editMode && this.companyId ? this.companyService.updateCompany(this.companyId, companyData) : this.companyService.registerCompany(companyData);
-
+        this.dialogCompany = false;
         operation.subscribe({
             next: () => {
-                this.dialogCompany = false;
                 this.registerFormCompany.reset();
                 this.messageService.add({
                     severity: 'success',
@@ -347,6 +356,7 @@ export class CompanyComponent implements OnInit {
     }
 
     buscarIdentificacion() {
+        this.hasSearchedIdentification = false;
         const identification = this.registerFormCompany.get('identification')?.value;
 
         if (!identification) {
@@ -361,35 +371,75 @@ export class CompanyComponent implements OnInit {
 
         this.companyService.searchByIdentification(identification).subscribe({
             next: (response) => {
-                if (response.statusCode === 200 && response.data) {
-                    this.patchFormWithOwnerData(response.data);
-                    this.messageService.add({
-                        severity: 'success',
-                        summary: 'Éxito',
-                        detail: 'Compañia encontrada',
-                        life: 5000
-                    });
+                this.hasSearchedIdentification = true;
 
-                    this.habilitarControles(false);
-                    this.registerFormCompany.get('type')?.enable();
+                if (response.statusCode === 200 && response.data) {
+                    // Caso 1: Ya está registrado como compañía (isRegistered: true)
+                    if (response.data.isRegistered) {
+                        this.messageService.add({
+                            severity: 'info',
+                            summary: 'Información',
+                            detail: 'Ya está registrada como compañía',
+                            life: 5000
+                        });
+                        this.dialogCompany = false;
+                    }
+                    // Caso 2: No está registrado como compañía, pero existe como persona (company no es null)
+                    else if (response.data.company) {
+                        this.patchFormWithOwnerData(response.data.company);
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'Advertencia',
+                            detail: 'No está registrado como compañía, por favor elija el tipo de compañía',
+                            life: 5000
+                        });
+                        this.habilitarControles(false);
+                        this.registerFormCompany.get('type')?.enable();
+                    }
+                    // Caso 3: No existe ningún registro (company: null)
+                    else {
+                        this.messageService.add({
+                            severity: 'info',
+                            summary: 'Información',
+                            detail: 'No se encontró un registro con esta identificación. Puede registrar uno nuevo.',
+                            life: 5000
+                        });
+
+                        // Guardamos el valor actual de identificación antes de resetear
+                        const currentIdentification = this.registerFormCompany.get('identification')?.value;
+                        const currentIdentificationType = this.registerFormCompany.get('identificationType')?.value;
+
+                        // Reseteamos el formulario pero preservamos identificación
+                        this.registerFormCompany.reset();
+
+                        // Restauramos la identificación
+                        this.registerFormCompany.patchValue({
+                            identification: currentIdentification,
+                            identificationType: currentIdentificationType
+                        });
+
+                        this.habilitarControles(true); // Habilitamos todos los controles
+                        this.editMode = false;
+                        this.companyId = null;
+                    }
                 } else {
+                    // Respuesta inesperada del servidor
                     this.messageService.add({
-                        severity: 'info',
-                        summary: 'Información',
-                        detail: 'No se encontró una compañia con esta identificación. Puede registrar uno nuevo.',
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Respuesta inesperada del servidor',
                         life: 5000
                     });
                     this.habilitarControles(true);
-                    this.editMode = false;
-                    this.companyId = null;
                 }
             },
             error: (err) => {
+                this.hasSearchedIdentification = false;
                 console.error('Error al buscar:', err);
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'Ocurrió un error al buscar la compañia',
+                    detail: 'Ocurrió un error al buscar la compañía',
                     life: 5000
                 });
             }
@@ -398,13 +448,13 @@ export class CompanyComponent implements OnInit {
 
     private patchFormWithOwnerData(data: any) {
         const formData = {
-            identificationType: data.identificationType,
-            type: data.type,
-            identification: data.identification?.trim(),
-            name: data.name,
-            address: data.address,
-            phone: data.phone,
-            email: data.email || null
+            identificationType: data.subject.identificationType,
+            identification: data.subject.identification?.trim(),
+            name: data.subject.name,
+            address: data.subject.address,
+            phone: data.subject.phone,
+            email: data.subject.email || null,
+            type: data.type || null
         };
 
         this.registerFormCompany.patchValue(formData, { emitEvent: false });
@@ -434,5 +484,49 @@ export class CompanyComponent implements OnInit {
         this.registerFormCompany.reset();
         this.habilitarControles(false);
         this.registerFormCompany.get('identification')?.enable();
+    }
+
+    checkFormValidity(): boolean {
+        const requiredFields = ['type', 'identificationType', 'identification', 'name'];
+        let isValid = true;
+        let invalidFields = [];
+
+        // Verificar solo los campos requeridos
+        requiredFields.forEach((field) => {
+            const control = this.registerFormCompany.get(field);
+            if (control && control.invalid) {
+                control.markAsTouched();
+                isValid = false;
+                invalidFields.push(field);
+            }
+        });
+
+        // Verificar campos con otras validaciones
+        const phoneControl = this.registerFormCompany.get('phone');
+        if (phoneControl && phoneControl.invalid) {
+            phoneControl.markAsTouched();
+            isValid = false;
+            invalidFields.push('teléfono (máx. 13 caracteres)');
+        }
+
+        const emailControl = this.registerFormCompany.get('email');
+        if (emailControl && emailControl.invalid) {
+            emailControl.markAsTouched();
+            isValid = false;
+            invalidFields.push('email (formato inválido)');
+        }
+
+        if (!isValid) {
+            const errorMessage = invalidFields.length > 1 ? `Corrija los siguientes campos: ${invalidFields.join(', ')}` : `Corrija el campo: ${invalidFields[0]}`;
+
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: errorMessage,
+                life: 5000
+            });
+        }
+
+        return isValid;
     }
 }
