@@ -24,28 +24,37 @@
 
         <ng-template pTemplate="header">
             <tr>
-                <th class="text-center">Razón Social</th>
+                <th class="text-justify">Razón Social</th>
+                <th class="text-justify">Tipo Empresa</th>
                 <th class="text-center">Tipo Identificación</th>
-                <th class="text-center">Nro. Identificación</th>
-                <th class="text-center">Dirección</th>
-                <th class="text-center">Teléfono</th>
-                <th class="text-center">Email</th>
+                <th  class="text-justify">Nro. Identificación</th>
+                <th class="text-justify">Dirección</th>
+                <th class="text-justify">Teléfono</th>
+                <th class="text-justify">Email</th>
                 <th class="text-center">Acciones</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-company>
             <tr>
-                <td class="text-center">{{ company.subject.name }}</td>
+                <td class="text-justify">{{ company.subject.name }}</td>
+                <td class="text-justify">
+                    {{
+                        company.type === 'both' ? 'Ambos' :
+                        company.type === 'client' ? 'Cliente' :
+                        company.type === 'carrier' ? 'Transportista' :
+                        (company.type || 'No registra')
+                    }}
+                </td>
                 <td class="text-center">
                     {{ company.subject.identificationType === 'dni' ? 'Cédula' : (company.subject.identificationType | titlecase) }}
                 </td>
-                <td class="text-center">{{ company.subject.identification || '-- --' }}</td>
-                <td class="text-center">{{ company.subject.address || '-- --' }}</td>
-                <td class="text-center">{{ company.subject.phone || '-- --' }}</td>
-                <td class="text-center">{{ company.subject.email || '-- --' }}</td>
+                
+                <td class="text-justify">{{ company.subject.identification || 'No registra' }}</td>
+                <td class="text-justify">{{ company.subject.address || 'No registra' }}</td>
+                <td class="text-justify">{{ company.subject.phone || 'No registra' }}</td>
+                <td class="text-justify">{{ company.subject.email || 'No registra' }}</td>
                 <td class="text-center">
                     <button pButton pRipple type="button" icon="pi pi-pencil" (click)="openDialogCompany(company)" class="p-danger- mb-2 mr-2"></button>
-                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2" (click)="confirmDeleteCompany(company)"></button>
                 </td>
             </tr>
         </ng-template>
@@ -121,25 +130,3 @@
     </form>
 </p-dialog>
 
-<p-dialog [(visible)]="dialogDeleteCompany" [modal]="true" [closable]="false" [style]="{ width: '100%', maxWidth: '400px' }" header="Confirmación requerida">
-    <div class="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
-        <div class="flex items-start gap-3">
-            <i class="pi pi-exclamation-circle text-yellow-600 text-2xl mt-1"></i>
-            <div>
-                <p class="text-sm text-gray-800 leading-relaxed">
-                    Estás a punto de eliminar la compañía
-                    <span class="font-semibold text-red-600">{{ companyToDelete?.subject?.name }}</span
-                    >. Esta acción no se puede deshacer. ¿Deseas continuar?
-                </p>
-            </div>
-        </div>
-    </div>
-        
-
-    <ng-template pTemplate="footer">
-        <div class="flex justify-end gap-2 pt-3">
-            <button pButton label="Cancelar" class="p-button-secondary p-button-sm" (click)="dialogDeleteCompany = false"></button>
-            <button pButton label="Eliminar" icon="pi pi-trash" class="p-button-sm p-button-danger" (click)="deleteCompany()" [disabled]="isDeleting"></button>
-        </div>
-    </ng-template>
-</p-dialog>

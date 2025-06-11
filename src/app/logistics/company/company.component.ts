@@ -69,12 +69,8 @@ export class CompanyComponent implements OnInit {
     //Para buscar compañias
     searchTerm: string = '';
 
-    //Para eliminar compañia
-    dialogDeleteCompany: boolean = false;
-    companyToDelete: CompanyResponse | null = null;
-
+    
     isSubmitted = true;
-    isDeleting = false;
 
     identificationTypes = this.companyService.getIdentificationTypes();
     companyTypes = this.companyService.getCompanyTypes();
@@ -167,48 +163,6 @@ export class CompanyComponent implements OnInit {
         });
     }
 
-    confirmDeleteCompany(company: CompanyResponse): void {
-        this.companyToDelete = company;
-        this.dialogDeleteCompany = true;
-    }
-
-    deleteCompany(): void {
-        if (!this.companyToDelete) return;
-        this.isDeleting = true;
-
-        this.companyService.deleteCompany(this.companyToDelete.id).subscribe({
-            next: (response) => {
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: 'Compañía eliminada correctamente',
-                    life: 5000
-                });
-                this.isDeleting = false;
-
-                // Recargar la lista de compañías
-                if (this.searchTerm.trim() === '') {
-                    this.loadCompanies(this.pagination().currentPage, this.pageSize(), this.selectedType);
-                } else {
-                    this.searchCompanies(this.searchTerm, this.pagination().currentPage, this.pageSize(), this.selectedType);
-                }
-            },
-            error: (err) => {
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'No se pudo eliminar la compañía',
-                    life: 5000
-                });
-            },
-            complete: () => {
-                this.dialogDeleteCompany = false;
-                this.isDeleting = false;
-                this.companyToDelete = null;
-            }
-        });
-    }
-
     loadCompanies(page: number = 1, limit: number = this.pageSize(), type?: string): void {
         this.companyService.loadCompanies(true, page, limit, type).subscribe(() => {
             if (this.paginator) {
@@ -221,7 +175,12 @@ export class CompanyComponent implements OnInit {
     onTypeChange(event: any) {
         if (event && event.value !== undefined) {
             this.selectedType = event.value;
-            this.loadCompanies(1, this.pageSize(), event.value);
+            // Buscar usando el texto actual del input de búsqueda
+            if (this.searchTerm.trim() === '') {
+                this.loadCompanies(1, this.pageSize(), event.value);
+            } else {
+                this.searchCompanies(this.searchTerm, 1, this.pageSize(), event.value);
+            }
         }
     }
 
@@ -255,7 +214,7 @@ export class CompanyComponent implements OnInit {
     }
 
     onSubmitCompany() {
-        if (!this.hasSearchedIdentification) {
+        if (!this.hasSearchedIdentification && !this.editMode) {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Advertencia',
@@ -264,10 +223,6 @@ export class CompanyComponent implements OnInit {
             });
             return;
         }
-
-        console.log(JSON.stringify(this.registerFormCompany.value, null, 2));
-        console.log('value:', this.registerFormCompany.value);
-        console.log('rawValue:', this.registerFormCompany.getRawValue());
 
         // Validar el formulario antes de continuar
         if (!this.checkFormValidity()) {
@@ -297,7 +252,7 @@ export class CompanyComponent implements OnInit {
 
         // Siempre ejecutar la operación, aunque los datos no hayan cambiado
         const operation = this.editMode && this.companyId ? this.companyService.updateCompany(this.companyId, companyData) : this.companyService.registerCompany(companyData);
-        this.dialogCompany = false;
+
         operation.subscribe({
             next: () => {
                 this.registerFormCompany.reset();
@@ -311,10 +266,22 @@ export class CompanyComponent implements OnInit {
                 this.companyId = null;
                 this.loadCompanies();
                 this.isSubmitted = false;
+                this.dialogCompany = false;
             },
             error: (err) => {
-                console.error('Error en el componente:', err);
+                // Mostrar mensaje de error pero NO cerrar el diálogo
+                let errorMsg = 'Ocurrió un error al procesar la solicitud';
+                if (err?.error?.message) {
+                    errorMsg = err.error.message;
+                }
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: errorMsg,
+                    life: 5000
+                });
                 this.isSubmitted = false;
+                // this.dialogCompany = false; // No cerrar el diálogo en caso de error
             }
         });
     }
