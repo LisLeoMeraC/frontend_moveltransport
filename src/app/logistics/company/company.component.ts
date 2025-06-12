@@ -68,8 +68,6 @@ export class CompanyComponent implements OnInit {
 
     //Para buscar compañias
     searchTerm: string = '';
-
-    
     isSubmitted = true;
 
     identificationTypes = this.companyService.getIdentificationTypes();
@@ -272,7 +270,11 @@ export class CompanyComponent implements OnInit {
                 // Mostrar mensaje de error pero NO cerrar el diálogo
                 let errorMsg = 'Ocurrió un error al procesar la solicitud';
                 if (err?.error?.message) {
-                    errorMsg = err.error.message;
+                    if (Array.isArray(err.error.message)) {
+                        errorMsg = err.error.message.join(' ');
+                    } else {
+                        errorMsg = err.error.message;
+                    }
                 }
                 this.messageService.add({
                     severity: 'error',
@@ -281,7 +283,6 @@ export class CompanyComponent implements OnInit {
                     life: 5000
                 });
                 this.isSubmitted = false;
-                // this.dialogCompany = false; // No cerrar el diálogo en caso de error
             }
         });
     }
