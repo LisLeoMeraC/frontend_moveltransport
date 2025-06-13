@@ -33,14 +33,14 @@
         </ng-template>
         <ng-template pTemplate="body" let-vehicleOwner>
             <tr>
-                <td class="text-center">{{ vehicleOwner.subject.name }}</td>
+                <td class="text-justify">{{ vehicleOwner.subject.name }}</td>
                 <td class="text-center">
                     {{ vehicleOwner.subject.identificationType === 'dni' ? 'Cédula' : (vehicleOwner.subject.identificationType | titlecase) }}
                 </td>
-                <td class="text-center">{{ vehicleOwner.subject.identification || '-- --' }}</td>
-                <td class="text-center">{{ vehicleOwner.subject.address || '-- --' }}</td>
-                <td class="text-center">{{ vehicleOwner.subject.phone  || '-- --' }}</td>
-                <td class="text-center">{{ vehicleOwner.subject.email || '-- --' }}</td>
+                <td class="text-center">{{ vehicleOwner.subject.identification || 'No registra' }}</td>
+                <td class="text-justify">{{ vehicleOwner.subject.address || 'No registra' }}</td>
+                <td class="text-center">{{ vehicleOwner.subject.phone  || 'No registra' }}</td>
+                <td class="text-justify">{{ vehicleOwner.subject.email || 'No registra' }}</td>
                 <td class="text-center">
                     <button pButton pRipple type="button" icon="pi pi-pencil" class="p-danger- mb-2 mr-2" (click)="openDialogVehicleOwner(vehicleOwner)"></button>
                     <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2" (click)="confirmDeleteVehicleOwner(vehicleOwner)"></button>

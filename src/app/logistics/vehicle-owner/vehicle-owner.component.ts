@@ -85,7 +85,7 @@ export class VehicleOwnerComponent implements OnInit {
             address: [''],
             phone: [''],
             email: ['', Validators.email]
-        }); 
+        });
 
         effect(() => {
             const error = this.hasError();
@@ -95,6 +95,7 @@ export class VehicleOwnerComponent implements OnInit {
                     summary: 'Error',
                     detail: error,
                     life: 5000
+
                 });
             }
         });
@@ -177,7 +178,7 @@ export class VehicleOwnerComponent implements OnInit {
 
     onSubmitVehicleOwner() {
         if (!this.checkFormValidity()) {
-           return;
+            return;
         }
         this.isSubmitted = true;
         const formValue = this.registerFormVehicleOwner.value;
@@ -198,8 +199,11 @@ export class VehicleOwnerComponent implements OnInit {
                 identificationType: formValue.identificationType
             };
         }
-        this.dialogVehicleOwner = false;
-        const operation = this.editMode && this.vehicleOwnerId ? this.vehicleOwnerService.updateVehicleOwner(this.vehicleOwnerId, vehicleOwnerData) : this.vehicleOwnerService.registerVehicleOwner(vehicleOwnerData);
+
+        // No cerrar el diálogo aquí, solo al éxito
+        const operation = this.editMode && this.vehicleOwnerId
+            ? this.vehicleOwnerService.updateVehicleOwner(this.vehicleOwnerId, vehicleOwnerData)
+            : this.vehicleOwnerService.registerVehicleOwner(vehicleOwnerData);
 
         operation.subscribe({
             next: () => {
@@ -216,8 +220,9 @@ export class VehicleOwnerComponent implements OnInit {
                 this.loadVehicleOwners();
                 this.isSubmitted = false;
             },
-            error: (err) => {
-                console.error('Error en el componente:', err);
+            
+           error: (err) => {
+                
                 this.isSubmitted = false;
             }
         });
@@ -315,22 +320,22 @@ export class VehicleOwnerComponent implements OnInit {
         this.vehicleOwnerService.searchByIdentification(identification).subscribe({
             next: (response) => {
                 if (response.statusCode === 200 && response.data) {
-                    this.patchFormWithOwnerData(response.data);
-                    this.messageService.add({
-                        severity: 'success',
-                        summary: 'Éxito',
-                        detail: 'Propietario encontrado',
-                        life: 5000
-                    });
-
-                    this.habilitarControles(false);
-                } else {
-                    this.messageService.add({
-                        severity: 'info',
-                        summary: 'Información',
-                        detail: 'No se encontró un propietario con esta identificación. Puede registrar uno nuevo.',
-                        life: 5000
-                    });
+                    if (response.data.isRegistered) {
+                        this.messageService.add({
+                            severity: 'info',
+                            summary: 'Información',
+                            detail: 'Ya está registrado como propietario de vehículo',
+                            life: 5000
+                        });
+                        this.closeDialogVehicleOwner();
+                    } else {
+                        this.messageService.add({
+                            severity: 'info',
+                            summary: 'Información',
+                            detail: 'No se encontró un propietario con esta identificación. Puede registrar uno nuevo.',
+                            life: 5000
+                        });
+                    }
                     this.habilitarControles(true);
                     this.editMode = false;
                     this.vehicleOwnerId = null;
@@ -344,6 +349,7 @@ export class VehicleOwnerComponent implements OnInit {
                     detail: 'Ocurrió un error al buscar el propietario',
                     life: 5000
                 });
+            
             }
         });
     }
@@ -355,16 +361,29 @@ export class VehicleOwnerComponent implements OnInit {
     }
 
     private patchFormWithOwnerData(data: any) {
-        const formData = {
-            identificationType: data.identificationType,
-            identification: data.identification?.trim(),
-            name: data.name,
-            address: data.address,
-            phone: data.phone,
-            email: data.email || null
-        };
+        if (data.isRegistered && data.vehicleOwner?.subject) {
+            const subject = data.vehicleOwner.subject;
+            const formData = {
+                identificationType: subject.identificationType,
+                identification: subject.identification?.trim(),
+                name: subject.name,
+                address: subject.address,
+                phone: subject.phone,
+                email: subject.email || null
+            };
 
-        this.registerFormVehicleOwner.patchValue(formData, { emitEvent: false });
+            this.registerFormVehicleOwner.patchValue(formData, { emitEvent: false });
+
+            // Si está registrado, deshabilitar controles y cerrar diálogo
+            this.habilitarControles(false);
+            // Aquí asumo que tienes una forma de cerrar el diálogo, por ejemplo:
+            // this.dialogRef.close();
+        } else {
+            // Si no está registrado, habilitar controles para nuevo registro
+            this.habilitarControles(true);
+            this.editMode = false;
+            this.vehicleOwnerId = null;
+        }
     }
 
     habilitarControles(estado: boolean) {

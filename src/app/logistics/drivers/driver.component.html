@@ -30,10 +30,10 @@
         </ng-template>
         <ng-template pTemplate="body" let-driver>
             <tr>
-                <td class="text-center">{{ driver.name || '-- --' }}</td>
-                <td class="text-center">{{ driver.licenseNumber || '-- --' }}</td>
-                <td class="text-center">{{ driver.alias || '-- --' }}</td>
-                <td class="text-center"> {{ driver.phone || '-- --' }}</td>
+                <td class="text-center">{{ driver.name || 'No registra' }}</td>
+                <td class="text-center">{{ driver.licenseNumber || 'No registra' }}</td>
+                <td class="text-center">{{ driver.alias || 'No registra' }}</td>
+                <td class="text-center"> {{ driver.phone || 'No registra' }}</td>
                 <td class="text-center">{{ driver.company?.subject.name || '-- --' }}</td>
                 <td class="text-center">
                     <button pButton pRipple type="button" icon="pi pi-pencil" class="p-danger- mb-2 mr-2" (click)="openDialogDriver(driver)"></button>

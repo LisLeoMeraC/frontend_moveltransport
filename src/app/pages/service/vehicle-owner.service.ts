@@ -1,4 +1,4 @@
-import { Injectable, signal } from '@angular/core';
+    import { Injectable, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { VehicleOwnerData, VehicleOwnerResponse } from '../models/vehicle-owner';
 import { ApiResponse, IdentificationType, Pagination } from '../models/company';
@@ -174,7 +174,7 @@ export class VehicleOwnerService {
     }
 
     searchByIdentification(identification: string): Observable<ApiResponse<any>> {
-        return this.http.get<ApiResponse<any>>(`${this.baseUrl}/subject/identification/${identification}`).pipe(
+        return this.http.get<ApiResponse<any>>(`${this.baseUrl}/vehicle-owner/identification/${identification}`).pipe(
             tap({
                 next: (response) => {
                     if (response.statusCode !== 200) {

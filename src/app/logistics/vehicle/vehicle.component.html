@@ -4,8 +4,7 @@
 
 
 <div class="card mt-4   ">
-    <p-table [scrollable]="true" scrollHeight="400px" styleClass="mt-4">
-
+    <p-table [scrollable]="true" scrollHeight="400px" styleClass="mt-4" [value]="vehicles()" [loading]="isLoading()">
 
         <ng-template #caption>
             <div class="flex justify-between items-center flex-column sm:flex-row">
@@ -19,7 +18,7 @@
             </div>
         </ng-template>
 
-        <ng-template #header>
+        <ng-template pTemplate="header">
             <tr>
                 <th>Placa</th>
                 <th>Marca</th>
@@ -29,10 +28,10 @@
                 <th>Chofer</th>
             </tr>
         </ng-template>
-        <ng-template #body>
+        <ng-template pTemplate="body" let-vehicle>
             <tr>
 
-                <td></td>
+                <td>{{ vehicle.plate || 'No registra' }}</td>
                 <td></td>
                 <td></td>
                 <td></td>

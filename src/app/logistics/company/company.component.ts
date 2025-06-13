@@ -89,18 +89,6 @@ export class CompanyComponent implements OnInit {
             email: ['', Validators.email]
         });
 
-        effect(() => {
-            const error = this.hasError();
-            if (error) {
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: error,
-                    life: 5000
-                });
-            }
-        });
-
         this.registerFormCompany.get('identificationType')?.valueChanges.subscribe(() => {
             this.showNumberOnlyWarning = false;
         });
@@ -267,19 +255,10 @@ export class CompanyComponent implements OnInit {
                 this.dialogCompany = false;
             },
             error: (err) => {
-                // Mostrar mensaje de error pero NO cerrar el diálogo
-                let errorMsg = 'Ocurrió un error al procesar la solicitud';
-                if (err?.error?.message) {
-                    if (Array.isArray(err.error.message)) {
-                        errorMsg = err.error.message.join(' ');
-                    } else {
-                        errorMsg = err.error.message;
-                    }
-                }
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
-                    detail: errorMsg,
+                    detail: err,
                     life: 5000
                 });
                 this.isSubmitted = false;
