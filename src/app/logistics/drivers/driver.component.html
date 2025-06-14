@@ -34,7 +34,7 @@
                 <td class="text-center">{{ driver.licenseNumber || 'No registra' }}</td>
                 <td class="text-center">{{ driver.alias || 'No registra' }}</td>
                 <td class="text-center"> {{ driver.phone || 'No registra' }}</td>
-                <td class="text-center">{{ driver.company?.subject.name || '-- --' }}</td>
+                <td class="text-center">{{ driver.company?.subject.name || 'No registra' }}</td>
                 <td class="text-center">
                     <button pButton pRipple type="button" icon="pi pi-pencil" class="p-danger- mb-2 mr-2" (click)="openDialogDriver(driver)"></button>
                     <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2" (click)="confirmDeleteDriver(driver)"></button>
@@ -53,7 +53,7 @@
 
 <p-dialog [header]="editMode ?'Editar Conductor': 'Agregar Conductor'" [(visible)]="dialogDriver" [breakpoints]="{ '960px': '75vw' }" 
           [style]="{ width: '22vw' }" [modal]="true" [draggable]="false" [resizable]="false">
-    <form class="p-fluid" [formGroup]="FormDriver" (ngSubmit)="onSubmitDriver()">
+    <form class="p-fluid" [formGroup]="formDriver" (ngSubmit)="onSubmitDriver()">
     <div class="flex flex-col gap-4">
 
          <div class="flex flex-col gap-1">
@@ -75,7 +75,7 @@
 
         <div class="flex flex-col gap-1">
             <label for="compania" class="text-sm">Compañía</label>
-            <p-dropdown
+            <p-select
             id="compania"
             [options]="carriers()"
             optionLabel="subject.name"
@@ -87,6 +87,7 @@
             [filter]="true"
             filterPlaceholder="Buscar compañía"
             [loading]="isLoading()"
+            scrollHeight="170px"  
             class="w-full"
             >
             <ng-template pTemplate="empty">
@@ -94,7 +95,7 @@
                 No existe la compañia.
                 </div>
             </ng-template>
-            </p-dropdown>
+            </p-select>
         </div>
 
         <div class="flex flex-col gap-1">

@@ -1,11 +1,10 @@
+<p-toast></p-toast>
 <p-toolbar styleClass="p-toolbar p-component mb-0 py-2">
     <h3 class="m-0 flex align-items-center">Vehículos</h3>
 </p-toolbar>
 
-
-<div class="card mt-4   ">
+<div class="card mt-4">
     <p-table [scrollable]="true" scrollHeight="400px" styleClass="mt-4" [value]="vehicles()" [loading]="isLoading()">
-
         <ng-template #caption>
             <div class="flex justify-between items-center flex-column sm:flex-row">
                 <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogVehicle()"></button>
@@ -13,7 +12,7 @@
                     <p-inputicon>
                         <i class="pi pi-search"></i>
                     </p-inputicon>
-                    <input pInputText type="text" placeholder="Buscar..." />
+                    <input pInputText type="text" placeholder="Buscar..." [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" />
                 </p-iconfield>
             </div>
         </ng-template>
@@ -23,21 +22,24 @@
                 <th>Placa</th>
                 <th>Marca</th>
                 <th>Color</th>
-                <th>Propietario</th>
                 <th>Compañia</th>
-                <th>Chofer</th>
+                <th>Propietario</th>
+                <th>Conductor</th>
+                <th>Acciones</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-vehicle>
             <tr>
-
-                <td>{{ vehicle.plate || 'No registra' }}</td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
+                <td>{{ vehicle.plate }}</td>
+                <td>{{ vehicle?.brand || 'No registra' }}</td>
+                <td>{{ vehicle?.color || 'No registra' }}</td>
+                <td>{{ vehicle.company?.subject?.name || 'No registra' }}</td>
+                <td>{{ vehicle.owner?.subject?.name || 'No registra' }}</td>
+                <td>{{ vehicle.defaultDriver?.name || 'No asignado' }}</td>
+                <td class="text-center">
+                    <button pButton pRipple type="button" icon="pi pi-pencil" class="p-danger- mb-2 mr-2"></button>
+                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2"></button>
+                </td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
@@ -45,75 +47,117 @@
                 <td colspan="6">No existen registros.</td>
             </tr>
         </ng-template>
-        <ng-template pTemplate="loadingbody">
-            <tr>
-                <td colspan="6">No existen registros</td>
-            </tr>
-        </ng-template>
     </p-table>
+    <mat-paginator [length]="pagination().totalRecords" [pageSize]="pageSize()" [pageIndex]="pagination().currentPage - 1" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons aria-label="Select page"> </mat-paginator>
 </div>
 
-
-
-<p-dialog header="Agregar Vehículo" [(visible)]="dialogVehicle" [breakpoints]="{ '960px': '75vw' }"
-    [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false" (onhide)="closeDialogVehicle()">
-    
-    <form class="p-fluid">
-
+<p-dialog header="Agregar Vehículo" [(visible)]="dialogVehicle" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false" (onhide)="closeDialogVehicle()">
+    <form class="p-fluid" [formGroup]="formVehicle" (ngSubmit)="onSubmitVehicle()">
         <div class="flex flex-col gap-4">
             <div class="flex flex-wrap gap-4">
-                <div class="flex flex-col grow basis-0 gap-1">
-                    <label for="placa" class="text-sm">Placa</label>
-                    <input pInputText id="placa" type="text" class="w-full" autocomplete="off" />
-                </div>
-                <div class="flex flex-col grow basis-0 gap-1">
+                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="marca" class="text-sm">Marca</label>
-                    <input pInputText id="marca" type="text" class="w-full" autocomplete="off" />
+                    <input pInputText id="marca" type="text" class="w-full" autocomplete="off" formControlName="brand" />
+                </div>
+
+                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                    <label for="model" class="text-sm">Modelo</label>
+                    <input pInputText id="model" type="text" class="w-full" autocomplete="off" formControlName="model" />
                 </div>
             </div>
 
             <div class="flex flex-wrap gap-4">
-                <div class="flex flex-col grow basis-0 gap-1">
+                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                    <label for="plate" class="text-sm">Placa</label>
+                    <input pInputText id="plate" type="text" class="w-full" autocomplete="off" formControlName="plate" />
+                </div>
+
+                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                    <label for="year" class="text-sm">Año</label>
+                    <input pInputText id="year" type="text" class="w-full" autocomplete="off" formControlName="year" />
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-4">
+                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="color" class="text-sm">Color</label>
-                    <input pInputText id="color" type="text" class="w-full" autocomplete="off" />
+                    <input pInputText id="color" type="text" class="w-full" autocomplete="off" formControlName="color" />
                 </div>
-                <div class="flex flex-col grow basis-0 gap-1">
+
+                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="compania" class="text-sm">Compañía</label>
-                    <p-dropdown id="compania" optionLabel="nombreCompañia" placeholder="Seleccione la compañía"
-                        [showClear]="true" [appendTo]="'body'" [filter]="true" filterPlaceholder="Buscar compañía"
-                        class="w-full">
-                    </p-dropdown>
+                    <p-select
+                        id="compania"
+                        [options]="companies()"
+                        optionLabel="subject.name"
+                        formControlName="companyId"
+                        [optionValue]="'id'"
+                        placeholder="Seleccione la compañía"
+                        [showClear]="true"
+                        [appendTo]="'body'"
+                        [filter]="true"
+                        filterPlaceholder="Buscar compañía"
+                        [loading]="isLoading()"
+                        scrollHeight="150px"
+                        class="w-full"
+                    >
+                        <ng-template pTemplate="empty">
+                            <div class="p-2">No existe la compañia.</div>
+                        </ng-template>
+                    </p-select>
                 </div>
             </div>
-
 
             <div class="flex flex-wrap gap-4">
-                <div class="flex flex-col grow basis-0 gap-1">
-                    <label for="compania" class="text-sm">Propietario</label>
-                    <p-dropdown id="propietario" optionLabel="propietario" placeholder="Seleccione el propietario"
-                        [showClear]="true" [appendTo]="'body'" [filter]="true" filterPlaceholder="Buscar propietario"
-                        class="w-full">
-                    </p-dropdown>
+                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                    <label for="owner" class="text-sm">Propietario</label>
+                    <p-select
+                        id="owner"
+                        [options]="owners()"
+                        optionLabel="subject.name"
+                        formControlName="ownerId"
+                        [optionValue]="'id'"
+                        placeholder="Seleccione el propietario"
+                        [showClear]="true"
+                        [appendTo]="'body'"
+                        [filter]="true"
+                        filterPlaceholder="Buscar propietario"
+                        [loading]="isLoading()"
+                        scrollHeight="150px"
+                        class="w-full"
+                    >
+                        <ng-template pTemplate="empty">
+                            <div class="p-2">No existe el propietario.</div>
+                        </ng-template>
+                    </p-select>
                 </div>
 
-                <div class="flex flex-col grow basis-0 gap-1">
-                    <label for="Chofer" class="text-sm">Chofer por Defecto</label>
-                    <p-dropdown id="chofer" optionLabel="chofer" placeholder="Seleccione el chofer"
-                        [showClear]="true" [appendTo]="'body'" [filter]="true" filterPlaceholder="Buscar chofer"
-                        class="w-full">
-                    </p-dropdown>
+                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                    <label for="defaultDriver" class="text-sm">Conductor por defecto</label>
+                    <p-select
+                        id="defaultDriver"
+                        [options]="drivers()"
+                        optionLabel="name"
+                        formControlName="defaultDriverId"
+                        [optionValue]="'id'"
+                        placeholder="Seleccione el conductor por defecto"
+                        [showClear]="true"
+                        [appendTo]="'body'"
+                        [filter]="true"
+                        filterPlaceholder="Buscar conductor por defecto"
+                        [loading]="isLoading()"
+                        class="w-full custom-select"
+                    >
+                        <ng-template pTemplate="empty">
+                            <div class="p-2">No existe el conductor.</div>
+                        </ng-template>
+                    </p-select>
                 </div>
-
             </div>
-
         </div>
 
         <div class="flex justify-end mt-4">
-            <button pButton label="Cancelar" icon="pi pi-times" (click)="closeDialogVehicle()"
-                class="p-button-secondary mr-2"></button>
-
-            <button pButton label="Registrar" icon="pi pi-save" type="submit" 
-                    class="p-button-primary"></button>
+            <button pButton label="Registrar" icon="pi pi-save" type="submit" class="p-button-primary"></button>
         </div>
     </form>
 </p-dialog>

@@ -1,0 +1,10 @@
+/* Estilo para limitar la altura del panel desplegable y mostrar scroll */
+.custom-dropdown .p-dropdown-panel .p-dropdown-items {
+    max-height: 200px; /* Ajusta esta altura según necesites (4 elementos + algo de padding) */
+    overflow-y: auto;
+}
+
+/* Opcional: Estilo para los items individuales */
+.custom-dropdown .p-dropdown-panel .p-dropdown-item {
+    padding: 0.5rem 1rem;
+}

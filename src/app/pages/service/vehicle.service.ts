@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
-import { VehicleResponse } from '../models/vehicle';
+import { VehicleData, VehicleResponse } from '../models/vehicle';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
 import { Observable, tap } from 'rxjs';
@@ -32,11 +32,11 @@ export class VehicleService {
         private messageService: MessageService
     ) {}
 
-    loadVewhicles(page: number = 1, limit: number = 5): Observable<ApiResponse<VehicleResponse[]>> {
+    loadVehicles(page: number = 1, limit: number = 5): Observable<ApiResponse<VehicleResponse[]>> {
         this.loading.set(true);
         this.error.set(null);
 
-        let params = new HttpParams().set('page', page.toString()).set('limit', limit.toString()).set('includeCompany', 'true');
+        let params = new HttpParams().set('page', page.toString()).set('limit', limit.toString()).set('includeCompany', 'true').set('includeDriver', 'true').set('includeOwner', 'true');
 
         return this.http.get<ApiResponse<VehicleResponse[]>>(`${this.baseUrl}/vehicle/enabled`, { params }).pipe(
             tap({
@@ -73,26 +73,113 @@ export class VehicleService {
         );
     }
 
+    registerVehicle(VehicleData: VehicleData): Observable<ApiResponse<VehicleResponse>> {
+        this.loading.set(true);
+        this.error.set(null);
+
+        return this.http.post<ApiResponse<VehicleResponse>>(`${this.baseUrl}/vehicle`, VehicleData).pipe(
+            tap({
+                next: (response) => {
+                    if (response.statusCode >= 200 && response.statusCode < 300) {
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: 'Vehículo registrado correctamente',
+                            life: 5000
+                        });
+                    } else {
+                        const errorMessage = this.formatErrorMessage(response);
+                        this.error.set(errorMessage);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: errorMessage,
+                            life: 5000
+                        });
+                    }
+                    this.loading.set(false);
+                },
+                error: (err) => {
+                    const errorMessage = this.getErrorMessage(err);
+                    this.error.set(errorMessage);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: errorMessage,
+                        life: 5000
+                    });
+                    this.loading.set(false);
+                }
+            })
+        );
+    }
+
+    searchVehicles(query: string, page: number = 1, limit: number = 5): Observable<ApiResponse<VehicleResponse[]>> {
+        this.loading.set(true); 
+        this.error.set(null);
+
+        // Cambia 'query' por 'plate' para coincidir con la API
+        let params = new HttpParams()
+            .set('plate', query)
+            .set('page', page.toString())
+            .set('limit', limit.toString());
+
+        return this.http.get<ApiResponse<VehicleResponse[]>>(`${this.baseUrl}/vehicle/search`, { params }).pipe(
+            tap({
+                next: (response) => {
+                    if (response.statusCode >= 200 && response.statusCode < 300) {
+                        this.vehicles.set(response.data || []);
+                        if (response.pagination) {
+                            this.pagination.set(response.pagination);
+                        }
+                    } else {
+                        const errorMessage = this.formatErrorMessage(response);
+                        this.error.set(errorMessage);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: errorMessage,
+                            life: 5000
+                        });
+                    }
+                    this.loading.set(false);
+                },
+                error: (err) => {
+                    const errorMessage = this.getErrorMessage(err);
+                    this.error.set(errorMessage);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: errorMessage,
+                        life: 5000
+                    });
+                    this.loading.set(false);
+                }
+            })
+        );
+    }
 
     private formatErrorMessage(response: ApiResponse<any>): string {
-            if (response.error) {
-                return response.error;
-            }
-    
-            if (response.message) {
-                return Array.isArray(response.message) ? response.message.join(', ') : response.message;
-            }
-    
-            return 'Error al cargar los conductores';
+        if (response.error) {
+            return response.error;
         }
-    
-        private getErrorMessage(error: any): string {
-            if (error.error) {
-                if (error.error.message) {
-                    return Array.isArray(error.error.message) ? error.error.message.join(', ') : error.error.message;
-                }
-                return error.error.error || error.message || 'Error desconocido';
-            }
-            return error.message || 'Error al conectar con el servidor';
+
+        if (response.message) {
+            return Array.isArray(response.message) ? response.message.join(', ') : response.message;
         }
+
+        return 'Error al cargar los conductores';
+    }
+
+    private getErrorMessage(error: any): string {
+        if (error.error) {
+            if (error.error.message) {
+                return Array.isArray(error.error.message) ? error.error.message.join(', ') : error.error.message;
+            }
+            return error.error.error || error.message || 'Error desconocido';
+        }
+        return error.message || 'Error al conectar con el servidor';
+    }
+
+    
 }

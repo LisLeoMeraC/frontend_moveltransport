@@ -19,6 +19,7 @@ import { CompanyService } from '../../pages/service/company.service';
 import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 import { DriverService } from '../../pages/service/driver.service';
 import { DriverResponse } from '../../pages/models/driver';
+import { SelectModule } from 'primeng/select';
 
 @Component({
     selector: 'app-drivers',
@@ -37,6 +38,7 @@ import { DriverResponse } from '../../pages/models/driver';
         ToastModule,
         MatPaginatorModule,
         MatProgressSpinnerModule,
+        SelectModule,
         SelectButtonModule,
         FormsModule
     ],
@@ -48,7 +50,7 @@ export class DriverComponent implements OnInit {
     showNumberOnlyWarning = false;
 
     dialogDriver: boolean = false;
-    FormDriver: FormGroup;
+    formDriver: FormGroup;
 
     private companyService = inject(CompanyService);
     private driverService = inject(DriverService);
@@ -83,7 +85,7 @@ export class DriverComponent implements OnInit {
         private fb: FormBuilder,
         private messageService: MessageService
     ) {
-        this.FormDriver = this.fb.group({
+        this.formDriver = this.fb.group({
             licenseNumber: [null, Validators.required],
             name: [null, Validators.required],
             alias: [null],
@@ -214,16 +216,16 @@ export class DriverComponent implements OnInit {
     }
 
     openDialogDriver(driver?: DriverResponse) {
-        this.FormDriver.reset();
+        this.formDriver.reset();
         this.editMode = !!driver;
         this.driverId = driver?.id || null;
         this.isSubmitted = false;
         this.dialogDriver = true;
         this.loadCompanies(1, this.pageSize(), 'carrier');
         if (this.editMode) {
-            this.FormDriver.get('licenseNumber')?.disable();
+            this.formDriver.get('licenseNumber')?.disable();
         } else {
-            this.FormDriver.get('licenseNumber')?.enable();
+            this.formDriver.get('licenseNumber')?.enable();
         }
 
         if (driver) {
@@ -235,14 +237,14 @@ export class DriverComponent implements OnInit {
                 companyId: driver.companyId
             };
             setTimeout(() => {
-                this.FormDriver.patchValue(formData, { emitEvent: false });
+                this.formDriver.patchValue(formData, { emitEvent: false });
             });
         }
     }
 
     closeDialogDriver() {
         this.dialogDriver = false;
-        this.FormDriver.reset();
+        this.formDriver.reset();
     }
 
     onKeyPressLicensePhone(event: KeyboardEvent) {
@@ -262,8 +264,8 @@ export class DriverComponent implements OnInit {
     }
 
     onSubmitDriver() {
-        const nameControl = this.FormDriver.get('name');
-        const licenseNumberControl = this.FormDriver.get('licenseNumber');
+        const nameControl = this.formDriver.get('name');
+        const licenseNumberControl = this.formDriver.get('licenseNumber');
         if ((nameControl && nameControl.invalid) || (licenseNumberControl && licenseNumberControl.invalid)) {
             if (nameControl) {
                 nameControl.markAsTouched();
@@ -278,7 +280,7 @@ export class DriverComponent implements OnInit {
             return;
         }
         this.isSubmitted = true;
-        const formValue = this.FormDriver.value;
+        const formValue = this.formDriver.value;
         let driverData: any = {
             name: formValue.name,
             alias: formValue.alias || null,
@@ -298,7 +300,7 @@ export class DriverComponent implements OnInit {
         operation.subscribe({
             next: () => {
                 this.dialogDriver = false;
-                this.FormDriver.reset();
+                this.formDriver.reset();
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
