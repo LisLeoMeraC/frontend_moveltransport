@@ -7,7 +7,7 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { CompanyService } from '../../pages/service/company.service';
-import { MessageService } from 'primeng/api';
+import { ConfirmationService, MessageService } from 'primeng/api';
 import { CompanyResponse, IdentificationType } from '../../pages/models/company';
 import { ToastModule } from 'primeng/toast';
 import { MatPaginator, MatPaginatorIntl, MatPaginatorModule } from '@angular/material/paginator';
@@ -18,6 +18,7 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { ToolbarModule } from 'primeng/toolbar';
 import { TableModule } from 'primeng/table';
 import { DropdownModule } from 'primeng/dropdown';
+import { ConfirmDialogModule } from 'primeng/confirmdialog';
 
 @Component({
     selector: 'app-company',
@@ -37,11 +38,12 @@ import { DropdownModule } from 'primeng/dropdown';
         MatPaginatorModule,
         MatProgressSpinnerModule,
         SelectButtonModule,
-        FormsModule
+        FormsModule,
+        ConfirmDialogModule 
     ],
     templateUrl: './company.component.html',
     styleUrl: './company.component.scss',
-    providers: [MessageService, { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() }]
+    providers: [MessageService,ConfirmationService, { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() }]
 })
 export class CompanyComponent implements OnInit {
     showNumberOnlyWarning = false;
@@ -66,6 +68,8 @@ export class CompanyComponent implements OnInit {
     editMode = false;
     companyId: string | null = null;
 
+
+
     //Para buscar compañias
     searchTerm: string = '';
     isSubmitted = true;
@@ -77,7 +81,8 @@ export class CompanyComponent implements OnInit {
 
     constructor(
         private fb: FormBuilder,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private confirmationService: ConfirmationService
     ) {
         this.registerFormCompany = this.fb.group({
             type: ['', Validators.required],
@@ -87,6 +92,18 @@ export class CompanyComponent implements OnInit {
             address: [''],
             phone: [''],
             email: ['', Validators.email]
+        });
+
+        effect(() => {
+            const error = this.hasError();
+            if (error) {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: error,
+                    life: 5000
+                });
+            }
         });
 
         this.registerFormCompany.get('identificationType')?.valueChanges.subscribe(() => {
@@ -210,7 +227,6 @@ export class CompanyComponent implements OnInit {
             return;
         }
 
-        // Validar el formulario antes de continuar
         if (!this.checkFormValidity()) {
             return;
         }
@@ -218,7 +234,6 @@ export class CompanyComponent implements OnInit {
         this.isSubmitted = true;
         const formValue = this.registerFormCompany.getRawValue();
 
-        // Datos comunes a ambas operaciones
         let companyData: any = {
             name: formValue.name,
             address: formValue.address || null,
@@ -227,7 +242,6 @@ export class CompanyComponent implements OnInit {
             type: formValue.type
         };
 
-        // Solo incluir identificación si NO estamos en modo edición
         if (!this.editMode) {
             companyData = {
                 ...companyData,
@@ -236,7 +250,6 @@ export class CompanyComponent implements OnInit {
             };
         }
 
-        // Siempre ejecutar la operación, aunque los datos no hayan cambiado
         const operation = this.editMode && this.companyId ? this.companyService.updateCompany(this.companyId, companyData) : this.companyService.registerCompany(companyData);
 
         operation.subscribe({
@@ -254,13 +267,8 @@ export class CompanyComponent implements OnInit {
                 this.isSubmitted = false;
                 this.dialogCompany = false;
             },
-            error: (err) => {
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: err,
-                    life: 5000
-                });
+            error: () => {
+                // Solo desactivamos el loading, el error se muestra con el efecto global
                 this.isSubmitted = false;
             }
         });
@@ -436,9 +444,8 @@ export class CompanyComponent implements OnInit {
     checkFormValidity(): boolean {
         const requiredFields = ['type', 'identificationType', 'identification', 'name'];
         let isValid = true;
-        let invalidFields = [];
+        let invalidFields: string[] = [];
 
-        // Verificar solo los campos requeridos
         requiredFields.forEach((field) => {
             const control = this.registerFormCompany.get(field);
             if (control && control.invalid) {
@@ -448,27 +455,29 @@ export class CompanyComponent implements OnInit {
             }
         });
 
-        // Verificar campos con otras validaciones
         const phoneControl = this.registerFormCompany.get('phone');
         if (phoneControl && phoneControl.invalid) {
             phoneControl.markAsTouched();
             isValid = false;
-            invalidFields.push('teléfono (máx. 13 caracteres)');
+            invalidFields.push('phone');
         }
 
         const emailControl = this.registerFormCompany.get('email');
         if (emailControl && emailControl.invalid) {
             emailControl.markAsTouched();
             isValid = false;
-            invalidFields.push('email (formato inválido)');
+            invalidFields.push('email');
         }
 
         if (!isValid) {
-            const errorMessage = invalidFields.length > 1 ? `Corrija los siguientes campos: ${invalidFields.join(', ')}` : `Corrija el campo: ${invalidFields[0]}`;
+            const fieldsList = invalidFields.join(', ');
+            const translatedMessage = this.companyService.translateFieldNames(fieldsList);
+
+            const errorMessage = invalidFields.length > 1 ? `Corrija los siguientes campos: ${translatedMessage}` : `Corrija el campo: ${translatedMessage}`;
 
             this.messageService.add({
-                severity: 'error',
-                summary: 'Error',
+                severity: 'warn',
+                summary: 'Advertencia',
                 detail: errorMessage,
                 life: 5000
             });
@@ -476,4 +485,10 @@ export class CompanyComponent implements OnInit {
 
         return isValid;
     }
+
+   
+    
+    
 }
+
+

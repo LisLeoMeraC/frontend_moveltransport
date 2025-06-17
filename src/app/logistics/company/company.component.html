@@ -39,7 +39,7 @@
                 <td class="text-justify">{{ company.subject.name }}</td>
                 <td class="text-justify">
                     {{
-                        company.type === 'both' ? 'Ambos' :
+                        company.type === 'both' ? 'Cli/Transp' :
                         company.type === 'client' ? 'Cliente' :
                         company.type === 'carrier' ? 'Transportista' :
                         (company.type || 'No registra')

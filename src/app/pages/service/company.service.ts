@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 import { ApiResponse, CompanyData, CompanyResponse, CompanyType, IdentificationType, Pagination } from '../models/company';
 import { environment } from '../../../environments/environment';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, tap } from 'rxjs';
+import { catchError, finalize, Observable, tap, throwError } from 'rxjs';
 import { MessageService } from 'primeng/api';
 @Injectable({
     providedIn: 'root'
@@ -30,151 +30,84 @@ export class CompanyService {
         private messageService: MessageService
     ) {}
 
-    //metodo para registrar compañia
+    private setError(message: string) {
+        this.error.set(message);
+    }
+
+    private handleHttpError<T>(contextMsg = 'Error'): (error: any) => Observable<T> {
+        return (error: any) => {
+            const message = this.getErrorMessage(error) || contextMsg;
+            this.setError(message);
+            this.loading.set(false);
+            return throwError(() => error);
+        };
+    }
+
+    private handleApiResponse<T>(response: ApiResponse<T>, fallbackError: string = 'Error'): boolean {
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+            const message = this.formatErrorMessage(response) || fallbackError;
+            this.setError(message);
+            this.loading.set(false);
+            return false;
+        }
+        return true;
+    }
+
     registerCompany(companyData: CompanyData): Observable<ApiResponse<CompanyResponse>> {
         this.loading.set(true);
         this.error.set(null);
+
         return this.http.post<ApiResponse<CompanyResponse>>(`${this.baseUrl}/company`, companyData).pipe(
-            tap({
-                next: (response) => {
-                    if (response.statusCode >= 200 && response.statusCode < 300) {
-                    } else {
-                        const errorMessage = this.formatErrorMessage(response);
-                        this.error.set(errorMessage);
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: errorMessage,
-                            life: 5000
-                        });
-                    }
-                    this.loading.set(false);
-                },
-                error: (err) => {
-                    const errorMessage = this.getErrorMessage(err);
-                    this.error.set(errorMessage);
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: errorMessage,
-                        life: 5000
-                    });
-                    this.loading.set(false);
-                }
-            })
+            tap((response) => this.handleApiResponse(response)),
+            catchError(this.handleHttpError<ApiResponse<CompanyResponse>>('Error al registrar compañía')),
+            finalize(() => this.loading.set(false))
         );
     }
 
-    //metodo para eliminar compañia
+    updateCompany(id: string, companyData: CompanyData): Observable<ApiResponse<CompanyResponse>> {
+        this.loading.set(true);
+        this.error.set(null);
+
+        return this.http.put<ApiResponse<CompanyResponse>>(`${this.baseUrl}/company/${id}`, companyData).pipe(
+            tap((response) => this.handleApiResponse(response)),
+            catchError(this.handleHttpError<ApiResponse<CompanyResponse>>('Error al actualizar compañía')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+
+   
+
     deleteCompany(id: string): Observable<ApiResponse<any>> {
         this.loading.set(true);
         this.error.set(null);
 
         return this.http.delete<ApiResponse<any>>(`${this.baseUrl}/company/${id}`).pipe(
-            tap({
-                next: (response) => {
-                    if (response.statusCode >= 200 && response.statusCode < 300) {
-                    } else {
-                        const errorMessage = this.formatErrorMessage(response);
-                        this.error.set(errorMessage);
-                    }
-                    this.loading.set(false);
-                },
-                error: (err) => {
-                    const errorMessage = this.getErrorMessage(err);
-                    this.error.set(errorMessage);
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: errorMessage,
-                        life: 5000
-                    });
-                    this.loading.set(false);
-                }
-            })
+            tap((response) => this.handleApiResponse(response)),
+            catchError(this.handleHttpError<ApiResponse<any>>('Error al eliminar compañía')),
+            finalize(() => this.loading.set(false))
         );
     }
-
-    //metodo para cargar compañias
 
     loadCompanies(status: boolean, page: number = 1, limit: number = 5, type?: string): Observable<ApiResponse<CompanyResponse[]>> {
         this.loading.set(status);
         this.error.set(null);
 
         let params = new HttpParams().set('page', page.toString()).set('limit', limit.toString());
-
         if (type) {
             params = params.set('type', type);
         }
 
         return this.http.get<ApiResponse<CompanyResponse[]>>(`${this.baseUrl}/company/enabled`, { params }).pipe(
-            tap({
-                next: (response) => {
-                    if (response.statusCode >= 200 && response.statusCode < 300) {
-                        this.companies.set(response.data || []);
-                        if (response.pagination) {
-                            this.pagination.set(response.pagination);
-                        }
-                    } else {
-                        const errorMessage = this.formatErrorMessage(response);
-                        this.error.set(errorMessage);
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: errorMessage,
-                            life: 5000
-                        });
+            tap((response) => {
+                if (this.handleApiResponse(response)) {
+                    this.companies.set(response.data || []);
+                    if (response.pagination) {
+                        this.pagination.set(response.pagination);
                     }
-                    this.loading.set(false);
-                },
-                error: (err) => {
-                    const errorMessage = this.getErrorMessage(err);
-                    this.error.set(errorMessage);
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: errorMessage,
-                        life: 5000
-                    });
-                    this.loading.set(false);
                 }
-            })
-        );
-    }
-
-    //metodo para editar compañia
-    updateCompany(id: string, companyData: CompanyData): Observable<ApiResponse<CompanyResponse>> {
-        this.loading.set(true);
-        this.error.set(null);
-
-        return this.http.put<ApiResponse<CompanyResponse>>(`${this.baseUrl}/company/${id}`, companyData).pipe(
-            tap({
-                next: (response) => {
-                    if (response.statusCode >= 200 && response.statusCode < 300) {
-                    } else {
-                        const errorMessage = this.formatErrorMessage(response);
-                        this.error.set(errorMessage);
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: errorMessage,
-                            life: 5000
-                        });
-                    }
-                    this.loading.set(false);
-                },
-                error: (err) => {
-                    const errorMessage = this.getErrorMessage(err);
-                    this.error.set(errorMessage);
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: errorMessage,
-                        life: 5000
-                    });
-                    this.loading.set(false);
-                }
-            })
+            }),
+            catchError(this.handleHttpError<ApiResponse<CompanyResponse[]>>('Error al cargar compañías')),
+            finalize(() => this.loading.set(false))
         );
     }
 
@@ -183,85 +116,77 @@ export class CompanyService {
         this.error.set(null);
 
         let params = new HttpParams().set('term', term).set('page', page.toString()).set('limit', limit.toString());
-
         if (type) {
             params = params.set('type', type);
         }
 
         return this.http.get<ApiResponse<CompanyResponse[]>>(`${this.baseUrl}/company/search`, { params }).pipe(
-            tap({
-                next: (response) => {
-                    if (response.statusCode >= 200 && response.statusCode < 300) {
-                        this.companies.set(response.data || []);
-                        if (response.pagination) {
-                            this.pagination.set(response.pagination);
-                        }
-                    } else {
-                        const errorMessage = this.formatErrorMessage(response);
-                        this.error.set(errorMessage);
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: errorMessage,
-                            life: 5000
-                        });
+            tap((response) => {
+                if (this.handleApiResponse(response)) {
+                    this.companies.set(response.data || []);
+                    if (response.pagination) {
+                        this.pagination.set(response.pagination);
                     }
-                    this.loading.set(false);
-                },
-                error: (err) => {
-                    const errorMessage = this.getErrorMessage(err);
-                    this.error.set(errorMessage);
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: errorMessage,
-                        life: 5000
-                    });
-                    this.loading.set(false);
                 }
-            })
+            }),
+            catchError(this.handleHttpError<ApiResponse<CompanyResponse[]>>('Error al buscar compañías')),
+            finalize(() => this.loading.set(false))
         );
     }
 
     searchByIdentification(identification: string): Observable<ApiResponse<any>> {
+        this.loading.set(true);
+        this.error.set(null);
+
         return this.http.get<ApiResponse<any>>(`${this.baseUrl}/company/identification/${identification}`).pipe(
-            tap({
-                next: (response) => {
-                    if (response.statusCode !== 200) {
-                        const errorMessage = this.formatErrorMessage(response);
-                        this.error.set(errorMessage);
-                    }
-                    this.loading.set(false);
-                },
-                error: (err) => {
-                    const errorMessage = this.getErrorMessage(err);
-                    this.error.set(errorMessage);
-                    this.loading.set(false);
-                }
-            })
+            tap((response) => this.handleApiResponse(response)),
+            catchError(this.handleHttpError<ApiResponse<any>>('Error al buscar identificación')),
+            finalize(() => this.loading.set(false))
         );
     }
 
     private formatErrorMessage(response: ApiResponse<any>): string {
+        let message = 'Error inesperado';
         if (response.error) {
-            return response.error;
+            message = response.error;
+        } else if (response.message) {
+            message = Array.isArray(response.message) ? response.message.join(', ') : response.message;
         }
-
-        if (response.message) {
-            return Array.isArray(response.message) ? response.message.join(', ') : response.message;
-        }
-
-        return 'Error al cargar las compañías';
+        return this.translateFieldNames(message);
     }
 
     private getErrorMessage(error: any): string {
+        let message = 'Error desconocido';
         if (error.error) {
             if (error.error.message) {
-                return Array.isArray(error.error.message) ? error.error.message.join(', ') : error.error.message;
+                message = Array.isArray(error.error.message) ? error.error.message.join(', ') : error.error.message;
+            } else {
+                message = error.error.error || error.message || message;
             }
-            return error.error.error || error.message || 'Error desconocido';
+        } else {
+            message = error.message || 'Error al conectar con el servidor';
         }
-        return error.message || 'Error al conectar con el servidor';
+        return this.translateFieldNames(message);
+    }
+
+    public translateFieldNames(message: string): string {
+        const fieldTranslations: { [key: string]: string } = {
+            name: 'Nombre',
+            address: 'Dirección',
+            email: 'Correo electrónico',
+            phone: 'Teléfono',
+            identificationType: 'Tipo de identificación',
+            identification: 'Identificación',
+            type: 'Tipo de compañía',
+            status: 'Estado'
+        };
+
+        Object.keys(fieldTranslations).forEach((key) => {
+            const regex = new RegExp(`\\b${key}\\b`, 'gi');
+            message = message.replace(regex, fieldTranslations[key]);
+        });
+
+        return message;
     }
 
     getIdentificationTypes(): { label: string; value: IdentificationType }[] {

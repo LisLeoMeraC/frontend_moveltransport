@@ -55,6 +55,39 @@
     <form class="p-fluid" [formGroup]="formVehicle" (ngSubmit)="onSubmitVehicle()">
         <div class="flex flex-col gap-4">
             <div class="flex flex-wrap gap-4">
+                <!-- 1. Placa -->
+                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                    <label for="plate" class="text-sm">Placa</label>
+                    <input pInputText id="plate" type="text" class="w-full" autocomplete="off" formControlName="plate" />
+                </div>
+
+                <!-- 2. Propietario -->
+                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                    <label for="owner" class="text-sm">Propietario</label>
+                    <p-select
+                        id="owner"
+                        [options]="owners()"
+                        optionLabel="subject.name"
+                        formControlName="ownerId"
+                        [optionValue]="'id'"
+                        placeholder="Seleccione el propietario"
+                        [showClear]="true"
+                        [appendTo]="'body'"
+                        [filter]="true"
+                        filterPlaceholder="Buscar propietario"
+                        [loading]="isLoading()"
+                        scrollHeight="150px"
+                        class="w-full"
+                    >
+                        <ng-template pTemplate="empty">
+                            <div class="p-2">No existe el propietario.</div>
+                        </ng-template>
+                    </p-select>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-4">
+
                 <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="marca" class="text-sm">Marca</label>
                     <input pInputText id="marca" type="text" class="w-full" autocomplete="off" formControlName="brand" />
@@ -67,22 +100,19 @@
             </div>
 
             <div class="flex flex-wrap gap-4">
-                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
-                    <label for="plate" class="text-sm">Placa</label>
-                    <input pInputText id="plate" type="text" class="w-full" autocomplete="off" formControlName="plate" />
-                </div>
 
                 <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="year" class="text-sm">Año</label>
                     <input pInputText id="year" type="text" class="w-full" autocomplete="off" formControlName="year" />
                 </div>
-            </div>
 
-            <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="color" class="text-sm">Color</label>
                     <input pInputText id="color" type="text" class="w-full" autocomplete="off" formControlName="color" />
                 </div>
+            </div>
+
+            <div class="flex flex-wrap gap-4">
 
                 <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="compania" class="text-sm">Compañía</label>
@@ -106,31 +136,6 @@
                         </ng-template>
                     </p-select>
                 </div>
-            </div>
-
-            <div class="flex flex-wrap gap-4">
-                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
-                    <label for="owner" class="text-sm">Propietario</label>
-                    <p-select
-                        id="owner"
-                        [options]="owners()"
-                        optionLabel="subject.name"
-                        formControlName="ownerId"
-                        [optionValue]="'id'"
-                        placeholder="Seleccione el propietario"
-                        [showClear]="true"
-                        [appendTo]="'body'"
-                        [filter]="true"
-                        filterPlaceholder="Buscar propietario"
-                        [loading]="isLoading()"
-                        scrollHeight="150px"
-                        class="w-full"
-                    >
-                        <ng-template pTemplate="empty">
-                            <div class="p-2">No existe el propietario.</div>
-                        </ng-template>
-                    </p-select>
-                </div>
 
                 <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="defaultDriver" class="text-sm">Conductor por defecto</label>
@@ -140,7 +145,7 @@
                         optionLabel="name"
                         formControlName="defaultDriverId"
                         [optionValue]="'id'"
-                        placeholder="Seleccione el conductor por defecto"
+                        placeholder="Seleccione el conductor"
                         [showClear]="true"
                         [appendTo]="'body'"
                         [filter]="true"
