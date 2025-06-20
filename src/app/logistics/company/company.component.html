@@ -3,10 +3,10 @@
     <h3 class="m-0 flex align-items-center">Compañias</h3>
 </p-toolbar>
 
-<div class="card mt-4">
-    <p-table [scrollable]="true" scrollHeight="550px" styleClass="mt-4" [value]="companies()" [loading]="isLoading()">
+<div class="card mt-4 w-full">
+    <p-table [scrollable]="true" scrollHeight="550px" scrollDirection="both" styleClass="mt-4 w-full" [value]="companies()" [loading]="isLoading()">
         <ng-template #caption>
-            <div class="flex justify-between items-center flex-column sm:flex-row">
+            <div class="flex justify-between items-center flex-column sm:flex-row gap-3">
                 <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogCompany()"></button>
 
                 <div class="flex-1 flex justify-center">
@@ -24,46 +24,43 @@
 
         <ng-template pTemplate="header">
             <tr>
-                <th class="text-justify">Razón Social</th>
-                <th class="text-justify">Tipo Empresa</th>
-                <th class="text-center">Tipo Identificación</th>
-                <th  class="text-justify">Nro. Identificación</th>
-                <th class="text-justify">Dirección</th>
-                <th class="text-justify">Teléfono</th>
-                <th class="text-justify">Email</th>
-                <th class="text-center">Acciones</th>
+                <th style="min-width: 180px ">Razón Social</th>
+                <th style="min-width: 140px">Tipo Empresa</th>
+                <th style="min-width: 140px">Tipo Identificación</th>
+                <th style="min-width: 180px">Nro. Identificación</th>
+                <th style="min-width: 250px">Dirección</th>
+                <th style="min-width: 150px">Teléfono</th>
+                <th style="min-width: 220px">Email</th>
+                <th style="min-width: 120px">Acciones</th>
             </tr>
         </ng-template>
+
         <ng-template pTemplate="body" let-company>
             <tr>
-                <td class="text-justify">{{ company.subject.name }}</td>
-                <td class="text-justify">
-                    {{
-                        company.type === 'both' ? 'Cli/Transp' :
-                        company.type === 'client' ? 'Cliente' :
-                        company.type === 'carrier' ? 'Transportista' :
-                        (company.type || 'No registra')
-                    }}
+                <td>{{ company.subject.name }}</td>
+                <td>
+                    {{ company.type === 'both' ? 'Cli/Transp' : company.type === 'client' ? 'Cliente' : company.type === 'carrier' ? 'Transportista' : company.type || 'No registra' }}
                 </td>
-                <td class="text-center">
+                <td>
                     {{ company.subject.identificationType === 'dni' ? 'Cédula' : (company.subject.identificationType | titlecase) }}
                 </td>
-                
-                <td class="text-justify">{{ company.subject.identification || 'No registra' }}</td>
-                <td class="text-justify">{{ company.subject.address || 'No registra' }}</td>
-                <td class="text-justify">{{ company.subject.phone || 'No registra' }}</td>
-                <td class="text-justify">{{ company.subject.email || 'No registra' }}</td>
+                <td>{{ company.subject.identification || 'No registra' }}</td>
+                <td>{{ company.subject.address || 'No registra' }}</td>
+                <td>{{ company.subject.phone || 'No registra' }}</td>
+                <td>{{ company.subject.email || 'No registra' }}</td>
                 <td class="text-center">
                     <button pButton pRipple type="button" icon="pi pi-pencil" (click)="openDialogCompany(company)" class="p-danger- mb-2 mr-2"></button>
                 </td>
             </tr>
         </ng-template>
+
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="7">No existen registros.</td>
+                <td colspan="8">No existen registros.</td>
             </tr>
         </ng-template>
     </p-table>
+
     <mat-paginator [length]="pagination().totalRecords" [pageSize]="pageSize()" [pageIndex]="pagination().currentPage - 1" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons aria-label="Select page"> </mat-paginator>
 </div>
 
@@ -129,4 +126,3 @@
         </div>
     </form>
 </p-dialog>
-
