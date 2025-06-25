@@ -7,7 +7,7 @@ import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { CompanyService } from '../../pages/service/company.service';
-import { ConfirmationService, MessageService } from 'primeng/api';
+import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { CompanyResponse, IdentificationType } from '../../pages/models/company';
 import { ToastModule } from 'primeng/toast';
 import { MatPaginator, MatPaginatorIntl, MatPaginatorModule } from '@angular/material/paginator';
@@ -19,6 +19,7 @@ import { ToolbarModule } from 'primeng/toolbar';
 import { TableModule } from 'primeng/table';
 import { DropdownModule } from 'primeng/dropdown';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
+import { SplitButtonModule } from 'primeng/splitbutton';
 
 @Component({
     selector: 'app-company',
@@ -38,12 +39,13 @@ import { ConfirmDialogModule } from 'primeng/confirmdialog';
         MatPaginatorModule,
         MatProgressSpinnerModule,
         SelectButtonModule,
+        SplitButtonModule,
         FormsModule,
-        ConfirmDialogModule 
+        ConfirmDialogModule
     ],
     templateUrl: './company.component.html',
     styleUrl: './company.component.scss',
-    providers: [MessageService,ConfirmationService, { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() }]
+    providers: [MessageService, ConfirmationService, { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() }]
 })
 export class CompanyComponent implements OnInit {
     showNumberOnlyWarning = false;
@@ -68,11 +70,20 @@ export class CompanyComponent implements OnInit {
     editMode = false;
     companyId: string | null = null;
 
+    //Para eliminar una compañia
+    dialogDisableCompany: boolean = false;
+    companyToDisable: CompanyResponse | null = null;
+    isDisabling = signal(false);
 
+    dialogEnableCompany: boolean = false;
+    companyToEnable: CompanyResponse | null = null;
 
     //Para buscar compañias
     searchTerm: string = '';
     isSubmitted = true;
+    isDisabled = false;
+
+    selectedCompany?: CompanyResponse;
 
     identificationTypes = this.companyService.getIdentificationTypes();
     companyTypes = this.companyService.getCompanyTypes();
@@ -117,10 +128,61 @@ export class CompanyComponent implements OnInit {
                 this.searchCompanies(term, 1, this.pageSize(), this.selectedType);
             }
         });
+
+        /* this.items = [
+            {
+                label: 'Update',
+                command: () => {
+                    console.log("id de company:", );
+                    if (this.companyId) {
+                        this.editMode = true;
+                        this.hasSearchedIdentification = true;
+                        this.registerFormCompany.get('identification')?.disable();
+                        this.registerFormCompany.get('identificationType')?.disable();
+                        // You should fetch the company object here if needed, or pass undefined to openDialogCompany
+                        this.openDialogCompany();
+                    } else {
+                        this.messageService.add({
+                            severity: 'warn',
+                            summary: 'Advertencia',
+                            detail: 'Por favor seleccione una compañía para editar',
+                            life: 5000
+                        });
+                    }
+                }
+            },
+            
+        ];*/
     }
 
     ngOnInit(): void {
         this.loadCompanies();
+    }
+
+    getMenuItems(company: CompanyResponse): MenuItem[] {
+        return [
+            {
+                label: 'Editar',
+                icon: 'pi pi-pencil',
+                command: () => {
+                    console.log('Editando compañía ID:', company.id);
+                    this.openDialogCompany(company);
+                }
+            },
+            {
+                label: 'Eliminar',
+                icon: 'pi pi-trash',
+                command: () => {
+                    console.log('Eliminando compañía ID:', company.id);
+                    // this.confirmDelete(company);
+                }
+            }
+        ];
+    }
+
+    selectCompany(company: CompanyResponse) {
+        this.selectedCompany = company;
+        console.log('Compañía seleccionada:', company.id);
     }
 
     typeCompany: any[] = [
@@ -149,6 +211,38 @@ export class CompanyComponent implements OnInit {
     onSearchChange(): void {
         // Resetear siempre a la primera página al cambiar el término de búsqueda
         this.searchSubject.next(this.searchTerm);
+    }
+
+    disableCompany(): void {
+        if (!this.companyToDisable?.id) return;
+
+        this.isDisabling.set(true);
+
+        this.companyService.disableCompany(this.companyToDisable.id).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Compañía deshabilitada correctamente',
+                    life: 5000
+                });
+                this.dialogDisableCompany = false;
+                this.loadCompanies(); // Recargar la lista
+            },
+            error: (err) => {
+                console.error('Error al deshabilitar compañía:', err);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo deshabilitar la compañía',
+                    life: 5000
+                });
+            },
+            complete: () => {
+                this.isDisabling.set(false);
+                this.companyToDisable = null;
+            }
+        });
     }
 
     searchCompanies(term: string, page: number = 1, limit: number = this.pageSize(), type?: string): void {
@@ -310,6 +404,11 @@ export class CompanyComponent implements OnInit {
         this.dialogCompany = false;
     }
 
+    confirmDisableCompany(company: CompanyResponse): void {
+        this.companyToDisable = company;
+        this.dialogDisableCompany = true;
+    }
+
     buscarIdentificacion() {
         this.hasSearchedIdentification = false;
         const identification = this.registerFormCompany.get('identification')?.value;
@@ -329,15 +428,19 @@ export class CompanyComponent implements OnInit {
                 this.hasSearchedIdentification = true;
 
                 if (response.statusCode === 200 && response.data) {
-                    // Caso 1: Ya está registrado como compañía (isRegistered: true)
-                    if (response.data.isRegistered) {
+                    // Caso 1: Ya está registrado y habilitado como compañía
+                    if (response.data.isRegistered && response.data.company?.status) {
                         this.messageService.add({
                             severity: 'info',
                             summary: 'Información',
-                            detail: 'Ya está registrada como compañía',
+                            detail: 'Ya está registrada como compañía habilitada',
                             life: 5000
                         });
                         this.dialogCompany = false;
+                    }
+                    // Caso 2: Está registrado pero deshabilitado
+                    else if (response.data.isRegistered && !response.data.company?.status) {
+                        this.confirmEnableCompany(response.data.company);
                     }
                     // Caso 2: No está registrado como compañía, pero existe como persona (company no es null)
                     else if (response.data.company) {
@@ -395,6 +498,37 @@ export class CompanyComponent implements OnInit {
                     severity: 'error',
                     summary: 'Error',
                     detail: 'Ocurrió un error al buscar la compañía',
+                    life: 5000
+                });
+            }
+        });
+    }
+
+    confirmEnableCompany(company: CompanyResponse): void {
+        this.companyToEnable = company;
+        this.dialogEnableCompany = true;
+    }
+
+    enableCompany(): void {
+        if (!this.companyToEnable?.id) return;
+
+        this.companyService.enableCompany(this.companyToEnable.id).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Compañía habilitada correctamente',
+                    life: 5000
+                });
+                this.dialogEnableCompany = false;
+                this.dialogCompany = false;
+                this.loadCompanies();
+            },
+            error: (err) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo habilitar la compañía',
                     life: 5000
                 });
             }
@@ -485,10 +619,4 @@ export class CompanyComponent implements OnInit {
 
         return isValid;
     }
-
-   
-    
-    
 }
-
-

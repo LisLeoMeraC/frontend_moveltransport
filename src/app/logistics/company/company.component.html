@@ -50,6 +50,7 @@
                 <td>{{ company.subject.email || 'No registra' }}</td>
                 <td class="text-center">
                     <button pButton pRipple type="button" icon="pi pi-pencil" (click)="openDialogCompany(company)" class="p-danger- mb-2 mr-2"></button>
+                    <button pButton pRipple type="button" icon="pi pi-trash" (click)="confirmDisableCompany(company)"  class="p-button-danger mb-2 mr-2"></button>
                 </td>
             </tr>
         </ng-template>
@@ -125,4 +126,52 @@
             <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary" [disabled]="isSubmitted"></button>
         </div>
     </form>
+</p-dialog>
+
+
+<p-dialog [(visible)]="dialogDisableCompany" [modal]="true" [closable]="false" [style]="{ width: '100%', maxWidth: '400px' }" header="Confirmación requerida">
+    <div class="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
+        <div class="flex items-start gap-3">
+            <i class="pi pi-exclamation-circle text-yellow-600 text-2xl mt-1"></i>
+            <div>
+                <p class="text-sm text-gray-800 leading-relaxed">
+                    Estás a punto de deshabilitar esta compañía
+                    <span class="font-semibold text-red-600"></span>. ¿Deseas continuar?
+                </p>
+            </div>
+        </div>
+    </div>
+        
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-2 pt-3">
+            <button pButton label="Cancelar" class="p-button-secondary p-button-sm" 
+                    (click)="dialogDisableCompany = false" [disabled]="isDisabling()"></button>
+            <button pButton label="Deshabilitar" icon="pi pi-ban" class="p-button-sm p-button-danger" 
+                    (click)="disableCompany()" [disabled]="isDisabling()"
+                    [loading]="isDisabling()"></button>
+        </div>
+    </ng-template>
+</p-dialog>
+
+
+<p-dialog [(visible)]="dialogEnableCompany" [modal]="true" [closable]="false" [style]="{ width: '100%', maxWidth: '400px' }" header="Confirmar habilitación">
+    <div class="border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
+        <div class="flex items-start gap-3">
+            <i class="pi pi-info-circle text-blue-600 text-2xl mt-1"></i>
+            <div>
+                <p class="text-sm text-gray-800 leading-relaxed">
+                    Esta compañía está actualmente deshabilitada. ¿Deseas habilitarla nuevamente?
+                </p>
+            </div>
+        </div>
+    </div>
+    
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-2 pt-3">
+            <button pButton label="Cancelar" class="p-button-secondary p-button-sm" 
+                    (click)="dialogEnableCompany = false"></button>
+            <button pButton label="Habilitar" icon="pi pi-check" class="p-button-sm p-button-success" 
+                    (click)="enableCompany()"></button>
+        </div>
+    </ng-template>
 </p-dialog>
