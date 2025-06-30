@@ -329,7 +329,7 @@ export class VehicleOwnerComponent implements OnInit {
                         this.messageService.add({
                             severity: 'info',
                             summary: 'Información',
-                            detail: 'No está registrado como porpietario, proceda a registrarlo',
+                            detail: 'No está registrado como propietario, proceda a registrarlo',
                             life: 5000
                         });
                         this.habilitarControles(false);
