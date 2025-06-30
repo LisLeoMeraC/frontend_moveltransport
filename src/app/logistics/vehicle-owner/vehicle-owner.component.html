@@ -4,13 +4,12 @@
 </p-toolbar>
 
 <div class="card mt-4">
-    <p-table [scrollable]="true" scrollHeight="550px" styleClass="mt-4" [value]="vehicleOwners()" [loading]="isLoading()">
+    <p-table [scrollable]="true" scrollHeight="550px" styleClass="mt-4 w-full" [value]="vehicleOwners()" [loading]="isLoading()">
         <ng-template #caption>
-            <div class="flex justify-between items-center flex-column sm:flex-row">
+            <div class="flex justify-between items-center flex-column sm:flex-row gap-3">
                 <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogVehicleOwner()"></button>
 
-                <div class="flex-1 flex justify-center"></div>
-
+        
                 <p-iconfield iconPosition="left" class="ml-auto">
                     <p-inputicon>
                         <i class="pi pi-search"></i>
@@ -22,26 +21,26 @@
 
         <ng-template pTemplate="header">
             <tr>
-                <th class="text-justify">Nombre</th>
-                <th class="text-justify">Tipo Identificación</th>
-                <th class="text-justify">Nro. Identificación</th>
-                <th class="text-justify">Dirección</th>
-                <th class="text-justify">Teléfono</th>
-                <th class="text-justify">Email</th>
-                <th class="text-justify">Acciones</th>
+                <th style="min-width: 180px ">Nombre</th>
+                <th style="min-width: 140px">Tipo Identificación</th>
+                <th style="min-width: 180px">Nro. Identificación</th>
+                <th style="min-width: 250px">Dirección</th>
+                <th style="min-width: 150px">Teléfono</th>
+                <th style="min-width: 220px">Email</th>
+                <th style="min-width: 120px">Acciones</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-vehicleOwner>
             <tr>
-                <td class="text-justify">{{ vehicleOwner.subject.name }}</td>
-                <td class="text-justify">
+                <td>{{ vehicleOwner.subject.name }}</td>
+                <td>
                     {{ vehicleOwner.subject.identificationType === 'dni' ? 'Cédula' : (vehicleOwner.subject.identificationType | titlecase) }}
                 </td>
-                <td class="text-justify">{{ vehicleOwner.subject.identification || 'No registra' }}</td>
-                <td class="text-justify">{{ vehicleOwner.subject.address || 'No registra' }}</td>
-                <td class="text-justify">{{ vehicleOwner.subject.phone  || 'No registra' }}</td>
-                <td class="text-justify">{{ vehicleOwner.subject.email || 'No registra' }}</td>
-                <td class="text-justify">
+                <td>{{ vehicleOwner.subject.identification || 'No registra' }}</td>
+                <td>{{ vehicleOwner.subject.address || 'No registra' }}</td>
+                <td>{{ vehicleOwner.subject.phone  || 'No registra' }}</td>
+                <td>{{ vehicleOwner.subject.email || 'No registra' }}</td>
+                <td class="text-center">
                     <button pButton pRipple type="button" icon="pi pi-pencil" class="p-danger- mb-2 mr-2" (click)="openDialogVehicleOwner(vehicleOwner)"></button>
                     <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2" (click)="confirmDeleteVehicleOwner(vehicleOwner)"></button>
                 </td>

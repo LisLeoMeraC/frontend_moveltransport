@@ -95,7 +95,6 @@ export class VehicleOwnerComponent implements OnInit {
                     summary: 'Error',
                     detail: error,
                     life: 5000
-
                 });
             }
         });
@@ -201,9 +200,7 @@ export class VehicleOwnerComponent implements OnInit {
         }
 
         // No cerrar el diálogo aquí, solo al éxito
-        const operation = this.editMode && this.vehicleOwnerId
-            ? this.vehicleOwnerService.updateVehicleOwner(this.vehicleOwnerId, vehicleOwnerData)
-            : this.vehicleOwnerService.registerVehicleOwner(vehicleOwnerData);
+        const operation = this.editMode && this.vehicleOwnerId ? this.vehicleOwnerService.updateVehicleOwner(this.vehicleOwnerId, vehicleOwnerData) : this.vehicleOwnerService.registerVehicleOwner(vehicleOwnerData);
 
         operation.subscribe({
             next: () => {
@@ -220,9 +217,8 @@ export class VehicleOwnerComponent implements OnInit {
                 this.loadVehicleOwners();
                 this.isSubmitted = false;
             },
-            
-           error: (err) => {
-                
+
+            error: (err) => {
                 this.isSubmitted = false;
             }
         });
@@ -328,6 +324,15 @@ export class VehicleOwnerComponent implements OnInit {
                             life: 5000
                         });
                         this.closeDialogVehicleOwner();
+                    } else if (response.data.vehicleOwner) {
+                        this.patchFormWithOwnerData(response.data);
+                        this.messageService.add({
+                            severity: 'info',
+                            summary: 'Información',
+                            detail: 'No está registrado como porpietario, proceda a registrarlo',
+                            life: 5000
+                        });
+                        this.habilitarControles(false);
                     } else {
                         this.messageService.add({
                             severity: 'info',
@@ -336,7 +341,7 @@ export class VehicleOwnerComponent implements OnInit {
                             life: 5000
                         });
                     }
-                    this.habilitarControles(true);
+                   // this.habilitarControles(true);
                     this.editMode = false;
                     this.vehicleOwnerId = null;
                 }
@@ -349,7 +354,6 @@ export class VehicleOwnerComponent implements OnInit {
                     detail: 'Ocurrió un error al buscar el propietario',
                     life: 5000
                 });
-            
             }
         });
     }
@@ -361,10 +365,10 @@ export class VehicleOwnerComponent implements OnInit {
     }
 
     private patchFormWithOwnerData(data: any) {
-        if (data.isRegistered && data.vehicleOwner?.subject) {
+        if (data.vehicleOwner?.subject) {
             const subject = data.vehicleOwner.subject;
             const formData = {
-                identificationType: subject.identificationType,
+                identificationType: subject.identificationType, // Cambiado de data.subject a subject
                 identification: subject.identification?.trim(),
                 name: subject.name,
                 address: subject.address,
@@ -373,13 +377,9 @@ export class VehicleOwnerComponent implements OnInit {
             };
 
             this.registerFormVehicleOwner.patchValue(formData, { emitEvent: false });
-
-            // Si está registrado, deshabilitar controles y cerrar diálogo
-            this.habilitarControles(false);
-            // Aquí asumo que tienes una forma de cerrar el diálogo, por ejemplo:
-            // this.dialogRef.close();
+            this.habilitarControles(true); // Habilitar controles para edición
+            this.editMode = true;
         } else {
-            // Si no está registrado, habilitar controles para nuevo registro
             this.habilitarControles(true);
             this.editMode = false;
             this.vehicleOwnerId = null;

@@ -128,31 +128,6 @@ export class CompanyComponent implements OnInit {
                 this.searchCompanies(term, 1, this.pageSize(), this.selectedType);
             }
         });
-
-        /* this.items = [
-            {
-                label: 'Update',
-                command: () => {
-                    console.log("id de company:", );
-                    if (this.companyId) {
-                        this.editMode = true;
-                        this.hasSearchedIdentification = true;
-                        this.registerFormCompany.get('identification')?.disable();
-                        this.registerFormCompany.get('identificationType')?.disable();
-                        // You should fetch the company object here if needed, or pass undefined to openDialogCompany
-                        this.openDialogCompany();
-                    } else {
-                        this.messageService.add({
-                            severity: 'warn',
-                            summary: 'Advertencia',
-                            detail: 'Por favor seleccione una compañía para editar',
-                            life: 5000
-                        });
-                    }
-                }
-            },
-            
-        ];*/
     }
 
     ngOnInit(): void {
@@ -429,7 +404,7 @@ export class CompanyComponent implements OnInit {
 
                 if (response.statusCode === 200 && response.data) {
                     // Caso 1: Ya está registrado y habilitado como compañía
-                    if (response.data.isRegistered && response.data.company?.status) {
+                    if (response.data.isRegistered && response.data.company?.isEnabled) {
                         this.messageService.add({
                             severity: 'info',
                             summary: 'Información',
@@ -439,7 +414,7 @@ export class CompanyComponent implements OnInit {
                         this.dialogCompany = false;
                     }
                     // Caso 2: Está registrado pero deshabilitado
-                    else if (response.data.isRegistered && !response.data.company?.status) {
+                    else if (response.data.isRegistered && !response.data.company?.isEnabled) {
                         this.confirmEnableCompany(response.data.company);
                     }
                     // Caso 2: No está registrado como compañía, pero existe como persona (company no es null)
