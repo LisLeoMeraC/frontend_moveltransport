@@ -4,9 +4,9 @@
 </p-toolbar>
 
 <div class="card mt-4">
-    <p-table [scrollable]="true" scrollHeight="550px" styleClass="mt-4" [value]="drivers()" [loading]="isLoading()">
+    <p-table [scrollable]="true" scrollHeight="550px" styleClass="mt-4 w-full" [value]="drivers()" [loading]="isLoading()">
         <ng-template #caption>
-            <div class="flex justify-between items-center flex-column sm:flex-row">
+            <div class="flex justify-between items-center flex-column sm:flex-row gap-3">
                 <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogDriver()"></button>
 
                 <p-iconfield iconPosition="left" class="ml-auto">
@@ -20,22 +20,22 @@
 
         <ng-template pTemplate="header">
             <tr>
-                <th class="text-justify">Chofer</th>
-                <th class="text-justify">Licencia</th>
-                <th class="text-justify">Alias</th>
-                <th class="text-justify">Teléfono</th>
-                <th class="text-justify">Compañia</th>
-                <th class="text-justify">Acciones</th>
+                <th style="min-width: 180px">Chofer</th>
+                <th style="min-width: 180px">Licencia</th>
+                <th style="min-width: 180px">Alias</th>
+                <th style="min-width: 150px">Teléfono</th>
+                <th style="min-width: 180px">Compañia</th>
+                <th style="min-width: 120px">Acciones</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-driver>
             <tr>
-                <td class="text-justify">{{ driver.name || 'No registra' }}</td>
-                <td class="text-justify">{{ driver.licenseNumber || 'No registra' }}</td>
-                <td class="text-justify">{{ driver.alias || 'No registra' }}</td>
-                <td class="text-justify"> {{ driver.phone || 'No registra' }}</td>
-                <td class="text-justify">{{ driver.company?.subject.name || 'No registra' }}</td>
-                <td class="text-justify ">
+                <td>{{ driver.name || 'No registra' }}</td>
+                <td>{{ driver.licenseNumber || 'No registra' }}</td>
+                <td>{{ driver.alias || 'No registra' }}</td>
+                <td> {{ driver.phone || 'No registra' }}</td>
+                <td>{{ driver.company?.subject.name || 'No registra' }}</td>
+                <td class="text-center">
                     <button pButton pRipple type="button" icon="pi pi-pencil" class="p-danger- mb-2 mr-2" (click)="openDialogDriver(driver)"></button>
                     <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2" (click)="confirmDeleteDriver(driver)"></button>
                 </td>

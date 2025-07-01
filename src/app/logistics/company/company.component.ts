@@ -591,7 +591,6 @@ export class CompanyComponent implements OnInit {
                 life: 5000
             });
         }
-
         return isValid;
     }
 }
