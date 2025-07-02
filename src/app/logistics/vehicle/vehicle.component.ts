@@ -103,7 +103,7 @@ export class VehicleComponent implements OnInit {
             }
         });
 
-        this.searchSubject.pipe(takeUntil(this.destroy$), debounceTime(2000), distinctUntilChanged()).subscribe((term) => {
+        this.searchSubject.pipe(takeUntil(this.destroy$), debounceTime(800), distinctUntilChanged()).subscribe((term) => {
             if (term.trim() === '') {
                 this.loadVehicles(1, this.pageSize());
             } else {

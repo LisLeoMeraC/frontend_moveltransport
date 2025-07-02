@@ -70,7 +70,7 @@
         <div class="flex flex-col gap-4">
             <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col grow basis-0 gap-1">
-                    <label for="identificacion" class="text-sm">Identificación</label>
+                    <label for="identificacion" class="text-sm">Identificación <span class="text-red-500">*</span></label>
                     <div class="flex gap-2">
                         <input pInputText id="identificacion" type="text" class="w-full" autocomplete="off" formControlName="identification" maxlength="13" (keypress)="onKeyPressIdentificacion($event)" />
                         <button pButton type="button" icon="pi pi-search" class="p-button-primary74m" (click)="buscarIdentificacion()" [disabled]="editMode" pTooltip="Buscar" tooltipPosition="top"></button>
@@ -79,12 +79,12 @@
                 </div>
 
                 <div class="flex flex-col grow basis-0 gap-1">
-                    <label for="compania" class="text-sm">Tipo De Compañia</label>
+                    <label for="companyType" class="text-sm">Tipo De Compañia <span class="text-red-500">*</span></label>
                     <p-dropdown id="companyType" [options]="companyTypes" optionLabel="label" optionValue="value" placeholder="Seleccione el tipo" formControlName="type" [showClear]="true" [appendTo]="'body'" class="w-full"> </p-dropdown>
                 </div>
 
                 <div class="flex flex-col grow basis-0 gap-1">
-                    <label for="compania" class="text-sm">Tipo Identificación</label>
+                    <label for="identificationTypes" class="text-sm">Tipo Identificación <span class="text-red-500">*</span></label>
                     <p-dropdown
                         id="identificationTypes"
                         [options]="identificationTypes"

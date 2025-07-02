@@ -121,7 +121,7 @@ export class CompanyComponent implements OnInit {
             this.showNumberOnlyWarning = false;
         });
 
-        this.searchSubject.pipe(takeUntil(this.destroy$), debounceTime(2000), distinctUntilChanged()).subscribe((term) => {
+        this.searchSubject.pipe(takeUntil(this.destroy$), debounceTime(800), distinctUntilChanged()).subscribe((term) => {
             if (term.trim() === '') {
                 this.loadCompanies(1, this.pageSize(), this.selectedType);
             } else {
@@ -465,6 +465,7 @@ export class CompanyComponent implements OnInit {
                     });
                     this.habilitarControles(true);
                 }
+                
             },
             error: (err) => {
                 this.hasSearchedIdentification = false;

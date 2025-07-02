@@ -57,13 +57,13 @@
     <div class="flex flex-col gap-4">
 
          <div class="flex flex-col gap-1">
-            <label for="licenseNumber" class="text-sm">Nro. Licencia</label>
-            <input pInputText id="licenseNumber" type="text" class="w-full" autocomplete="off" formControlName="licenseNumber" (keypress)="onKeyPressLicensePhone($event)" maxlength="10" />
+            <label for="licenseNumber" class="text-sm">Nro. Licencia <span class="text-red-500">*</span></label>
+            <input pInputText id="licenseNumber" type="text" class="w-full" autocomplete="off" formControlName="licenseNumber" (keypress)="onKeyPressLicensePhone($event)" maxlength="10" required />
         </div>
 
         <div class="flex flex-col gap-1">
-            <label for="nombre" class="text-sm">Nombre</label>
-            <input pInputText id="nombre" type="text" class="w-full" autocomplete="off" formControlName="name" />
+            <label for="nombre" class="text-sm">Nombre <span class="text-red-500">*</span></label>
+            <input pInputText id="nombre" type="text" class="w-full" autocomplete="off" formControlName="name" required />
         </div>
 
         

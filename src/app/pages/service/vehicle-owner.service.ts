@@ -1,10 +1,10 @@
-    import { Injectable, signal } from '@angular/core';
+import { Injectable, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
 import { VehicleOwnerData, VehicleOwnerResponse } from '../models/vehicle-owner';
 import { ApiResponse, IdentificationType, Pagination } from '../models/company';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
-import { Observable, tap } from 'rxjs';
+import { catchError, finalize, Observable, tap, throwError } from 'rxjs';
 
 @Injectable({
     providedIn: 'root'
@@ -31,6 +31,10 @@ export class VehicleOwnerService {
         private http: HttpClient,
         private messageService: MessageService
     ) {}
+
+    private setError(message: string) {
+        this.error.set(message);
+    }
 
     loadVehicleOwners(page: number = 1, limit: number = 5): Observable<ApiResponse<VehicleOwnerResponse[]>> {
         this.loading.set(true);
@@ -173,6 +177,34 @@ export class VehicleOwnerService {
         );
     }
 
+    disableVehicleOwner(id: string): Observable<ApiResponse<VehicleOwnerResponse>> {
+        this.loading.set(true);
+        this.error.set(null);
+
+        return this.http.put<ApiResponse<VehicleOwnerResponse>>(`${this.baseUrl}/vehicle-owner/disable/${id}`, null).pipe(
+            tap((response) => {
+                if (this.handleApiResponse(response, 'Error al deshabilitar el propietario')) {
+                    //Para actualizar la lista
+                    const updatedVehicleOwners = this.vehhicleOwners().filter((vehicleOwner) => vehicleOwner.id !== id);
+                    this.vehhicleOwners.set(updatedVehicleOwners);
+                }
+            }),
+            catchError(this.handleHttpError<ApiResponse<VehicleOwnerResponse>>('Error al deshabilitar propietario')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+
+    enableVehicleOwner(id: string): Observable<ApiResponse<VehicleOwnerResponse>> {
+        this.loading.set(true);
+        this.error.set(null);
+
+        return this.http.put<ApiResponse<VehicleOwnerResponse>>(`${this.baseUrl}/vehicle-owner/enable/${id}`, null).pipe(
+            tap((response) => this.handleApiResponse(response, 'Error al habilitar al propietario')),
+            catchError(this.handleHttpError<ApiResponse<VehicleOwnerResponse>>('Error al habilitar al propietario')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+
     searchByIdentification(identification: string): Observable<ApiResponse<any>> {
         return this.http.get<ApiResponse<any>>(`${this.baseUrl}/vehicle-owner/identification/${identification}`).pipe(
             tap({
@@ -260,5 +292,24 @@ export class VehicleOwnerService {
                 }
             })
         );
+    }
+
+    private handleApiResponse<T>(response: ApiResponse<T>, fallbackError: string = 'Error'): boolean {
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+            const message = this.formatErrorMessage(response) || fallbackError;
+            this.setError(message);
+            this.loading.set(false);
+            return false;
+        }
+        return true;
+    }
+
+    private handleHttpError<T>(contextMsg = 'Error'): (error: any) => Observable<T> {
+        return (error: any) => {
+            const message = this.getErrorMessage(error) || contextMsg;
+            this.setError(message);
+            this.loading.set(false);
+            return throwError(() => error);
+        };
     }
 }

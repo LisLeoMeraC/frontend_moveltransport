@@ -223,13 +223,13 @@ export class CompanyService {
     }
 
     enableCompany(id: string): Observable<ApiResponse<CompanyResponse>> {
-    this.loading.set(true);
-    this.error.set(null);
+        this.loading.set(true);
+        this.error.set(null);
 
-    return this.http.put<ApiResponse<CompanyResponse>>(`${this.baseUrl}/company/enable/${id}`, null).pipe(
-        tap((response) => this.handleApiResponse(response, 'Error al habilitar compañía')),
-        catchError(this.handleHttpError<ApiResponse<CompanyResponse>>('Error al habilitar compañía')),
-        finalize(() => this.loading.set(false))
-    );
-}
+        return this.http.put<ApiResponse<CompanyResponse>>(`${this.baseUrl}/company/enable/${id}`, null).pipe(
+            tap((response) => this.handleApiResponse(response, 'Error al habilitar compañía')),
+            catchError(this.handleHttpError<ApiResponse<CompanyResponse>>('Error al habilitar compañía')),
+            finalize(() => this.loading.set(false))
+        );
+    }
 }

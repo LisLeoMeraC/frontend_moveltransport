@@ -42,7 +42,7 @@
                 <td>{{ vehicleOwner.subject.email || 'No registra' }}</td>
                 <td class="text-center">
                     <button pButton pRipple type="button" icon="pi pi-pencil" class="p-danger- mb-2 mr-2" (click)="openDialogVehicleOwner(vehicleOwner)"></button>
-                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2" (click)="confirmDeleteVehicleOwner(vehicleOwner)"></button>
+                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2" (click)="confirmDisableVehicleOwner(vehicleOwner)"></button>
                 </td>
             </tr>
         </ng-template>
@@ -60,7 +60,7 @@
         <div class="flex flex-col gap-4">
             <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col grow basis-0 gap-1">
-                    <label for="identificacion" class="text-sm">Identificación</label>
+                    <label for="identificacion" class="text-sm">Identificación <span class="text-red-500">*</span></label>
                     <div class="flex gap-2">
                         <input pInputText id="identificacion" type="text" class="w-full" autocomplete="off" formControlName="identification" maxlength="13" (keypress)="onKeyPressIdentificacion($event)" />
                         <button pButton type="button" icon="pi pi-search" class="p-button-primary74m" (click)="buscarIdentificacion()"  [disabled]="editMode" pTooltip="Buscar" tooltipPosition="top"></button>
@@ -69,7 +69,7 @@
                 </div>
 
                 <div class="flex flex-col grow basis-0 gap-1">
-                    <label for="compania" class="text-sm">Tipo Identificación</label>
+                    <label for="compania" class="text-sm">Tipo Identificación <span class="text-red-500">*</span></label>
                     <p-dropdown
                         id="identificationTypes"
                         [options]="identificationTypes"
@@ -87,7 +87,7 @@
 
             <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col grow basis-0 gap-1">
-                    <label for="nombre" class="text-sm">Nombre</label>
+                    <label for="nombre" class="text-sm">Nombre <span class="text-red-500">*</span></label>
                     <input pInputText id="nombre" type="text" class="w-full" autocomplete="off" formControlName="name" />
                 </div>
 
@@ -136,3 +136,48 @@
         </div>
     </ng-template>
 </p-dialog>
+
+
+<p-dialog [(visible)]="dialogDisableVehicleOwner" [modal]="true" [closable]="false" [style]="{ width: '100%', maxWidth: '400px' }" header="Confirmación requerida">
+    <div class="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
+        <div class="flex items-start gap-3">
+            <i class="pi pi-exclamation-circle text-yellow-600 text-2xl mt-1"></i>
+            <div>
+                <p class="text-sm text-gray-800 leading-relaxed">
+                    Estás a punto de deshabilitar al propietario:
+                    <span class="font-semibold text-black-400">{{ vehicleOwnerToDisable?.subject?.name }}</span
+                    >. ¿Deseas continuar?
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-2 pt-3">
+            <p-button label="Cancelar" variant="text" severity="secondary" (click)="dialogDisableVehicleOwner = false" [disabled]="isDisabling()"/>
+            <p-button label="Deshabilitar" variant="text" severity="danger" (click)="disableVehicleOwner()" [disabled]="isDisabling()" />
+        </div>
+    </ng-template>
+</p-dialog>
+
+
+<p-dialog [(visible)]="dialogEnableVehicleOwner" [modal]="true" [closable]="false" [style]="{ width: '100%', maxWidth: '400px' }" header="Confirmar habilitación">
+    <div class="border-l-4 border-blue-500 bg-blue-50 p-4 rounded">
+        <div class="flex items-start gap-3">
+            <i class="pi pi-info-circle text-blue-600 text-2xl mt-1"></i>
+            <div>
+                <p class="text-sm text-gray-800 leading-relaxed">
+                    la compañia <span class="font-semibold text-black-400">{{ vehicleOwnerToEnable?.subject?.name }}</span> está actualmente deshabilitada. ¿Deseas habilitarla nuevamente?
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-2 pt-3">
+            <p-button label="Cancelar" variant="text" severity="secondary" (click)="dialogEnableVehicleOwner = false" />
+            <p-button label="Habilitar" variant="text" severity="success" (click)="enableVehicleOwner()" [disabled]="isDisabling()" />
+        </div>
+    </ng-template>
+</p-dialog>
+

@@ -105,7 +105,7 @@ export class DriverComponent implements OnInit {
             }
         });
 
-        this.searchSubject.pipe(takeUntil(this.destroy$), debounceTime(2000), distinctUntilChanged()).subscribe((term) => {
+        this.searchSubject.pipe(takeUntil(this.destroy$), debounceTime(800), distinctUntilChanged()).subscribe((term) => {
             if (term.trim() === '') {
                 this.loadDrivers(1, this.pageSize());
             } else {

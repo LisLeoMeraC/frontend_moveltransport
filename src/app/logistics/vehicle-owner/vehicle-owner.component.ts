@@ -72,6 +72,15 @@ export class VehicleOwnerComponent implements OnInit {
     dialogDeleteVehicleOwner: boolean = false;
     vehicleOwnerToDelete: VehicleOwnerResponse | null = null;
 
+    //Para deshabiltar un propietario
+    dialogDisableVehicleOwner: boolean = false;
+    vehicleOwnerToDisable: VehicleOwnerResponse | null = null;
+    isDisabling = signal(false);
+
+    //Para haabiliraar un propietario
+    dialogEnableVehicleOwner: boolean = false;
+    vehicleOwnerToEnable: VehicleOwnerResponse | null = null;
+
     identificationTypes = this.vehicleOwnerService.getIdentificationTypes();
 
     constructor(
@@ -105,8 +114,8 @@ export class VehicleOwnerComponent implements OnInit {
         this.searchSubject
             .pipe(
                 takeUntil(this.destroy$),
-                debounceTime(2000), // 3 segundos de retardo
-                distinctUntilChanged() // Solo emite si el valor cambió
+                debounceTime(800),
+                distinctUntilChanged()
             )
             .subscribe((term) => {
                 if (term.trim() === '') {
@@ -316,14 +325,18 @@ export class VehicleOwnerComponent implements OnInit {
         this.vehicleOwnerService.searchByIdentification(identification).subscribe({
             next: (response) => {
                 if (response.statusCode === 200 && response.data) {
-                    if (response.data.isRegistered) {
+                    if (response.data.isRegistered && response.data.vehicleOwner?.isEnabled) {
                         this.messageService.add({
                             severity: 'info',
                             summary: 'Información',
                             detail: 'Ya está registrado como propietario de vehículo',
                             life: 5000
                         });
-                        this.closeDialogVehicleOwner();
+                        this.dialogVehicleOwner = false;
+                        // this.closeDialogVehicleOwner();
+                    } else if (response.data.isRegistered && !response.data.vehicleOwner?.isEnabled) {
+                        console.log("es la prueba");
+                        this.confirmEnableVehicleOwner(response.data.vehicleOwner);
                     } else if (response.data.vehicleOwner) {
                         this.patchFormWithOwnerData(response.data);
                         this.messageService.add({
@@ -340,10 +353,19 @@ export class VehicleOwnerComponent implements OnInit {
                             detail: 'No se encontró un propietario con esta identificación. Puede registrar uno nuevo.',
                             life: 5000
                         });
+                        this.habilitarControles(true);
                     }
-                   // this.habilitarControles(true);
+                    // this.habilitarControles(true);
                     this.editMode = false;
                     this.vehicleOwnerId = null;
+                } else {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Respuesta inesperada del servidor',
+                        life: 5000
+                    });
+                    this.habilitarControles(true);
                 }
             },
             error: (err) => {
@@ -364,11 +386,79 @@ export class VehicleOwnerComponent implements OnInit {
         this.registerFormVehicleOwner.get('identification')?.enable();
     }
 
+    confirmDisableVehicleOwner(vehicleOwner: VehicleOwnerResponse): void {
+        this.vehicleOwnerToDisable = vehicleOwner;
+        this.dialogDisableVehicleOwner = true;
+    }
+
+    disableVehicleOwner(): void {
+        if (!this.vehicleOwnerToDisable?.id) return;
+        this.isDisabling.set(true);
+        this.vehicleOwnerService.disableVehicleOwner(this.vehicleOwnerToDisable.id).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Propietario deshabilitado correctamente',
+                    life: 5000
+                });
+                this.dialogDisableVehicleOwner = false;
+                this.loadVehicleOwners();
+            },
+            error: (err) => {
+                console.error('Error al deshabilitar Propierario:', err);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo deshabilitar al propietario',
+                    life: 5000
+                });
+            },
+            complete: () => {
+                this.isDisabling.set(false);
+                this.vehicleOwnerToDisable = null;
+            }
+        });
+    }
+
+    confirmEnableVehicleOwner(vehicleOwner: VehicleOwnerResponse): void {
+        this.vehicleOwnerToEnable = vehicleOwner;
+        this.dialogEnableVehicleOwner = true;
+    }
+
+    enableVehicleOwner(): void {
+        if (!this.vehicleOwnerToEnable?.id) return;
+
+        this.vehicleOwnerService.enableVehicleOwner(this.vehicleOwnerToEnable.id).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Propietario habilitado correctamente',
+                    life: 5000
+                });
+                this.dialogEnableVehicleOwner = false;
+                this.dialogVehicleOwner = false;
+                this.loadVehicleOwners();
+            },
+            error: (err) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo habilitar a este propietario',
+                    life: 5000
+                });
+            }
+        });
+    }
+
+    
+
     private patchFormWithOwnerData(data: any) {
         if (data.vehicleOwner?.subject) {
             const subject = data.vehicleOwner.subject;
             const formData = {
-                identificationType: subject.identificationType, // Cambiado de data.subject a subject
+                identificationType: subject.identificationType,
                 identification: subject.identification?.trim(),
                 name: subject.name,
                 address: subject.address,
