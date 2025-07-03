@@ -24,14 +24,14 @@
 
         <ng-template pTemplate="header">
             <tr>
-                <th style="min-width: 180px">Razón Social</th>
+                <th style="min-width: 190px">Razón Social</th>
                 <th style="min-width: 140px">Tipo Empresa</th>
-                <th style="min-width: 140px">Tipo Identificación</th>
+                <th style="min-width: 130px">Tipo Identificación</th>
                 <th style="min-width: 180px">Nro. Identificación</th>
                 <th style="min-width: 250px">Dirección</th>
                 <th style="min-width: 150px">Teléfono</th>
                 <th style="min-width: 220px">Email</th>
-                <th style="min-width: 120px">Acciones</th>
+                <th class="text-center" style="min-width: 120px">Acciones</th>
             </tr>
         </ng-template>
 
@@ -49,8 +49,8 @@
                 <td>{{ company.subject.phone || 'No registra' }}</td>
                 <td>{{ company.subject.email || 'No registra' }}</td>
                 <td class="text-center">
-                    <button pButton pRipple type="button" icon="pi pi-pencil" (click)="openDialogCompany(company)" class="p-danger- mb-2 mr-2"></button>
-                    <button pButton pRipple type="button" icon="pi pi-trash" (click)="confirmDisableCompany(company)" class="p-button-danger mb-2 mr-2"></button>
+                    <p-button label="Opciones" severity="secondary" icon="pi pi-angle-down" iconPos="right" (click)="toggleMenu($event, company)" class="p-button-text p-button-ro" />
+                    <p-menu #menu [popup]="true" [model]="menuItems" [appendTo]="'body'"></p-menu>
                 </td>
             </tr>
         </ng-template>
@@ -144,7 +144,7 @@
 
     <ng-template pTemplate="footer">
         <div class="flex justify-end gap-2 pt-3">
-            <p-button label="Cancelar" variant="text" severity="secondary" (click)="dialogDisableCompany = false" [disabled]="isDisabling()"/>
+            <p-button label="Cancelar" variant="text" severity="secondary" (click)="dialogDisableCompany = false" [disabled]="isDisabling()" />
             <p-button label="Deshabilitar" variant="text" severity="danger" (click)="disableCompany()" [disabled]="isDisabling()" />
         </div>
     </ng-template>
@@ -169,7 +169,3 @@
         </div>
     </ng-template>
 </p-dialog>
-
-
-
-

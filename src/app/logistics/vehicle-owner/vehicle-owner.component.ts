@@ -3,7 +3,7 @@ import { Component, effect, inject, OnInit, signal, ViewChild } from '@angular/c
 import { AbstractControl, FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { MatPaginator, MatPaginatorIntl, MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MessageService } from 'primeng/api';
+import { MenuItem, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
@@ -19,6 +19,7 @@ import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 import { IdentificationType } from '../../pages/models/company';
 import { getSpanishPaginatorIntl } from '../../config/getSpanishPaginatorIntl';
 import { VehicleOwnerResponse } from '../../pages/models/vehicle-owner';
+import { Menu, MenuModule } from 'primeng/menu';
 
 @Component({
     selector: 'app-vehicle-owner',
@@ -33,6 +34,7 @@ import { VehicleOwnerResponse } from '../../pages/models/vehicle-owner';
         ButtonModule,
         ReactiveFormsModule,
         DialogModule,
+        MenuModule,
         DropdownModule,
         ToastModule,
         MatPaginatorModule,
@@ -80,8 +82,10 @@ export class VehicleOwnerComponent implements OnInit {
     //Para haabiliraar un propietario
     dialogEnableVehicleOwner: boolean = false;
     vehicleOwnerToEnable: VehicleOwnerResponse | null = null;
-
     identificationTypes = this.vehicleOwnerService.getIdentificationTypes();
+
+    menuItems:MenuItem[]=[];
+    selectedVehicleOwner?:VehicleOwnerResponse;
 
     constructor(
         private fb: FormBuilder,
@@ -128,6 +132,7 @@ export class VehicleOwnerComponent implements OnInit {
 
     ngOnInit(): void {
         this.loadVehicleOwners();
+        this.initMenuItems();
     }
 
     ngOnDestroy(): void {
@@ -143,6 +148,39 @@ export class VehicleOwnerComponent implements OnInit {
             }
         });
     }
+
+    
+    initMenuItems(): void {
+            this.menuItems = [
+                {
+                    label: 'Editar',
+                    icon: 'pi pi-pencil',
+                    command: () => {
+                        if (this.selectedVehicleOwner) {
+                            this.openDialogVehicleOwner(this.selectedVehicleOwner);
+                        }
+                    }
+                },
+                {
+                    label: 'Eliminar',
+                    icon: 'pi pi-trash',
+                    command: () => {
+                        if (this.selectedVehicleOwner) {
+                            this.confirmDisableVehicleOwner(this.selectedVehicleOwner);
+                        }
+                    }
+                }
+            ];
+        }
+    
+        toggleMenu(event: Event, vehicleOwner: VehicleOwnerResponse): void {
+            this.selectedVehicleOwner = vehicleOwner;
+            this.menu.toggle(event);
+        }
+    
+        @ViewChild('menu') menu!: Menu;
+    
+
 
     ngAfterViewInit(): void {
         this.paginator.page.subscribe((event) => {

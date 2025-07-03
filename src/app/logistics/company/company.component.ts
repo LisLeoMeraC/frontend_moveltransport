@@ -20,6 +20,7 @@ import { TableModule } from 'primeng/table';
 import { DropdownModule } from 'primeng/dropdown';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SplitButtonModule } from 'primeng/splitbutton';
+import { Menu, MenuModule } from 'primeng/menu';
 
 @Component({
     selector: 'app-company',
@@ -38,6 +39,7 @@ import { SplitButtonModule } from 'primeng/splitbutton';
         ToastModule,
         MatPaginatorModule,
         MatProgressSpinnerModule,
+        MenuModule,
         SelectButtonModule,
         SplitButtonModule,
         FormsModule,
@@ -83,10 +85,13 @@ export class CompanyComponent implements OnInit {
     isSubmitted = true;
     isDisabled = false;
 
+    menuItems: MenuItem[] = [];
     selectedCompany?: CompanyResponse;
 
     identificationTypes = this.companyService.getIdentificationTypes();
     companyTypes = this.companyService.getCompanyTypes();
+
+     
 
     @ViewChild(MatPaginator) paginator!: MatPaginator;
 
@@ -132,33 +137,46 @@ export class CompanyComponent implements OnInit {
 
     ngOnInit(): void {
         this.loadCompanies();
+         this.initMenuItems();
     }
 
-    getMenuItems(company: CompanyResponse): MenuItem[] {
-        return [
+
+    selectCompany(company: CompanyResponse) {
+        this.selectedCompany = company;
+        console.log('Compañía seleccionada:', company.id);
+    }
+
+
+    initMenuItems(): void {
+        this.menuItems = [
             {
                 label: 'Editar',
                 icon: 'pi pi-pencil',
                 command: () => {
-                    console.log('Editando compañía ID:', company.id);
-                    this.openDialogCompany(company);
+                    if (this.selectedCompany) {
+                        this.openDialogCompany(this.selectedCompany);
+                    }
                 }
             },
             {
                 label: 'Eliminar',
                 icon: 'pi pi-trash',
                 command: () => {
-                    console.log('Eliminando compañía ID:', company.id);
-                    // this.confirmDelete(company);
+                    if (this.selectedCompany) {
+                        this.confirmDisableCompany(this.selectedCompany);
+                    }
                 }
             }
         ];
     }
 
-    selectCompany(company: CompanyResponse) {
+    toggleMenu(event: Event, company: CompanyResponse): void {
         this.selectedCompany = company;
-        console.log('Compañía seleccionada:', company.id);
+        this.menu.toggle(event);
     }
+
+    @ViewChild('menu') menu!: Menu;
+
 
     typeCompany: any[] = [
         { name: 'Cliente', value: 'client' },

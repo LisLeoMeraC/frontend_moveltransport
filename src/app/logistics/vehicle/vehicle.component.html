@@ -37,7 +37,7 @@
                 <td>{{ vehicle.owner?.subject?.name || 'No registra' }}</td>
                 <td>{{ vehicle.defaultDriver?.name || 'No asignado' }}</td>
                 <td class="text-center">
-                    <button pButton pRipple type="button" icon="pi pi-pencil" class="p-danger- mb-2 mr-2"></button>
+                    <button pButton pRipple type="button" icon="pi pi-pencil" (click)="openDialogVehicle(vehicle)" class="p-danger- mb-2 mr-2"></button>
                     <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2"></button>
                 </td>
             </tr>
@@ -51,7 +51,7 @@
     <mat-paginator [length]="pagination().totalRecords" [pageSize]="pageSize()" [pageIndex]="pagination().currentPage - 1" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons aria-label="Select page"> </mat-paginator>
 </div>
 
-<p-dialog header="Agregar Vehículo" [(visible)]="dialogVehicle" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false" (onhide)="closeDialogVehicle()">
+<p-dialog [header]="editMode? 'Editar Vehículo': 'Agregar Vehículo'" [(visible)]="dialogVehicle" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false" (onhide)="closeDialogVehicle()">
     <form class="p-fluid" [formGroup]="formVehicle" (ngSubmit)="onSubmitVehicle()">
         <div class="flex flex-col gap-4">
             <div class="flex flex-wrap gap-4">
@@ -162,7 +162,7 @@
         </div>
 
         <div class="flex justify-end mt-4">
-            <button pButton label="Registrar" icon="pi pi-save" type="submit" class="p-button-primary"></button>
+            <button pButton [label]=" editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary"></button>
         </div>
     </form>
 </p-dialog>

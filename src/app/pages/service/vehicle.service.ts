@@ -114,6 +114,42 @@ export class VehicleService {
         );
     }
 
+    updateVehicle(id:string, vehicleData:VehicleData):Observable<ApiResponse<VehicleResponse>>{
+        this.loading.set(true);
+        this.error.set(null);
+
+        return this.http.put<ApiResponse<VehicleResponse>>(`${this.baseUrl}/vehicle/${id}`, vehicleData).pipe(
+            tap({
+                next:(response)=>{
+                    if(response.statusCode>=200 && response.statusCode<300 ){
+                    }
+                    else {
+                        const errorMessage = this.formatErrorMessage(response);
+                        this.error.set(errorMessage);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: errorMessage,
+                            life: 5000
+                        });
+                    }
+                    this.loading.set(false);
+                },
+                error: (err) => {
+                    const errorMessage = this.getErrorMessage(err);
+                    this.error.set(errorMessage);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: errorMessage,
+                        life: 5000
+                    });
+                    this.loading.set(false);
+                }
+               })
+        );
+    }
+
     searchVehicles(query: string, page: number = 1, limit: number = 5): Observable<ApiResponse<VehicleResponse[]>> {
         this.loading.set(true); 
         this.error.set(null);

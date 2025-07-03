@@ -20,7 +20,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { VehicleOwnerService } from '../../pages/service/vehicle-owner.service';
 import { DriverService } from '../../pages/service/driver.service';
-import { VehicleData } from '../../pages/models/vehicle';
+import { VehicleData, VehicleResponse } from '../../pages/models/vehicle';
 import { SelectModule } from 'primeng/select';
 
 @Component({
@@ -72,9 +72,16 @@ export class VehicleComponent implements OnInit {
     //para buscar un vehículo
     searchTerm: string = '';
 
+    //Para editar un vehiculo
+    editMode = false;
+    vehicleId: string | null = null;
+
     isSubmitted = true;
 
     @ViewChild(MatPaginator) paginator!: MatPaginator;
+
+
+    
 
     constructor(
         private fb: FormBuilder,
@@ -128,12 +135,29 @@ export class VehicleComponent implements OnInit {
         });
     }
 
-    openDialogVehicle() {
+    openDialogVehicle(vehicle?: VehicleResponse) {
         this.formVehicle.reset();
-        this.dialogVehicle = true;
-        this.loadCompanies(1, this.pageSize(), 'carrier');
+        this.editMode = !!vehicle;
+        this.vehicleId = vehicle?.id || null;
+         this.loadCompanies(1, this.pageSize(), 'carrier');
         this.loadOwners(1, this.pageSize());
         this.loadDrivers(1, this.pageSize());
+
+        if (this.editMode && vehicle) {
+            this.formVehicle.patchValue({
+                plate: vehicle.plate,
+                brand: vehicle.brand,
+                model: vehicle.model,
+                year: vehicle.year?.toString(),
+                color: vehicle.color,
+                companyId: vehicle.companyId,
+                ownerId: vehicle.ownerId,
+                defaultDriverId: vehicle.defaultDriverId
+            });
+        }
+
+        this.dialogVehicle = true;
+       
     }
 
     closeDialogVehicle() {
@@ -202,9 +226,56 @@ export class VehicleComponent implements OnInit {
     }
 
     onSubmitVehicle() {
-        this.isSubmitted = true;
+        if (!this.checkFormValidity()) {
+            return;
+        }
 
-        if (this.formVehicle.invalid) {
+        this.isSubmitted = true;
+        const formValue = this.formVehicle.getRawValue();
+
+        let vehicleData: any = {
+            // plate: this.formVehicle.value.plate,
+            brand: formValue.brand,
+            model: formValue.model,
+            year: parseInt(formValue.year, 10),
+            color: formValue.color,
+            // companyId: this.formVehicle.value.companyId,
+            //ownerId: this.formVehicle.value.ownerId,
+            defaultDriverId: formValue.defaultDriverId
+        };
+
+        if (!this.editMode) {
+            vehicleData = {
+                ...vehicleData,
+                plate: this.formVehicle.value.plate,
+                companyId: this.formVehicle.value.companyId,
+                ownerId: this.formVehicle.value.ownerId
+            };
+        }
+
+        const operation=this.editMode && this.vehicleId ? this.vehicleService.updateVehicle(this.vehicleId, vehicleData): this.vehicleService.registerVehicle(vehicleData);
+        
+        operation.subscribe({
+            next:()=>{
+                this.formVehicle.reset();
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: this.editMode ? 'Vehiculo actualizado correctamente' : 'Vehiculo registrado correctamente',
+                    life: 5000
+                });
+                this.editMode=false;
+                this.vehicleId=null;
+                this.loadVehicles();
+                this.isSubmitted=false;
+                this.dialogVehicle=false;
+            },
+            error:()=>{
+                this.isSubmitted=false;
+            }
+        });
+
+        /*  if (this.formVehicle.invalid) {
             // Marcar todos los campos como tocados para mostrar errores de validación
             this.formVehicle.markAllAsTouched();
 
@@ -263,6 +334,22 @@ export class VehicleComponent implements OnInit {
                     console.error('Error al registrar vehículo:', err);
                     this.isSubmitted = false;
                 }
-            });
+            });*/
+    }
+
+    checkFormValidity(): boolean {
+        const requiredFields = ['plate', 'ownerId', 'companyId'];
+        let isValid = true;
+        let invalidFields: string[] = [];
+
+        requiredFields.forEach((field) => {
+            const control = this.formVehicle.get(field);
+            if (control && control.invalid) {
+                control.markAsTouched();
+                isValid = false;
+                invalidFields.push(field);
+            }
+        });
+        return isValid;
     }
 }
