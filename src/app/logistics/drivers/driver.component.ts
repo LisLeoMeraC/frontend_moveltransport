@@ -197,23 +197,19 @@ export class DriverComponent implements OnInit {
         this.destroy$.complete();
     }
 
-    loadCompanies(page: number = 1, limit: number = this.pageSize(), type: 'carrier'): void {
-        this.companyService.loadCompanies(false, page, limit, type).subscribe(() => {
-            if (this.paginator) {
-                this.paginator.pageIndex = page - 1;
-                this.paginator.pageSize = limit;
-            }
-        });
-    }
+    loadCompanies(): void {
+    this.companyService.loadCompanies({ status: false, type: 'carrier' }).subscribe();
+}
+
 
     loadDrivers(page: number = 1, limit: number = this.pageSize()): void {
-        this.driverService.loadDrivers(page, limit).subscribe(() => {
-            if (this.paginator) {
-                this.paginator.pageIndex = page - 1;
-                this.paginator.pageSize = limit;
-            }
-        });
-    }
+    this.driverService.loadDrivers({ page, limit }).subscribe(() => {
+        if (this.paginator) {
+            this.paginator.pageIndex = page - 1;
+            this.paginator.pageSize = limit;
+        }
+    });
+}
 
     openDialogDriver(driver?: DriverResponse) {
         this.formDriver.reset();
@@ -221,7 +217,7 @@ export class DriverComponent implements OnInit {
         this.driverId = driver?.id || null;
         this.isSubmitted = false;
         this.dialogDriver = true;
-        this.loadCompanies(1, this.pageSize(), 'carrier');
+        this.loadCompanies();
         if (this.editMode) {
             this.formDriver.get('licenseNumber')?.disable();
         } else {

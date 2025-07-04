@@ -80,8 +80,9 @@ export class VehicleComponent implements OnInit {
 
     @ViewChild(MatPaginator) paginator!: MatPaginator;
 
-
-    
+    isLoaDriver = this.driverService.isLoading;
+    totalRecords = signal(0);
+    lastSearchTerm = '';
 
     constructor(
         private fb: FormBuilder,
@@ -139,9 +140,12 @@ export class VehicleComponent implements OnInit {
         this.formVehicle.reset();
         this.editMode = !!vehicle;
         this.vehicleId = vehicle?.id || null;
-         this.loadCompanies(1, this.pageSize(), 'carrier');
-        this.loadOwners(1, this.pageSize());
-        this.loadDrivers(1, this.pageSize());
+        this.loadCompanies();
+        //this.loadOwners(1, this.pageSize());
+        //this.loadDrivers(1, this.pageSize());
+
+        this.loadAllDrivers();
+        this.loadAllVehicleOwners();
 
         if (this.editMode && vehicle) {
             this.formVehicle.patchValue({
@@ -155,9 +159,7 @@ export class VehicleComponent implements OnInit {
                 defaultDriverId: vehicle.defaultDriverId
             });
         }
-
         this.dialogVehicle = true;
-       
     }
 
     closeDialogVehicle() {
@@ -172,17 +174,26 @@ export class VehicleComponent implements OnInit {
     searchVehicle(term: string, page: number = 1, limit: number = this.pageSize()): void {
         this.vehicleService.searchVehicles(term, page, limit).subscribe(() => {
             if (this.paginator) {
-                // Resetear el paginador solo si es una nueva búsqueda (página 1)
                 if (page === 1) {
                     this.paginator.pageIndex = 0;
                 }
-                // Actualizar el tamaño de página si es diferente
                 if (limit !== this.paginator.pageSize) {
                     this.paginator.pageSize = limit;
                 }
             }
         });
     }
+
+    loadAllDrivers(): void {
+        this.driverService.loadDrivers().subscribe();
+    }
+
+    loadAllVehicleOwners():void{
+        this.ownerService.loadVehicleOwners().subscribe();
+    }
+
+    loadCompanies(): void {
+    this.companyService.loadCompanies({ status: false, type: 'carrier' }).subscribe();}
 
     ngOnDestroy(): void {
         this.destroy$.next();
@@ -198,33 +209,9 @@ export class VehicleComponent implements OnInit {
         });
     }
 
-    loadCompanies(page: number = 1, limit: number = this.pageSize(), type: 'carrier'): void {
-        this.companyService.loadCompanies(false, page, limit, type).subscribe(() => {
-            if (this.paginator) {
-                this.paginator.pageIndex = page - 1;
-                this.paginator.pageSize = limit;
-            }
-        });
-    }
+   
 
-    loadDrivers(page: number = 1, limit: number = this.pageSize()): void {
-        this.driverService.loadDrivers(page, limit).subscribe(() => {
-            if (this.paginator) {
-                this.paginator.pageIndex = page - 1;
-                this.paginator.pageSize = limit;
-            }
-        });
-    }
-
-    loadOwners(page: number = 1, limit: number = this.pageSize()): void {
-        this.ownerService.loadVehicleOwners(page, limit).subscribe(() => {
-            if (this.paginator) {
-                this.paginator.pageIndex = page - 1;
-                this.paginator.pageSize = limit;
-            }
-        });
-    }
-
+   
     onSubmitVehicle() {
         if (!this.checkFormValidity()) {
             return;
@@ -253,10 +240,10 @@ export class VehicleComponent implements OnInit {
             };
         }
 
-        const operation=this.editMode && this.vehicleId ? this.vehicleService.updateVehicle(this.vehicleId, vehicleData): this.vehicleService.registerVehicle(vehicleData);
-        
+        const operation = this.editMode && this.vehicleId ? this.vehicleService.updateVehicle(this.vehicleId, vehicleData) : this.vehicleService.registerVehicle(vehicleData);
+
         operation.subscribe({
-            next:()=>{
+            next: () => {
                 this.formVehicle.reset();
                 this.messageService.add({
                     severity: 'success',
@@ -264,14 +251,14 @@ export class VehicleComponent implements OnInit {
                     detail: this.editMode ? 'Vehiculo actualizado correctamente' : 'Vehiculo registrado correctamente',
                     life: 5000
                 });
-                this.editMode=false;
-                this.vehicleId=null;
+                this.editMode = false;
+                this.vehicleId = null;
                 this.loadVehicles();
-                this.isSubmitted=false;
-                this.dialogVehicle=false;
+                this.isSubmitted = false;
+                this.dialogVehicle = false;
             },
-            error:()=>{
-                this.isSubmitted=false;
+            error: () => {
+                this.isSubmitted = false;
             }
         });
 

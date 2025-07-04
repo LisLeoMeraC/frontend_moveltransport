@@ -254,7 +254,7 @@ export class CompanyComponent implements OnInit {
     }
 
     loadCompanies(page: number = 1, limit: number = this.pageSize(), type?: string): void {
-        this.companyService.loadCompanies(true, page, limit, type).subscribe(() => {
+        this.companyService.loadCompanies({ status: false, page, limit, type }).subscribe(() => {
             if (this.paginator) {
                 this.paginator.pageIndex = page - 1;
                 this.paginator.pageSize = limit;

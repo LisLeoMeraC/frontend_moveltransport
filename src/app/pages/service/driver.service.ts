@@ -32,34 +32,27 @@ export class DriverService {
         private messageService: MessageService
     ) {}
 
-    loadDrivers(page: number = 1, limit: number = 5): Observable<ApiResponse<DriverResponse[]>> {
-        this.loading.set(true);
-        this.error.set(null);
+    loadDrivers(options?: { page?: number; limit?: number }): Observable<ApiResponse<DriverResponse[]>> {
+    this.loading.set(true);
+    this.error.set(null);
 
-        let params = new HttpParams().set('page', page.toString()).set('limit', limit.toString()).set('includeCompany', 'true');
+    let params = new HttpParams().set('includeCompany', 'true');
 
-        return this.http.get<ApiResponse<DriverResponse[]>>(`${this.baseUrl}/driver/enabled`, { params }).pipe(
-            tap({
-                next: (response) => {
-                    if (response.statusCode >= 200 && response.statusCode < 300) {
-                        this.drivers.set(response.data || []);
-                        if (response.pagination) {
-                            this.pagination.set(response.pagination);
-                        }
-                    } else {
-                        const errorMessage = this.formatErrorMessage(response);
-                        this.error.set(errorMessage);
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: errorMessage,
-                            life: 5000
-                        });
+    if (options?.page && options?.limit) {
+        params = params.set('page', options.page.toString()).set('limit', options.limit.toString());
+    }
+
+    return this.http.get<ApiResponse<DriverResponse[]>>(`${this.baseUrl}/driver/enabled`, { params }).pipe(
+        tap({
+            next: (response) => {
+                if (response.statusCode >= 200 && response.statusCode < 300) {
+                    this.drivers.set(response.data || []);
+
+                    if (response.pagination) {
+                        this.pagination.set(response.pagination);
                     }
-                    this.loading.set(false);
-                },
-                error: (err) => {
-                    const errorMessage = this.getErrorMessage(err);
+                } else {
+                    const errorMessage = this.formatErrorMessage(response);
                     this.error.set(errorMessage);
                     this.messageService.add({
                         severity: 'error',
@@ -67,11 +60,23 @@ export class DriverService {
                         detail: errorMessage,
                         life: 5000
                     });
-                    this.loading.set(false);
                 }
-            })
-        );
-    }
+                this.loading.set(false);
+            },
+            error: (err) => {
+                const errorMessage = this.getErrorMessage(err);
+                this.error.set(errorMessage);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: errorMessage,
+                    life: 5000
+                });
+                this.loading.set(false);
+            }
+        })
+    );
+}
 
     private formatErrorMessage(response: ApiResponse<any>): string {
         if (response.error) {
@@ -203,6 +208,9 @@ export class DriverService {
             })
         );
     }
+
+    // Añade este método en tu servicio
+    
 
     deleteDriver(id: string): Observable<ApiResponse<any>> {
         this.loading.set(true);

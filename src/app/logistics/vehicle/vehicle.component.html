@@ -51,7 +51,7 @@
     <mat-paginator [length]="pagination().totalRecords" [pageSize]="pageSize()" [pageIndex]="pagination().currentPage - 1" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons aria-label="Select page"> </mat-paginator>
 </div>
 
-<p-dialog [header]="editMode? 'Editar Vehículo': 'Agregar Vehículo'" [(visible)]="dialogVehicle" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false" (onhide)="closeDialogVehicle()">
+<p-dialog [header]="editMode ? 'Editar Vehículo' : 'Agregar Vehículo'" [(visible)]="dialogVehicle" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false" (onhide)="closeDialogVehicle()">
     <form class="p-fluid" [formGroup]="formVehicle" (ngSubmit)="onSubmitVehicle()">
         <div class="flex flex-col gap-4">
             <div class="flex flex-wrap gap-4">
@@ -76,18 +76,17 @@
                         [filter]="true"
                         filterPlaceholder="Buscar propietario"
                         [loading]="isLoading()"
-                        scrollHeight="150px"
-                        class="w-full"
-                    >
+                        class="w-full custom-select">
                         <ng-template pTemplate="empty">
-                            <div class="p-2">No existe el propietario.</div>
+                            <div class="p-2">
+                                {{ isLoading() ? 'Cargando propietarios...' : 'No se encontraron propietarios' }}
+                            </div>
                         </ng-template>
                     </p-select>
                 </div>
             </div>
 
             <div class="flex flex-wrap gap-4">
-
                 <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="marca" class="text-sm">Marca</label>
                     <input pInputText id="marca" type="text" class="w-full" autocomplete="off" formControlName="brand" />
@@ -100,7 +99,6 @@
             </div>
 
             <div class="flex flex-wrap gap-4">
-
                 <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="year" class="text-sm">Año</label>
                     <input pInputText id="year" type="text" class="w-full" autocomplete="off" formControlName="year" />
@@ -113,7 +111,6 @@
             </div>
 
             <div class="flex flex-wrap gap-4">
-
                 <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="compania" class="text-sm">Compañía</label>
                     <p-select
@@ -149,12 +146,13 @@
                         [showClear]="true"
                         [appendTo]="'body'"
                         [filter]="true"
-                        filterPlaceholder="Buscar conductor por defecto"
+                        filterPlaceholder="Buscar conductor"
                         [loading]="isLoading()"
-                        class="w-full custom-select"
-                    >
+                        class="w-full custom-select">
                         <ng-template pTemplate="empty">
-                            <div class="p-2">No existe el conductor.</div>
+                            <div class="p-2">
+                                {{ isLoading() ? 'Cargando conductores...' : 'No se encontraron conductores' }}
+                            </div>
                         </ng-template>
                     </p-select>
                 </div>
@@ -162,7 +160,7 @@
         </div>
 
         <div class="flex justify-end mt-4">
-            <button pButton [label]=" editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary"></button>
+            <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary"></button>
         </div>
     </form>
 </p-dialog>

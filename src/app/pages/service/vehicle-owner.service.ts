@@ -36,11 +36,14 @@ export class VehicleOwnerService {
         this.error.set(message);
     }
 
-    loadVehicleOwners(page: number = 1, limit: number = 5): Observable<ApiResponse<VehicleOwnerResponse[]>> {
+    loadVehicleOwners(options?:{page?:number; limit?:number}): Observable<ApiResponse<VehicleOwnerResponse[]>> {
         this.loading.set(true);
         this.error.set(null);
 
-        let params = new HttpParams().set('page', page.toString()).set('limit', limit.toString());
+         let params = new HttpParams();
+         if(options?.page && options?.limit){
+            params=params.set('page', options.page.toString()).set('limit',options.limit.toString());
+         }
 
         return this.http.get<ApiResponse<VehicleOwnerResponse[]>>(`${this.baseUrl}/vehicle-owner/enabled`, { params }).pipe(
             tap({

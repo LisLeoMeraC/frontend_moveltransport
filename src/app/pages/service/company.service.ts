@@ -104,11 +104,20 @@ export class CompanyService {
         );
     }
 
-    loadCompanies(status: boolean, page: number = 1, limit: number = 5, type?: string): Observable<ApiResponse<CompanyResponse[]>> {
+    loadCompanies(options: { status: boolean; page?: number; limit?: number; type?: string }): Observable<ApiResponse<CompanyResponse[]>> {
+        const { status, page, limit, type } = options;
+
         this.loading.set(status);
         this.error.set(null);
 
-        let params = new HttpParams().set('page', page.toString()).set('limit', limit.toString());
+        let params = new HttpParams();
+
+        // Si se especifica paginación, se añade
+        if (page && limit) {
+            params = params.set('page', page.toString()).set('limit', limit.toString());
+        }
+
+        // Si se especifica el tipo, se añade
         if (type) {
             params = params.set('type', type);
         }
@@ -117,6 +126,7 @@ export class CompanyService {
             tap((response) => {
                 if (this.handleApiResponse(response)) {
                     this.companies.set(response.data || []);
+
                     if (response.pagination) {
                         this.pagination.set(response.pagination);
                     }
@@ -126,7 +136,6 @@ export class CompanyService {
             finalize(() => this.loading.set(false))
         );
     }
-
     searchCompanies(term: string, page: number = 1, limit: number = 10, type?: string): Observable<ApiResponse<CompanyResponse[]>> {
         this.loading.set(true);
         this.error.set(null);

@@ -141,7 +141,7 @@ export class VehicleOwnerComponent implements OnInit {
     }
 
     loadVehicleOwners(page: number = 1, limit: number = this.pageSize()): void {
-        this.vehicleOwnerService.loadVehicleOwners(page, limit).subscribe(() => {
+        this.vehicleOwnerService.loadVehicleOwners({ page, limit }).subscribe(() => {
             if (this.paginator) {
                 this.paginator.pageIndex = page - 1;
                 this.paginator.pageSize = limit;
