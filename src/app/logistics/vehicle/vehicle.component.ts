@@ -127,7 +127,7 @@ export class VehicleComponent implements OnInit {
     ngAfterViewInit(): void {
         this.paginator.page.subscribe((event) => {
             this.pageSize.set(event.pageSize);
-            const newPage = event.pageSize !== this.pagination().pageSize ? 1 : event.pageIndex + 1;
+            const newPage = event.pageIndex + 1;
             if (this.searchTerm.trim() === '') {
                 this.loadVehicles(newPage, event.pageSize);
             } else {
@@ -141,8 +141,6 @@ export class VehicleComponent implements OnInit {
         this.editMode = !!vehicle;
         this.vehicleId = vehicle?.id || null;
         this.loadCompanies();
-        //this.loadOwners(1, this.pageSize());
-        //this.loadDrivers(1, this.pageSize());
 
         this.loadAllDrivers();
         this.loadAllVehicleOwners();
@@ -209,9 +207,7 @@ export class VehicleComponent implements OnInit {
         });
     }
 
-   
 
-   
     onSubmitVehicle() {
         if (!this.checkFormValidity()) {
             return;
@@ -262,66 +258,7 @@ export class VehicleComponent implements OnInit {
             }
         });
 
-        /*  if (this.formVehicle.invalid) {
-            // Marcar todos los campos como tocados para mostrar errores de validación
-            this.formVehicle.markAllAsTouched();
-
-            // Mostrar mensajes de error específicos
-            if (this.formVehicle.get('plate')?.errors?.['required']) {
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Por favor, ingrese una placa.',
-                    life: 5000
-                });
-            }
-
-            if (this.formVehicle.get('ownerId')?.errors?.['required']) {
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Por favor, seleccione un propietario.',
-                    life: 5000
-                });
-            }
-
-            return;
-        }
-
-        const vehicleData: any = {
-            plate: this.formVehicle.value.plate,
-            brand: this.formVehicle.value.brand,
-            model: this.formVehicle.value.model,
-            year: parseInt(this.formVehicle.value.year, 10),
-            color: this.formVehicle.value.color,
-            companyId: this.formVehicle.value.companyId,
-            ownerId: this.formVehicle.value.ownerId,
-            defaultDriverId: this.formVehicle.value.defaultDriverId
-        };
-
-        console.log(JSON.stringify(vehicleData));
-
-        this.vehicleService
-            .registerVehicle(vehicleData)
-            .pipe(takeUntil(this.destroy$))
-            .subscribe({
-                next: () => {
-                    this.dialogVehicle = false;
-                    this.formVehicle.reset();
-                    this.messageService.add({
-                        severity: 'success',
-                        summary: 'Éxito',
-                        detail: 'Vehículo registrado correctamente',
-                        life: 5000
-                    });
-                    this.isSubmitted = false;
-                    this.loadVehicles();
-                },
-                error: (err) => {
-                    console.error('Error al registrar vehículo:', err);
-                    this.isSubmitted = false;
-                }
-            });*/
+        
     }
 
     checkFormValidity(): boolean {

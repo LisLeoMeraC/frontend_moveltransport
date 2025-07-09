@@ -121,7 +121,7 @@ export class DriverComponent implements OnInit {
     ngAfterViewInit(): void {
         this.paginator.page.subscribe((event) => {
             this.pageSize.set(event.pageSize);
-            const newPage = event.pageSize !== this.pagination().pageSize ? 1 : event.pageIndex + 1;
+            const newPage = event.pageIndex + 1;
             if (this.searchTerm.trim() === '') {
                 this.loadDrivers(newPage, event.pageSize);
             } else {

@@ -20,6 +20,7 @@ export class CompanyService {
         totalRecords: 0
     });
 
+
     readonly companiesList = this.companies.asReadonly();
     readonly isLoading = this.loading.asReadonly();
     readonly hasError = this.error.asReadonly();
@@ -109,7 +110,6 @@ export class CompanyService {
 
         this.loading.set(status);
         this.error.set(null);
-
         let params = new HttpParams();
 
         // Si se especifica paginación, se añade

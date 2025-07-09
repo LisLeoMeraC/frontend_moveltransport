@@ -187,7 +187,7 @@ export class CompanyComponent implements OnInit {
     ngAfterViewInit(): void {
         this.paginator.page.subscribe((event) => {
             this.pageSize.set(event.pageSize);
-            const newPage = event.pageSize !== this.pagination().pageSize ? 1 : event.pageIndex + 1;
+            const newPage =  event.pageIndex + 1;
             if (this.searchTerm.trim() === '') {
                 this.loadCompanies(newPage, event.pageSize, this.selectedType);
             } else {
@@ -254,7 +254,7 @@ export class CompanyComponent implements OnInit {
     }
 
     loadCompanies(page: number = 1, limit: number = this.pageSize(), type?: string): void {
-        this.companyService.loadCompanies({ status: false, page, limit, type }).subscribe(() => {
+        this.companyService.loadCompanies({ status: true, page, limit, type }).subscribe(() => {
             if (this.paginator) {
                 this.paginator.pageIndex = page - 1;
                 this.paginator.pageSize = limit;
