@@ -36,8 +36,8 @@
                 <td> {{ driver.phone || 'No registra' }}</td>
                 <td>{{ driver.company?.subject.name || 'No registra' }}</td>
                 <td class="text-center">
-                    <button pButton pRipple type="button" icon="pi pi-pencil" class="p-danger- mb-2 mr-2" (click)="openDialogDriver(driver)"></button>
-                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2" (click)="confirmDeleteDriver(driver)"></button>
+                    <p-button label="Opciones" severity="secondary" icon="pi pi-angle-down" iconPos="right" (click)="toggleMenu($event, driver)" class="p-button-text p-button-ro" />
+                    <p-menu #menu [popup]="true" [model]="menuItems" [appendTo]="'body'"></p-menu>
                 </td>
             </tr>
         </ng-template>

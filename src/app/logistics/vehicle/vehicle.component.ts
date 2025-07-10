@@ -12,7 +12,7 @@ import { VehicleService } from '../../pages/service/vehicle.service';
 import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 import { MatPaginator, MatPaginatorIntl, MatPaginatorModule } from '@angular/material/paginator';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MessageService } from 'primeng/api';
+import { MenuItem, MessageService } from 'primeng/api';
 import { getSpanishPaginatorIntl } from '../../config/getSpanishPaginatorIntl';
 import { CompanyService } from '../../pages/service/company.service';
 import { ToastModule } from 'primeng/toast';
@@ -22,6 +22,7 @@ import { VehicleOwnerService } from '../../pages/service/vehicle-owner.service';
 import { DriverService } from '../../pages/service/driver.service';
 import { VehicleData, VehicleResponse } from '../../pages/models/vehicle';
 import { SelectModule } from 'primeng/select';
+import { Menu, MenuModule } from 'primeng/menu';
 
 @Component({
     selector: 'app-vehicle',
@@ -37,6 +38,7 @@ import { SelectModule } from 'primeng/select';
         ReactiveFormsModule,
         DialogModule,
         DropdownModule,
+        MenuModule,
         ToastModule,
         SelectModule,
         MatPaginatorModule,
@@ -51,6 +53,9 @@ import { SelectModule } from 'primeng/select';
 export class VehicleComponent implements OnInit {
     dialogVehicle: boolean = false;
     formVehicle: FormGroup;
+
+    dialogUpdateOwner: boolean = false;
+    formUpdateOwner: FormGroup;
 
     private vehicleService = inject(VehicleService);
     private companyService = inject(CompanyService);
@@ -76,13 +81,25 @@ export class VehicleComponent implements OnInit {
     editMode = false;
     vehicleId: string | null = null;
 
+    //Para eliminar un vehiculo
+    dialogDeleteVehicle: boolean = false;
+    vehicleToDelete: VehicleResponse | null = null;
+
     isSubmitted = true;
+
+    isDeleting = false;
+
+    currentVehicleId: string = '';
+    currentOwnerName: string = '';
 
     @ViewChild(MatPaginator) paginator!: MatPaginator;
 
     isLoaDriver = this.driverService.isLoading;
     totalRecords = signal(0);
     lastSearchTerm = '';
+
+    menuItems: MenuItem[] = [];
+    selectedVehicle?: VehicleResponse;
 
     constructor(
         private fb: FormBuilder,
@@ -97,6 +114,10 @@ export class VehicleComponent implements OnInit {
             companyId: [''],
             ownerId: ['', Validators.required],
             defaultDriverId: ['']
+        });
+
+        this.formUpdateOwner = this.fb.group({
+            ownerId: ['', Validators.required]
         });
 
         effect(() => {
@@ -122,6 +143,7 @@ export class VehicleComponent implements OnInit {
 
     ngOnInit(): void {
         this.loadVehicles();
+        this.initMenuItems();
     }
 
     ngAfterViewInit(): void {
@@ -135,6 +157,76 @@ export class VehicleComponent implements OnInit {
             }
         });
     }
+
+    initMenuItems(): void {
+        this.menuItems = [
+            {
+                label: 'Editar',
+                icon: 'pi pi-pencil',
+                command: () => {
+                    if (this.selectedVehicle) {
+                        this.openDialogVehicle(this.selectedVehicle);
+                    }
+                }
+            },
+            {
+                label: 'Elimnar',
+                icon: 'pi pi-trash',
+                command: () => {
+                    if (this.selectedVehicle) {
+                        this.confirmDeleteVehicle(this.selectedVehicle);
+                    }
+                }
+            },
+            {
+                label: 'Cambiar Propietario',
+                icon: 'pi pi-replay',
+                command: () => {
+                     this.openUpdateOwnerDialog(this.selectedVehicle);
+                }
+            }
+        ];
+    }
+
+    toggleMenu(event: Event, vehicle: VehicleResponse): void {
+        this.selectedVehicle = vehicle;
+        this.menu.toggle(event);
+    }
+
+    openUpdateOwnerDialog(vehicle: any): void {
+        this.currentVehicleId = vehicle.id;
+        console.log("propietariio actual: "+this.currentVehicleId)
+        this.currentOwnerName = vehicle.owner?.subject?.name || 'Sin propietario';
+        this.loadAllVehicleOwners();
+        this.dialogUpdateOwner = true;
+        this.loadVehicles();
+    }
+
+    onUpdateOwner(): void {
+        if (this.formUpdateOwner.invalid) {
+            this.formUpdateOwner.markAllAsTouched();
+            return;
+        }
+
+        const ownerId = this.formUpdateOwner.get('ownerId')?.value;
+        const payload = { ownerId };
+
+        console.log('Payload enviado a updateVehicleOwner:', JSON.stringify(payload));
+
+        this.vehicleService.updateVehicleOwner(this.currentVehicleId, ownerId).subscribe({
+            next: () => {
+                this.dialogUpdateOwner = false;
+                this.formUpdateOwner.reset();
+                // Recargar la lista de vehículos si es necesario
+                this.vehicleService.loadVehicles().subscribe();
+            },
+            error: (err) => {
+                console.error('Error al actualizar propietario:', err);
+            }
+        });
+    }
+
+    @ViewChild('menu') menu!: Menu;
 
     openDialogVehicle(vehicle?: VehicleResponse) {
         this.formVehicle.reset();
@@ -158,6 +250,11 @@ export class VehicleComponent implements OnInit {
             });
         }
         this.dialogVehicle = true;
+    }
+
+    closeDialogUpdateOwner(): void {
+        this.dialogUpdateOwner = false;
+        this.formUpdateOwner.reset();
     }
 
     closeDialogVehicle() {
@@ -186,12 +283,13 @@ export class VehicleComponent implements OnInit {
         this.driverService.loadDrivers().subscribe();
     }
 
-    loadAllVehicleOwners():void{
+    loadAllVehicleOwners(): void {
         this.ownerService.loadVehicleOwners().subscribe();
     }
 
     loadCompanies(): void {
-    this.companyService.loadCompanies({ status: false, type: 'carrier' }).subscribe();}
+        this.companyService.loadCompanies({ status: false, type: 'carrier' }).subscribe();
+    }
 
     ngOnDestroy(): void {
         this.destroy$.next();
@@ -206,7 +304,6 @@ export class VehicleComponent implements OnInit {
             }
         });
     }
-
 
     onSubmitVehicle() {
         if (!this.checkFormValidity()) {
@@ -257,8 +354,6 @@ export class VehicleComponent implements OnInit {
                 this.isSubmitted = false;
             }
         });
-
-        
     }
 
     checkFormValidity(): boolean {
@@ -275,5 +370,46 @@ export class VehicleComponent implements OnInit {
             }
         });
         return isValid;
+    }
+
+    confirmDeleteVehicle(vehicle: VehicleResponse): void {
+        this.vehicleToDelete = vehicle;
+        this.dialogDeleteVehicle = true;
+    }
+
+    deleteVehicle(): void {
+        if (!this.vehicleToDelete) return;
+        this.isDeleting = true;
+
+        this.vehicleService.deleteVehicle(this.vehicleToDelete.id).subscribe({
+            next: (response) => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Vehiculo eliminado correctamente',
+                    life: 5000
+                });
+                this.isDeleting = false;
+
+                if (this.searchTerm.trim() === '') {
+                    this.loadVehicles(this.pagination().currentPage, this.pageSize());
+                } else {
+                    this.searchVehicle(this.searchTerm, this.pagination().currentPage, this.pageSize());
+                }
+            },
+            error: (err) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo eliminar el vehiculo',
+                    life: 5000
+                });
+            },
+            complete: () => {
+                this.dialogDeleteVehicle = false;
+                this.isDeleting = false;
+                this.vehicleToDelete = null;
+            }
+        });
     }
 }

@@ -3,7 +3,7 @@ import { Component, effect, inject, OnInit, signal, ViewChild } from '@angular/c
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatPaginator, MatPaginatorIntl, MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinner, MatProgressSpinnerModule } from '@angular/material/progress-spinner';
-import { MessageService } from 'primeng/api';
+import { MenuItem, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
 import { DropdownModule } from 'primeng/dropdown';
@@ -20,6 +20,7 @@ import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 import { DriverService } from '../../pages/service/driver.service';
 import { DriverResponse } from '../../pages/models/driver';
 import { SelectModule } from 'primeng/select';
+import { Menu, MenuModule } from 'primeng/menu';
 
 @Component({
     selector: 'app-drivers',
@@ -36,6 +37,7 @@ import { SelectModule } from 'primeng/select';
         DialogModule,
         DropdownModule,
         ToastModule,
+        MenuModule,
         MatPaginatorModule,
         MatProgressSpinnerModule,
         SelectModule,
@@ -79,6 +81,10 @@ export class DriverComponent implements OnInit {
 
     isDeleting = false;
 
+
+    menuItems:MenuItem[]=[];
+    selectedDriver?: DriverResponse;
+
     @ViewChild(MatPaginator) paginator!: MatPaginator;
 
     constructor(
@@ -100,7 +106,7 @@ export class DriverComponent implements OnInit {
                     severity: 'error',
                     summary: 'Error',
                     detail: error,
-                    life: 5000
+                    life: 5000,
                 });
             }
         });
@@ -116,7 +122,40 @@ export class DriverComponent implements OnInit {
 
     ngOnInit(): void {
         this.loadDrivers();
+        this.initMenuItems();
     }
+
+
+    initMenuItems():void{
+        this.menuItems=[
+            {
+                label:" Editar",
+                icon:'pi pi-pencil',
+                command:()=>{
+                    if(this.selectedDriver){
+                        this.openDialogDriver(this.selectedDriver);
+                    }
+                }
+            },
+            {
+                label:'Eliminar',
+                icon:'pi pi-trash',
+                command:()=>{
+                    if(this.selectedDriver){
+                        this.confirmDeleteDriver(this.selectedDriver);
+                    }
+                }
+            }
+        ];
+    }
+
+    toggleMenu(event:Event, driver:DriverResponse):void{
+        this.selectedDriver=driver;
+        this.menu.toggle(event);
+    }
+
+     @ViewChild('menu') menu!: Menu;
+
 
     ngAfterViewInit(): void {
         this.paginator.page.subscribe((event) => {

@@ -4,9 +4,9 @@
 </p-toolbar>
 
 <div class="card mt-4">
-    <p-table [scrollable]="true" scrollHeight="400px" styleClass="mt-4" [value]="vehicles()" [loading]="isLoading()">
+    <p-table [scrollable]="true" scrollHeight="550px" styleClass="mt-4 w-full" [value]="vehicles()" [loading]="isLoading()">
         <ng-template #caption>
-            <div class="flex justify-between items-center flex-column sm:flex-row">
+            <div class="flex justify-between items-center flex-column sm:flex-row gap-3">
                 <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogVehicle()"></button>
                 <p-iconfield iconPosition="left" class="ml-auto">
                     <p-inputicon>
@@ -19,13 +19,13 @@
 
         <ng-template pTemplate="header">
             <tr>
-                <th>Placa</th>
-                <th>Marca</th>
-                <th>Color</th>
-                <th>Compañia</th>
-                <th>Propietario</th>
-                <th>Conductor</th>
-                <th>Acciones</th>
+                <th style="min-width: 180px">Placa</th>
+                <th style="min-width: 180px">Marca</th>
+                <th style="min-width: 180px">Color</th>
+                <th style="min-width: 180px">Compañia</th>
+                <th style="min-width: 180px">Propietario</th>
+                <th style="min-width: 180px">Conductor</th>
+                <th style="min-width: 120px">Acciones</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-vehicle>
@@ -37,8 +37,8 @@
                 <td>{{ vehicle.owner?.subject?.name || 'No registra' }}</td>
                 <td>{{ vehicle.defaultDriver?.name || 'No asignado' }}</td>
                 <td class="text-center">
-                    <button pButton pRipple type="button" icon="pi pi-pencil" (click)="openDialogVehicle(vehicle)" class="p-danger- mb-2 mr-2"></button>
-                    <button pButton pRipple type="button" icon="pi pi-trash" class="p-button-danger mr-2 mb-2"></button>
+                    <p-button label="Opciones" severity="secondary" icon="pi pi-angle-down" iconPos="right" (click)="toggleMenu($event, vehicle)" class="p-button-text p-button-ro" />
+                    <p-menu #menu [popup]="true" [model]="menuItems" [appendTo]="'body'"></p-menu>
                 </td>
             </tr>
         </ng-template>
@@ -76,7 +76,8 @@
                         [filter]="true"
                         filterPlaceholder="Buscar propietario"
                         [loading]="isLoading()"
-                        class="w-full custom-select">
+                        class="w-full custom-select"
+                    >
                         <ng-template pTemplate="empty">
                             <div class="p-2">
                                 {{ isLoading() ? 'Cargando propietarios...' : 'No se encontraron propietarios' }}
@@ -148,7 +149,8 @@
                         [filter]="true"
                         filterPlaceholder="Buscar conductor"
                         [loading]="isLoading()"
-                        class="w-full custom-select">
+                        class="w-full custom-select"
+                    >
                         <ng-template pTemplate="empty">
                             <div class="p-2">
                                 {{ isLoading() ? 'Cargando conductores...' : 'No se encontraron conductores' }}
@@ -163,4 +165,68 @@
             <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary"></button>
         </div>
     </form>
+</p-dialog>
+
+<p-dialog header="Cambiar Propietario" [(visible)]="dialogUpdateOwner" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false" (onhide)="closeDialogUpdateOwner()">
+    <form class="p-fluid" [formGroup]="formUpdateOwner" (ngSubmit)="onUpdateOwner()">
+        <div class="flex flex-col gap-4">
+            <!-- Propietario actual -->
+            <div class="flex flex-col gap-1">
+                <label class="text-sm">Propietario Actual</label>
+                <input pInputText [value]="currentOwnerName" readonly class="w-full" />
+            </div>
+
+            <!-- Selector de nuevo propietario -->
+            <div class="flex flex-col gap-1">
+                <label for="owner" class="text-sm">Nuevo Propietario</label>
+                <p-dropdown
+                    id="owner"
+                    [options]="owners()"
+                    optionLabel="subject.name"
+                    formControlName="ownerId"
+                    [optionValue]="'id'"
+                    placeholder="Seleccione el propietario"
+                    [showClear]="true"
+                    [appendTo]="'body'"
+                    [filter]="true"
+                    filterPlaceholder="Buscar propietario"
+                    [loading]="isLoading()"
+                    class="w-full"
+                >
+                    <ng-template pTemplate="empty">
+                        <div class="p-2">
+                            {{ isLoading() ? 'Cargando propietarios...' : 'No se encontraron propietarios' }}
+                        </div>
+                    </ng-template>
+                </p-dropdown>
+                <small *ngIf="formUpdateOwner.get('ownerId')?.touched && formUpdateOwner.get('ownerId')?.errors?.['required']" class="p-error"> El propietario es requerido </small>
+            </div>
+        </div>
+
+        <div class="flex justify-end mt-4">
+            <button pButton label="Actualizar" icon="pi pi-save" type="submit" class="p-button-primary"></button>
+        </div>
+    </form>
+</p-dialog>
+
+<p-dialog [(visible)]="dialogDeleteVehicle" [modal]="true" [closable]="false" [style]="{ width: '100%', maxWidth: '400px' }" header="Confirmación requerida">
+    <div class="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
+        <div class="flex items-start gap-3">
+            <i class="pi pi-exclamation-circle text-yellow-600 text-2xl mt-1"></i>
+            <div>
+                <p class="text-sm text-gray-800 leading-relaxed">
+                    Estás a punto de eliminar este Vehículo con placa
+                    <span class="font-semibold text-red-600">{{ vehicleToDelete?.plate }}</span
+                    >. Esta acción no se puede deshacer. ¿Deseas continuar?
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <ng-template pTemplate="footer">
+        <div class="flex justify-end gap-2 pt-3">
+            <button pButton label="Cancelar" class="p-button-secondary p-button-sm" (click)="dialogDeleteVehicle = false"></button>
+            <button pButton label="Eliminar" icon="pi pi-trash" class="p-button-sm p-button-danger" (click)="deleteVehicle()" [disabled]="isDeleting"></button>
+        </div>
+    </ng-template>
 </p-dialog>

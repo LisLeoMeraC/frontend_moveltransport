@@ -114,16 +114,15 @@ export class VehicleService {
         );
     }
 
-    updateVehicle(id:string, vehicleData:VehicleData):Observable<ApiResponse<VehicleResponse>>{
+    updateVehicle(id: string, vehicleData: VehicleData): Observable<ApiResponse<VehicleResponse>> {
         this.loading.set(true);
         this.error.set(null);
 
         return this.http.put<ApiResponse<VehicleResponse>>(`${this.baseUrl}/vehicle/${id}`, vehicleData).pipe(
             tap({
-                next:(response)=>{
-                    if(response.statusCode>=200 && response.statusCode<300 ){
-                    }
-                    else {
+                next: (response) => {
+                    if (response.statusCode >= 200 && response.statusCode < 300) {
+                    } else {
                         const errorMessage = this.formatErrorMessage(response);
                         this.error.set(errorMessage);
                         this.messageService.add({
@@ -146,19 +145,16 @@ export class VehicleService {
                     });
                     this.loading.set(false);
                 }
-               })
+            })
         );
     }
 
     searchVehicles(query: string, page: number = 1, limit: number = 5): Observable<ApiResponse<VehicleResponse[]>> {
-        this.loading.set(true); 
+        this.loading.set(true);
         this.error.set(null);
 
         // Cambia 'query' por 'plate' para coincidir con la API
-        let params = new HttpParams()
-            .set('plate', query)
-            .set('page', page.toString())
-            .set('limit', limit.toString());
+        let params = new HttpParams().set('plate', query).set('page', page.toString()).set('limit', limit.toString());
 
         return this.http.get<ApiResponse<VehicleResponse[]>>(`${this.baseUrl}/vehicle/search`, { params }).pipe(
             tap({
@@ -177,6 +173,35 @@ export class VehicleService {
                             detail: errorMessage,
                             life: 5000
                         });
+                    }
+                    this.loading.set(false);
+                },
+                error: (err) => {
+                    const errorMessage = this.getErrorMessage(err);
+                    this.error.set(errorMessage);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: errorMessage,
+                        life: 5000
+                    });
+                    this.loading.set(false);
+                }
+            })
+        );
+    }
+
+    deleteVehicle(id: string): Observable<ApiResponse<any>> {
+        this.loading.set(true);
+        this.error.set(null);
+
+        return this.http.delete<ApiResponse<any>>(`${this.baseUrl}/vehicle/${id}`).pipe(
+            tap({
+                next: (response) => {
+                    if (response.statusCode >= 200 && response.statusCode < 300) {
+                    } else {
+                        const errorMessage = this.formatErrorMessage(response);
+                        this.error.set(errorMessage);
                     }
                     this.loading.set(false);
                 },
@@ -217,5 +242,46 @@ export class VehicleService {
         return error.message || 'Error al conectar con el servidor';
     }
 
-    
+    updateVehicleOwner(vehicleId: string, ownerId: string): Observable<ApiResponse<VehicleResponse>> {
+        this.loading.set(true);
+        this.error.set(null);
+
+        const params = new HttpParams().set('vehicleId', vehicleId).set('ownerId', ownerId);
+
+        return this.http.put<ApiResponse<any>>(`${this.baseUrl}/vehicle/update-ownership`, null, { params }).pipe(
+            tap({
+                next: (response) => {
+                    if (response.statusCode >= 200 && response.statusCode < 300) {
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: 'Propietario actualizado correctamente',
+                            life: 5000
+                        });
+                    } else {
+                        const errorMessage = this.formatErrorMessage(response);
+                        this.error.set(errorMessage);
+                        this.messageService.add({
+                            severity: 'error',
+                            summary: 'Error',
+                            detail: errorMessage,
+                            life: 5000
+                        });
+                    }
+                    this.loading.set(false);
+                },
+                error: (err) => {
+                    const errorMessage = this.getErrorMessage(err);
+                    this.error.set(errorMessage);
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: errorMessage,
+                        life: 5000
+                    });
+                    this.loading.set(false);
+                }
+            })
+        );
+    }
 }
