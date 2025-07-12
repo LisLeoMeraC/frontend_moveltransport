@@ -3,7 +3,7 @@ import { environment } from '../../../environments/environment';
 import { VehicleData, VehicleResponse } from '../models/vehicle';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
-import { Observable, tap } from 'rxjs';
+import { catchError, finalize, Observable, tap, throwError } from 'rxjs';
 import { ApiResponse } from '../models/company';
 
 @Injectable({
@@ -31,6 +31,12 @@ export class VehicleService {
         private http: HttpClient,
         private messageService: MessageService
     ) {}
+
+    private setError(message: string) {
+        this.error.set(message);
+    }
+
+    
 
     loadVehicles(page: number = 1, limit: number = 5): Observable<ApiResponse<VehicleResponse[]>> {
         this.loading.set(true);
@@ -249,39 +255,31 @@ export class VehicleService {
         const params = new HttpParams().set('vehicleId', vehicleId).set('ownerId', ownerId);
 
         return this.http.put<ApiResponse<any>>(`${this.baseUrl}/vehicle/update-ownership`, null, { params }).pipe(
-            tap({
-                next: (response) => {
-                    if (response.statusCode >= 200 && response.statusCode < 300) {
-                        this.messageService.add({
-                            severity: 'success',
-                            summary: 'Éxito',
-                            detail: 'Propietario actualizado correctamente',
-                            life: 5000
-                        });
-                    } else {
-                        const errorMessage = this.formatErrorMessage(response);
-                        this.error.set(errorMessage);
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: errorMessage,
-                            life: 5000
-                        });
-                    }
-                    this.loading.set(false);
-                },
-                error: (err) => {
-                    const errorMessage = this.getErrorMessage(err);
-                    this.error.set(errorMessage);
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: errorMessage,
-                        life: 5000
-                    });
-                    this.loading.set(false);
-                }
-            })
+            tap((response)=> this.handleApiResponse(response)),
+            catchError(this.handleHttpError<ApiResponse<VehicleResponse>>('Error al modificar al propierario')),
+            finalize(()=> this.loading.set(false))         
         );
     }
+
+
+    private handleApiResponse<T>(response: ApiResponse<T>, fallbackError: string = 'Error'): boolean {
+        if (response.statusCode < 200 || response.statusCode >= 300) {
+            const message = this.formatErrorMessage(response) || fallbackError;
+            this.setError(message);
+            this.loading.set(false);
+            return false;
+        }
+        return true;
+    }
+
+    private handleHttpError<T>(contextMsg = 'Error'): (error: any) => Observable<T> {
+            return (error: any) => {
+                const message = this.getErrorMessage(error) || contextMsg;
+                this.setError(message);
+                this.loading.set(false);
+                return throwError(() => error);
+            };
+        }
+    
+       
 }

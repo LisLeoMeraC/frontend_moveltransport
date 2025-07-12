@@ -21,6 +21,7 @@ import { DriverService } from '../../pages/service/driver.service';
 import { DriverResponse } from '../../pages/models/driver';
 import { SelectModule } from 'primeng/select';
 import { Menu, MenuModule } from 'primeng/menu';
+import { PaginatorModule } from 'primeng/paginator';
 
 @Component({
     selector: 'app-drivers',
@@ -37,6 +38,7 @@ import { Menu, MenuModule } from 'primeng/menu';
         DialogModule,
         DropdownModule,
         ToastModule,
+        PaginatorModule,
         MenuModule,
         MatPaginatorModule,
         MatProgressSpinnerModule,
@@ -352,5 +354,18 @@ export class DriverComponent implements OnInit {
                 this.isSubmitted = false;
             }
         });
+    }
+
+    onPageChange(event: any): void {
+        const newPage = event.page + 1; // PrimeNG usa base 0
+        const newSize = event.rows;
+
+        this.pageSize.set(newSize);
+
+        if (this.searchTerm.trim() === '') {
+            this.loadDrivers(newPage, newSize);
+        } else {
+            this.searchDrivers(this.searchTerm, newPage, newSize);
+        }
     }
 }

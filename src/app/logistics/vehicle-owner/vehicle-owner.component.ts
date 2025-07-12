@@ -20,6 +20,7 @@ import { IdentificationType } from '../../pages/models/company';
 import { getSpanishPaginatorIntl } from '../../config/getSpanishPaginatorIntl';
 import { VehicleOwnerResponse } from '../../pages/models/vehicle-owner';
 import { Menu, MenuModule } from 'primeng/menu';
+import { PaginatorModule } from 'primeng/paginator';
 
 @Component({
     selector: 'app-vehicle-owner',
@@ -34,6 +35,7 @@ import { Menu, MenuModule } from 'primeng/menu';
         ButtonModule,
         ReactiveFormsModule,
         DialogModule,
+        PaginatorModule,
         MenuModule,
         DropdownModule,
         ToastModule,
@@ -590,5 +592,18 @@ export class VehicleOwnerComponent implements OnInit {
                 this.vehicleOwnerToDelete = null;
             }
         });
+    }
+
+    onPageChange(event: any): void {
+        const newPage = event.page + 1; // PrimeNG usa base 0
+        const newSize = event.rows;
+
+        this.pageSize.set(newSize);
+
+        if (this.searchTerm.trim() === '') {
+            this.loadVehicleOwners(newPage, newSize);
+        } else {
+            this.searchVehicleOwner(this.searchTerm, newPage, newSize);
+        }
     }
 }

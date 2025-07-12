@@ -52,7 +52,8 @@
             </tr>
         </ng-template>
     </p-table>
-    <mat-paginator [length]="pagination().totalRecords" [pageSize]="pageSize()" [pageIndex]="pagination().currentPage - 1" [pageSizeOptions]="[5, 10, 25, 100]" showFirstLastButtons aria-label="Select page"> </mat-paginator>
+    <p-paginator [rows]="pageSize()" [first]="(pagination().currentPage - 1) * pageSize()" [totalRecords]="pagination().totalRecords" [rowsPerPageOptions]="[5, 10, 25, 100]" (onPageChange)="onPageChange($event)" styleClass="dark-paginator">
+    </p-paginator>
 </div>
 
 <p-dialog [header]="editMode ? 'Editar Propietario' : 'Agregar Propietario'" [(visible)]="dialogVehicleOwner" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '35vw' }" [modal]="true" [draggable]="false" [resizable]="false">

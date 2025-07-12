@@ -21,6 +21,7 @@ import { DropdownModule } from 'primeng/dropdown';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { Menu, MenuModule } from 'primeng/menu';
+import { PaginatorModule } from 'primeng/paginator';
 
 @Component({
     selector: 'app-company',
@@ -42,6 +43,7 @@ import { Menu, MenuModule } from 'primeng/menu';
         MenuModule,
         SelectButtonModule,
         SplitButtonModule,
+        PaginatorModule,
         FormsModule,
         ConfirmDialogModule
     ],
@@ -91,8 +93,6 @@ export class CompanyComponent implements OnInit {
     identificationTypes = this.companyService.getIdentificationTypes();
     companyTypes = this.companyService.getCompanyTypes();
 
-     
-
     @ViewChild(MatPaginator) paginator!: MatPaginator;
 
     constructor(
@@ -137,15 +137,13 @@ export class CompanyComponent implements OnInit {
 
     ngOnInit(): void {
         this.loadCompanies();
-         this.initMenuItems();
+        this.initMenuItems();
     }
-
 
     selectCompany(company: CompanyResponse) {
         this.selectedCompany = company;
         console.log('Compañía seleccionada:', company.id);
     }
-
 
     initMenuItems(): void {
         this.menuItems = [
@@ -177,7 +175,6 @@ export class CompanyComponent implements OnInit {
 
     @ViewChild('menu') menu!: Menu;
 
-
     typeCompany: any[] = [
         { name: 'Cliente', value: 'client' },
         { name: 'Transportista', value: 'carrier' },
@@ -187,7 +184,7 @@ export class CompanyComponent implements OnInit {
     ngAfterViewInit(): void {
         this.paginator.page.subscribe((event) => {
             this.pageSize.set(event.pageSize);
-            const newPage =  event.pageIndex + 1;
+            const newPage = event.pageIndex + 1;
             if (this.searchTerm.trim() === '') {
                 this.loadCompanies(newPage, event.pageSize, this.selectedType);
             } else {
@@ -483,7 +480,6 @@ export class CompanyComponent implements OnInit {
                     });
                     this.habilitarControles(true);
                 }
-                
             },
             error: (err) => {
                 this.hasSearchedIdentification = false;
@@ -611,5 +607,18 @@ export class CompanyComponent implements OnInit {
             });
         }
         return isValid;
+    }
+
+    onPageChange(event: any): void {
+        const newPage = event.page + 1; // PrimeNG usa base 0
+        const newSize = event.rows;
+
+        this.pageSize.set(newSize);
+
+        if (this.searchTerm.trim() === '') {
+            this.loadCompanies(newPage, newSize);
+        } else {
+            this.searchCompanies(this.searchTerm, newPage, newSize);
+        }
     }
 }

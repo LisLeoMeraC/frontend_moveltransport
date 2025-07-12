@@ -23,7 +23,7 @@ import { DriverService } from '../../pages/service/driver.service';
 import { VehicleData, VehicleResponse } from '../../pages/models/vehicle';
 import { SelectModule } from 'primeng/select';
 import { Menu, MenuModule } from 'primeng/menu';
-
+import { PaginatorModule } from 'primeng/paginator';
 @Component({
     selector: 'app-vehicle',
     standalone: true,
@@ -38,6 +38,7 @@ import { Menu, MenuModule } from 'primeng/menu';
         ReactiveFormsModule,
         DialogModule,
         DropdownModule,
+        PaginatorModule,
         MenuModule,
         ToastModule,
         SelectModule,
@@ -182,7 +183,7 @@ export class VehicleComponent implements OnInit {
                 label: 'Cambiar Propietario',
                 icon: 'pi pi-replay',
                 command: () => {
-                     this.openUpdateOwnerDialog(this.selectedVehicle);
+                    this.openUpdateOwnerDialog(this.selectedVehicle);
                 }
             }
         ];
@@ -195,7 +196,7 @@ export class VehicleComponent implements OnInit {
 
     openUpdateOwnerDialog(vehicle: any): void {
         this.currentVehicleId = vehicle.id;
-        console.log("propietariio actual: "+this.currentVehicleId)
+        console.log('propietariio actual: ' + this.currentVehicleId);
         this.currentOwnerName = vehicle.owner?.subject?.name || 'Sin propietario';
         this.loadAllVehicleOwners();
         this.dialogUpdateOwner = true;
@@ -214,11 +215,16 @@ export class VehicleComponent implements OnInit {
         console.log('Payload enviado a updateVehicleOwner:', JSON.stringify(payload));
 
         this.vehicleService.updateVehicleOwner(this.currentVehicleId, ownerId).subscribe({
-            next: () => {
+            next: (response) => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Propietario actualizado correctamente',
+                    life: 5000
+                });
                 this.dialogUpdateOwner = false;
                 this.formUpdateOwner.reset();
-                // Recargar la lista de vehículos si es necesario
-                this.vehicleService.loadVehicles().subscribe();
+                this.loadVehicles();
             },
             error: (err) => {
                 console.error('Error al actualizar propietario:', err);
@@ -411,5 +417,18 @@ export class VehicleComponent implements OnInit {
                 this.vehicleToDelete = null;
             }
         });
+    }
+
+    onPageChange(event: any): void {
+        const newPage = event.page + 1; // PrimeNG usa base 0
+        const newSize = event.rows;
+
+        this.pageSize.set(newSize);
+
+        if (this.searchTerm.trim() === '') {
+            this.loadVehicles(newPage, newSize);
+        } else {
+            this.searchVehicle(this.searchTerm, newPage, newSize);
+        }
     }
 }
