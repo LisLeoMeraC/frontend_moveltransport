@@ -320,22 +320,24 @@ export class VehicleComponent implements OnInit {
         const formValue = this.formVehicle.getRawValue();
 
         let vehicleData: any = {
-            // plate: this.formVehicle.value.plate,
             brand: formValue.brand,
             model: formValue.model,
             year: parseInt(formValue.year, 10),
             color: formValue.color,
-            // companyId: this.formVehicle.value.companyId,
-            //ownerId: this.formVehicle.value.ownerId,
             defaultDriverId: formValue.defaultDriverId
         };
 
         if (!this.editMode) {
             vehicleData = {
                 ...vehicleData,
-                plate: this.formVehicle.value.plate,
-                companyId: this.formVehicle.value.companyId,
-                ownerId: this.formVehicle.value.ownerId
+                plate: formValue.plate,
+                companyId: formValue.companyId,
+                ownerId: formValue.ownerId
+            };
+        } else {
+            vehicleData = {
+                ...vehicleData,
+                companyId: formValue.companyId
             };
         }
 
