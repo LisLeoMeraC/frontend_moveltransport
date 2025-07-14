@@ -21,7 +21,8 @@ import { DropdownModule } from 'primeng/dropdown';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { SplitButtonModule } from 'primeng/splitbutton';
 import { Menu, MenuModule } from 'primeng/menu';
-import { PaginatorModule } from 'primeng/paginator';
+import { Paginator, PaginatorModule } from 'primeng/paginator';
+import { SelectModule } from 'primeng/select';
 
 @Component({
     selector: 'app-company',
@@ -35,6 +36,7 @@ import { PaginatorModule } from 'primeng/paginator';
         InputIconModule,
         ButtonModule,
         ReactiveFormsModule,
+        SelectModule,
         DialogModule,
         DropdownModule,
         ToastModule,
@@ -64,7 +66,9 @@ export class CompanyComponent implements OnInit {
     isLoading = this.companyService.isLoading;
     hasError = this.companyService.hasError;
     pagination = this.companyService.paginationData;
+
     pageSize = signal(5);
+    first = signal(0);
 
     selectedType: string | undefined;
 
@@ -92,8 +96,6 @@ export class CompanyComponent implements OnInit {
 
     identificationTypes = this.companyService.getIdentificationTypes();
     companyTypes = this.companyService.getCompanyTypes();
-
-    @ViewChild(MatPaginator) paginator!: MatPaginator;
 
     constructor(
         private fb: FormBuilder,
@@ -181,18 +183,6 @@ export class CompanyComponent implements OnInit {
         { name: 'Ambos', value: 'both' }
     ];
 
-    ngAfterViewInit(): void {
-        this.paginator.page.subscribe((event) => {
-            this.pageSize.set(event.pageSize);
-            const newPage = event.pageIndex + 1;
-            if (this.searchTerm.trim() === '') {
-                this.loadCompanies(newPage, event.pageSize, this.selectedType);
-            } else {
-                this.searchCompanies(this.searchTerm, newPage, event.pageSize, this.selectedType);
-            }
-        });
-    }
-
     ngOnDestroy(): void {
         this.destroy$.next();
         this.destroy$.complete();
@@ -235,30 +225,19 @@ export class CompanyComponent implements OnInit {
         });
     }
 
-    searchCompanies(term: string, page: number = 1, limit: number = this.pageSize(), type?: string): void {
-        this.companyService.searchCompanies(term, page, limit, type).subscribe(() => {
-            if (this.paginator) {
-                // Resetear el paginador solo si es una nueva búsqueda (página 1)
-                if (page === 1) {
-                    this.paginator.pageIndex = 0;
-                }
-                // Actualizar el tamaño de página si es diferente
-                if (limit !== this.paginator.pageSize) {
-                    this.paginator.pageSize = limit;
-                }
-            }
-        });
-    }
+    @ViewChild('paginator') paginator!: Paginator;
 
     loadCompanies(page: number = 1, limit: number = this.pageSize(), type?: string): void {
         this.companyService.loadCompanies({ status: true, page, limit, type }).subscribe(() => {
-            if (this.paginator) {
-                this.paginator.pageIndex = page - 1;
-                this.paginator.pageSize = limit;
-            }
+            if (page === 1) this.first.set(0); // Reset si es nueva búsqueda
         });
     }
 
+    searchCompanies(term: string, page: number = 1, limit: number = this.pageSize(), type?: string): void {
+        this.companyService.searchCompanies(term, page, limit, type).subscribe(() => {
+            if (page === 1) this.first.set(0);
+        });
+    }
     onTypeChange(event: any) {
         if (event && event.value !== undefined) {
             this.selectedType = event.value;
