@@ -21,7 +21,7 @@ import { DriverService } from '../../pages/service/driver.service';
 import { DriverResponse } from '../../pages/models/driver';
 import { SelectModule } from 'primeng/select';
 import { Menu, MenuModule } from 'primeng/menu';
-import { PaginatorModule } from 'primeng/paginator';
+import { Paginator, PaginatorModule } from 'primeng/paginator';
 
 @Component({
     selector: 'app-drivers',
@@ -66,7 +66,9 @@ export class DriverComponent implements OnInit {
     isLoading = this.driverService.isLoading;
     hasError = this.driverService.hasError;
     pagination = this.driverService.paginationData;
+    
     pageSize = signal(5);
+    first=signal(0);
 
     //para editar un conductor
     editMode = false;
@@ -87,7 +89,8 @@ export class DriverComponent implements OnInit {
     menuItems:MenuItem[]=[];
     selectedDriver?: DriverResponse;
 
-    @ViewChild(MatPaginator) paginator!: MatPaginator;
+    @ViewChild('paginator') paginator!: Paginator;
+    
 
     constructor(
         private fb: FormBuilder,
@@ -159,17 +162,7 @@ export class DriverComponent implements OnInit {
      @ViewChild('menu') menu!: Menu;
 
 
-    ngAfterViewInit(): void {
-        this.paginator.page.subscribe((event) => {
-            this.pageSize.set(event.pageSize);
-            const newPage = event.pageIndex + 1;
-            if (this.searchTerm.trim() === '') {
-                this.loadDrivers(newPage, event.pageSize);
-            } else {
-                this.searchDrivers(this.searchTerm, newPage, event.pageSize);
-            }
-        });
-    }
+   
 
     onSearchChange(): void {
         // Resetear siempre a la primera página al cambiar el término de búsqueda
@@ -178,16 +171,7 @@ export class DriverComponent implements OnInit {
 
     searchDrivers(term: string, page: number = 1, limit: number = this.pageSize()): void {
         this.driverService.searchDrivers(term, page, limit).subscribe(() => {
-            if (this.paginator) {
-                // Resetear el paginador solo si es una nueva búsqueda (página 1)
-                if (page === 1) {
-                    this.paginator.pageIndex = 0;
-                }
-                // Actualizar el tamaño de página si es diferente
-                if (limit !== this.paginator.pageSize) {
-                    this.paginator.pageSize = limit;
-                }
-            }
+            if(page===1)this.first.set(0);
         });
     }
 
@@ -246,8 +230,7 @@ export class DriverComponent implements OnInit {
     loadDrivers(page: number = 1, limit: number = this.pageSize()): void {
     this.driverService.loadDrivers({ page, limit }).subscribe(() => {
         if (this.paginator) {
-            this.paginator.pageIndex = page - 1;
-            this.paginator.pageSize = limit;
+            if(page===1) this.first.set(0);
         }
     });
 }

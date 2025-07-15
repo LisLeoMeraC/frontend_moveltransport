@@ -20,7 +20,8 @@ import { IdentificationType } from '../../pages/models/company';
 import { getSpanishPaginatorIntl } from '../../config/getSpanishPaginatorIntl';
 import { VehicleOwnerResponse } from '../../pages/models/vehicle-owner';
 import { Menu, MenuModule } from 'primeng/menu';
-import { PaginatorModule } from 'primeng/paginator';
+import { Paginator, PaginatorModule } from 'primeng/paginator';
+import { SelectModule } from 'primeng/select';
 
 @Component({
     selector: 'app-vehicle-owner',
@@ -30,6 +31,7 @@ import { PaginatorModule } from 'primeng/paginator';
         ToolbarModule,
         TableModule,
         InputTextModule,
+        SelectModule,
         IconFieldModule,
         InputIconModule,
         ButtonModule,
@@ -53,7 +55,7 @@ export class VehicleOwnerComponent implements OnInit {
     dialogVehicleOwner = false;
     registerFormVehicleOwner: FormGroup;
 
-    @ViewChild(MatPaginator) paginator!: MatPaginator;
+    @ViewChild('paginator') paginator!: Paginator;
 
     private vehicleOwnerService = inject(VehicleOwnerService);
     private destroy$ = new Subject<void>();
@@ -63,6 +65,8 @@ export class VehicleOwnerComponent implements OnInit {
     hasError = this.vehicleOwnerService.hasError;
     pagination = this.vehicleOwnerService.paginationData;
     pageSize = signal(5);
+    first=signal(0);
+
 
     editMode = false;
     vehicleOwnerId: string | null = null;
@@ -144,10 +148,7 @@ export class VehicleOwnerComponent implements OnInit {
 
     loadVehicleOwners(page: number = 1, limit: number = this.pageSize()): void {
         this.vehicleOwnerService.loadVehicleOwners({ page, limit }).subscribe(() => {
-            if (this.paginator) {
-                this.paginator.pageIndex = page - 1;
-                this.paginator.pageSize = limit;
-            }
+            if(page===1)this.first.set(0);
         });
     }
 
@@ -184,17 +185,7 @@ export class VehicleOwnerComponent implements OnInit {
     
 
 
-    ngAfterViewInit(): void {
-        this.paginator.page.subscribe((event) => {
-            this.pageSize.set(event.pageSize);
-            const newPage = event.pageIndex + 1;
-            if (this.searchTerm.trim() === '') {
-                this.loadVehicleOwners(newPage, event.pageSize);
-            } else {
-                this.searchVehicleOwner(this.searchTerm, newPage, event.pageSize);
-            }
-        });
-    }
+    
 
     validarIdentificacion(control: AbstractControl): ValidationErrors | null {
         const tipoIdentificacion = this.registerFormVehicleOwner?.get('identificationType')?.value;
@@ -541,14 +532,7 @@ export class VehicleOwnerComponent implements OnInit {
 
     searchVehicleOwner(term: string, page: number = 1, limit: number = this.pageSize(), type?: string): void {
         this.vehicleOwnerService.searchVehicleOwner(term, page, limit).subscribe(() => {
-            if (this.paginator) {
-                if (page === 1) {
-                    this.paginator.pageIndex = 0;
-                }
-                if (limit !== this.paginator.pageSize) {
-                    this.paginator.pageSize = limit;
-                }
-            }
+           if(page===1)this.first.set(0);
         });
     }
 

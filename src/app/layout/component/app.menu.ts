@@ -38,7 +38,7 @@ export class AppMenu {
             {
                 label: 'Operaciones',
                 items: [
-                    { label: 'Fletes', icon: 'pi pi-truck', routerLink: ['/app/logistics/fletes'] },
+                    { label: 'Rutas', icon: 'pi pi-truck', routerLink: ['/app/logistics/routes'] },
                 ]
             },
             {

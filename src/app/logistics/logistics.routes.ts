@@ -7,6 +7,7 @@ import { DriverComponent } from "./drivers/driver.component";
 import { FletesComponent } from "./fletes/fletes.component";
 import { LiquidacionesComponent } from "./liquidaciones/liquidaciones.component";
 import { VehicleOwnerComponent } from "./vehicle-owner/vehicle-owner.component";
+import { RouteComponent } from "./route/route.component";
 
 export default [
     { path: '', redirectTo: 'vehiculos', pathMatch: 'full' },
@@ -16,5 +17,6 @@ export default [
     { path: 'drivers', data: { breadcrumb: 'Conductores' }, component: DriverComponent },
     { path: 'fletes', data: { breadcrumb: 'Fletes' }, component: FletesComponent },
     { path: 'liquidaciones', data: { breadcrumb: 'Liquidaciones' }, component: LiquidacionesComponent },
+    {path:'routes', data:{breadcrumb:'Rutas'}, component: RouteComponent},
     { path: '**', redirectTo: '/app/notfound' }
 ] as Routes;

@@ -180,7 +180,7 @@
             <!-- Selector de nuevo propietario -->
             <div class="flex flex-col gap-1">
                 <label for="owner" class="text-sm">Nuevo Propietario</label>
-                <p-dropdown
+                <p-select
                     id="owner"
                     [options]="owners()"
                     optionLabel="subject.name"
@@ -199,7 +199,7 @@
                             {{ isLoading() ? 'Cargando propietarios...' : 'No se encontraron propietarios' }}
                         </div>
                     </ng-template>
-                </p-dropdown>
+                </p-select>
                 <small *ngIf="formUpdateOwner.get('ownerId')?.touched && formUpdateOwner.get('ownerId')?.errors?.['required']" class="p-error"> El propietario es requerido </small>
             </div>
         </div>

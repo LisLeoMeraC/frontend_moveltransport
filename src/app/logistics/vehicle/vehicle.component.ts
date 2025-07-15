@@ -23,7 +23,7 @@ import { DriverService } from '../../pages/service/driver.service';
 import { VehicleData, VehicleResponse } from '../../pages/models/vehicle';
 import { SelectModule } from 'primeng/select';
 import { Menu, MenuModule } from 'primeng/menu';
-import { PaginatorModule } from 'primeng/paginator';
+import { Paginator, PaginatorModule } from 'primeng/paginator';
 @Component({
     selector: 'app-vehicle',
     standalone: true,
@@ -74,6 +74,7 @@ export class VehicleComponent implements OnInit {
     hasError = this.vehicleService.hasError;
     pagination = this.vehicleService.paginationData;
     pageSize = signal(5);
+    first=signal(0);
 
     //para buscar un vehículo
     searchTerm: string = '';
@@ -93,7 +94,7 @@ export class VehicleComponent implements OnInit {
     currentVehicleId: string = '';
     currentOwnerName: string = '';
 
-    @ViewChild(MatPaginator) paginator!: MatPaginator;
+    @ViewChild('paginator') paginator!: Paginator;
 
     isLoaDriver = this.driverService.isLoading;
     totalRecords = signal(0);
@@ -147,17 +148,7 @@ export class VehicleComponent implements OnInit {
         this.initMenuItems();
     }
 
-    ngAfterViewInit(): void {
-        this.paginator.page.subscribe((event) => {
-            this.pageSize.set(event.pageSize);
-            const newPage = event.pageIndex + 1;
-            if (this.searchTerm.trim() === '') {
-                this.loadVehicles(newPage, event.pageSize);
-            } else {
-                this.searchVehicle(this.searchTerm, newPage, event.pageSize);
-            }
-        });
-    }
+    
 
     initMenuItems(): void {
         this.menuItems = [
@@ -274,14 +265,7 @@ export class VehicleComponent implements OnInit {
 
     searchVehicle(term: string, page: number = 1, limit: number = this.pageSize()): void {
         this.vehicleService.searchVehicles(term, page, limit).subscribe(() => {
-            if (this.paginator) {
-                if (page === 1) {
-                    this.paginator.pageIndex = 0;
-                }
-                if (limit !== this.paginator.pageSize) {
-                    this.paginator.pageSize = limit;
-                }
-            }
+            if(page===1)this.first.set(0);
         });
     }
 
@@ -304,10 +288,7 @@ export class VehicleComponent implements OnInit {
 
     loadVehicles(page: number = 1, limit: number = this.pageSize()): void {
         this.vehicleService.loadVehicles(page, limit).subscribe(() => {
-            if (this.paginator) {
-                this.paginator.pageIndex = page - 1;
-                this.paginator.pageSize = limit;
-            }
+            if(page===1)this.first.set(0);
         });
     }
 
