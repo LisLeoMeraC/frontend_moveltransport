@@ -18,7 +18,7 @@ import { getSpanishPaginatorIntl } from '../../config/getSpanishPaginatorIntl';
 import { CompanyService } from '../../pages/service/company.service';
 import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 import { DriverService } from '../../pages/service/driver.service';
-import { DriverResponse } from '../../pages/models/driver';
+import { DriverResponse } from '../../pages/models/driver.model';
 import { SelectModule } from 'primeng/select';
 import { Menu, MenuModule } from 'primeng/menu';
 import { Paginator, PaginatorModule } from 'primeng/paginator';

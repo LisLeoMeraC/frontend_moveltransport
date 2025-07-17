@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, effect, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, effect, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { FormGroup, FormBuilder, Validators, ReactiveFormsModule, AbstractControl, ValidationErrors, FormsModule } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
@@ -8,7 +8,6 @@ import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
 import { CompanyService } from '../../pages/service/company.service';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
-import { CompanyResponse, IdentificationType } from '../../pages/models/company';
 import { ToastModule } from 'primeng/toast';
 import { MatPaginator, MatPaginatorIntl, MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -23,6 +22,9 @@ import { SplitButtonModule } from 'primeng/splitbutton';
 import { Menu, MenuModule } from 'primeng/menu';
 import { Paginator, PaginatorModule } from 'primeng/paginator';
 import { SelectModule } from 'primeng/select';
+import { CompanyResponse } from '../../pages/models/company.model';
+import { IdentificationType } from '../../pages/models/shared.model';
+import { BaseHttpService } from '../../pages/service/base-http.service';
 
 @Component({
     selector: 'app-company',
@@ -53,12 +55,13 @@ import { SelectModule } from 'primeng/select';
     styleUrl: './company.component.scss',
     providers: [MessageService, ConfirmationService, { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() }]
 })
-export class CompanyComponent implements OnInit {
+export class CompanyComponent implements OnInit, OnDestroy {
     showNumberOnlyWarning = false;
     dialogCompany: boolean = false;
     registerFormCompany: FormGroup;
 
     private companyService = inject(CompanyService);
+    private baseHttpService = inject(BaseHttpService);
     private destroy$ = new Subject<void>();
     private searchSubject = new Subject<string>();
 
@@ -408,7 +411,7 @@ export class CompanyComponent implements OnInit {
                         this.dialogCompany = false;
                     }
                     // Caso 2: Está registrado pero deshabilitado
-                    else if (response.data.isRegistered && !response.data.company?.isEnabled) {
+                    else if (response.data.isRegistered && response.data.company && !response.data.company.isEnabled) {
                         this.confirmEnableCompany(response.data.company);
                     }
                     // Caso 2: No está registrado como compañía, pero existe como persona (company no es null)
@@ -574,7 +577,7 @@ export class CompanyComponent implements OnInit {
 
         if (!isValid) {
             const fieldsList = invalidFields.join(', ');
-            const translatedMessage = this.companyService.translateFieldNames(fieldsList);
+            const translatedMessage = this.baseHttpService.translateFieldNames(fieldsList);
 
             const errorMessage = invalidFields.length > 1 ? `Corrija los siguientes campos: ${translatedMessage}` : `Corrija el campo: ${translatedMessage}`;
 

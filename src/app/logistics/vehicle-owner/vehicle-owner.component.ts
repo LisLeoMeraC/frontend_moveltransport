@@ -16,12 +16,12 @@ import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { VehicleOwnerService } from '../../pages/service/vehicle-owner.service';
 import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
-import { IdentificationType } from '../../pages/models/company';
 import { getSpanishPaginatorIntl } from '../../config/getSpanishPaginatorIntl';
-import { VehicleOwnerResponse } from '../../pages/models/vehicle-owner';
+import { VehicleOwnerResponse } from '../../pages/models/vehicle-owner.model';
 import { Menu, MenuModule } from 'primeng/menu';
 import { Paginator, PaginatorModule } from 'primeng/paginator';
 import { SelectModule } from 'primeng/select';
+import { IdentificationType } from '../../pages/models/shared.model';
 
 @Component({
     selector: 'app-vehicle-owner',

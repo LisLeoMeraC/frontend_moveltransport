@@ -1,10 +1,10 @@
 import { Injectable, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
-import { VehicleData, VehicleResponse } from '../models/vehicle';
+import { VehicleData, VehicleResponse } from '../models/vehicle.model';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
 import { catchError, finalize, Observable, tap, throwError } from 'rxjs';
-import { ApiResponse } from '../models/company';
+import { ApiResponse } from '../models/shared.model';
 
 @Injectable({
     providedIn: 'root'

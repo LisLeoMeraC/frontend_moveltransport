@@ -20,7 +20,7 @@ import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { VehicleOwnerService } from '../../pages/service/vehicle-owner.service';
 import { DriverService } from '../../pages/service/driver.service';
-import { VehicleData, VehicleResponse } from '../../pages/models/vehicle';
+import { VehicleData, VehicleResponse } from '../../pages/models/vehicle.model';
 import { SelectModule } from 'primeng/select';
 import { Menu, MenuModule } from 'primeng/menu';
 import { Paginator, PaginatorModule } from 'primeng/paginator';
