@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { environment } from '../../../environments/environment';
-import { VehicleOwnerData, VehicleOwnerResponse } from '../models/vehicle-owner.model';
+import { OwnerSearchByIdentificationResponse, VehicleOwnerData, VehicleOwnerResponse } from '../models/vehicle-owner.model';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
 import { catchError, finalize, Observable, tap, throwError } from 'rxjs';
@@ -14,7 +14,6 @@ export class VehicleOwnerService extends BaseHttpService<VehicleOwnerResponse> {
     private readonly baseUrl = environment.apiUrl;
     private vehhicleOwners = signal<VehicleOwnerResponse[]>([]);
     readonly vehicleOwnersList = this.vehhicleOwners.asReadonly();
-    
 
     constructor(
         private http: HttpClient,
@@ -23,14 +22,12 @@ export class VehicleOwnerService extends BaseHttpService<VehicleOwnerResponse> {
         super();
     }
 
-   
-
-    loadVehicleOwners(options?:{page?:number; limit?:number}): Observable<ApiResponse<VehicleOwnerResponse[]>> {
+    loadVehicleOwners(options?: { page?: number; limit?: number }): Observable<ApiResponse<VehicleOwnerResponse[]>> {
         this.loading.set(true);
         this.clearError();
         let params = new HttpParams();
-        if(options?.page && options?.limit) params=params.set('page', options.page.toString()).set('limit',options.limit.toString());
-        
+        if (options?.page && options?.limit) params = params.set('page', options.page.toString()).set('limit', options.limit.toString());
+
         return this.http.get<ApiResponse<VehicleOwnerResponse[]>>(`${this.baseUrl}/vehicle-owner/enabled`, { params }).pipe(
             tap((response) => {
                 if (this.handleApiResponse(response)) {
@@ -56,9 +53,9 @@ export class VehicleOwnerService extends BaseHttpService<VehicleOwnerResponse> {
         this.loading.set(true);
         this.clearError();
         return this.http.post<ApiResponse<VehicleOwnerResponse>>(`${this.baseUrl}/vehicle-owner`, vehhicleOwnerData).pipe(
-            tap((response)=>this.handleApiResponse(response)),
+            tap((response) => this.handleApiResponse(response)),
             catchError(this.handleHttpError<ApiResponse<VehicleOwnerResponse>>('Error al registrar propietario')),
-            finalize(() => this.loading.set(false)) 
+            finalize(() => this.loading.set(false))
         );
     }
 
@@ -79,7 +76,7 @@ export class VehicleOwnerService extends BaseHttpService<VehicleOwnerResponse> {
         return this.http.put<ApiResponse<VehicleOwnerResponse>>(`${this.baseUrl}/vehicle-owner/disable/${id}`, null).pipe(
             tap((response) => {
                 if (this.handleApiResponse(response, 'Error al deshabilitar propietario')) {
-                    this.vehhicleOwners.update(owners => owners.filter(owner => owner.id !== id));
+                    this.vehhicleOwners.update((owners) => owners.filter((owner) => owner.id !== id));
                 }
             }),
             catchError(this.handleHttpError<ApiResponse<VehicleOwnerResponse>>('Error al deshabilitar propietario')),
@@ -97,94 +94,45 @@ export class VehicleOwnerService extends BaseHttpService<VehicleOwnerResponse> {
         );
     }
 
-    searchByIdentification(identification: string): Observable<ApiResponse<any>> {
-        return this.http.get<ApiResponse<any>>(`${this.baseUrl}/vehicle-owner/identification/${identification}`).pipe(
-            tap({
-                next: (response) => {
-                    if (response.statusCode !== 200) {
-                        const errorMessage = this.formatErrorMessage(response);
-                        this.error.set(errorMessage);
-                    }
-                    this.loading.set(false);
-                },
-                error: (err) => {
-                    const errorMessage = this.getErrorMessage(err);
-                    this.error.set(errorMessage);
-                    this.loading.set(false);
-                }
-            })
+    searchByIdentification(identification: string): Observable<ApiResponse<OwnerSearchByIdentificationResponse>> {
+        return this.http.get<ApiResponse<OwnerSearchByIdentificationResponse>>(`${this.baseUrl}/vehicle-owner/identification/${identification}`).pipe(
+            tap((response) => this.handleApiResponse(response)),
+            catchError(this.handleHttpError<ApiResponse<OwnerSearchByIdentificationResponse>>('Error al buscar propietario por identificación')),
+            finalize(() => this.loading.set(false))
         );
     }
 
     searchVehicleOwner(term: string, page: number = 1, limit: number = 10): Observable<ApiResponse<VehicleOwnerResponse[]>> {
         this.loading.set(true);
-        this.error.set(null);
+        this.clearError();
 
         let params = new HttpParams().set('term', term).set('page', page.toString()).set('limit', limit.toString());
 
         return this.http.get<ApiResponse<VehicleOwnerResponse[]>>(`${this.baseUrl}/vehicle-owner/search`, { params }).pipe(
-            tap({
-                next: (response) => {
-                    if (response.statusCode >= 200 && response.statusCode < 300) {
-                        this.vehhicleOwners.set(response.data || []);
-                        if (response.pagination) {
-                            this.pagination.set(response.pagination);
-                        }
-                    } else {
-                        const errorMessage = this.formatErrorMessage(response);
-                        this.error.set(errorMessage);
-                        this.messageService.add({
-                            severity: 'error',
-                            summary: 'Error',
-                            detail: errorMessage,
-                            life: 5000
-                        });
-                    }
-                    this.loading.set(false);
-                },
-                error: (err) => {
-                    const errorMessage = this.getErrorMessage(err);
-                    this.error.set(errorMessage);
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: errorMessage,
-                        life: 5000
-                    });
-                    this.loading.set(false);
+            tap((response) => {
+                if (this.handleApiResponse(response)) {
+                    this.vehhicleOwners.set(response.data || []);
+                    if (response.pagination) this.setPagination(response.pagination);
                 }
-            })
+            }),
+            catchError(this.handleHttpError<ApiResponse<VehicleOwnerResponse[]>>('Error al buscar propietarios de vehículos')),
+            finalize(() => this.loading.set(false))
         );
     }
 
-    deleteCompany(id: string): Observable<ApiResponse<any>> {
+    deleteCompany(id: string): Observable<ApiResponse<VehicleOwnerResponse>> {
         this.loading.set(true);
-        this.error.set(null);
+        this.clearError();
 
-        return this.http.delete<ApiResponse<any>>(`${this.baseUrl}/vehicle-owner/${id}`).pipe(
-            tap({
-                next: (response) => {
-                    if (response.statusCode >= 200 && response.statusCode < 300) {
-                    } else {
-                        const errorMessage = this.formatErrorMessage(response);
-                        this.error.set(errorMessage);
-                    }
-                    this.loading.set(false);
-                },
-                error: (err) => {
-                    const errorMessage = this.getErrorMessage(err);
-                    this.error.set(errorMessage);
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: errorMessage,
-                        life: 5000
-                    });
-                    this.loading.set(false);
+        return this.http.delete<ApiResponse<VehicleOwnerResponse>>(`${this.baseUrl}/vehicle-owner/${id}`).pipe(
+            tap((response) => {
+                if (this.handleApiResponse(response, 'Error al eliminar propietario')) {
+                    const updatedOwners = this.vehhicleOwners().filter((owner) => owner.id !== id);
+                    this.vehhicleOwners.set(updatedOwners);
                 }
-            })
+            }),
+            catchError(this.handleHttpError<ApiResponse<VehicleOwnerResponse>>('Error al eliminar propietario')),
+            finalize(() => this.loading.set(false))
         );
     }
-
-    
 }

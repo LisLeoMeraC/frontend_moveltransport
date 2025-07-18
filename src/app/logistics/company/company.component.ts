@@ -56,54 +56,62 @@ import { BaseHttpService } from '../../pages/service/base-http.service';
     providers: [MessageService, ConfirmationService, { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() }]
 })
 export class CompanyComponent implements OnInit, OnDestroy {
-    showNumberOnlyWarning = false;
-    dialogCompany: boolean = false;
+    // Formularios
     registerFormCompany: FormGroup;
 
+    // Estados reactivos
+    pageSize = signal(5);
+    first = signal(0);
+    isDisabling = signal(false);
+
+    // Flags y controles de UI
+    showNumberOnlyWarning = false;
+    isSubmitted = true;
+    hasSearchedIdentification = false;
+    editMode = false;
+
+    // Diálogos
+    dialogCompany = false;
+    dialogDisableCompany = false;
+    dialogEnableCompany = false;
+
+    // Selecciones actuales
+    selectedType: string | undefined;
+    selectedCompany?: CompanyResponse;
+    companyToDisable: CompanyResponse | null = null;
+    companyToEnable: CompanyResponse | null = null;
+    companyId: string | null = null;
+
+    // Datos y servicios
     private companyService = inject(CompanyService);
     private baseHttpService = inject(BaseHttpService);
-    private destroy$ = new Subject<void>();
-    private searchSubject = new Subject<string>();
-
+    searchTerm = '';
+    menuItems: MenuItem[] = [];
     companies = this.companyService.companiesList;
     isLoading = this.companyService.isLoading;
     hasError = this.companyService.hasError;
     pagination = this.companyService.paginationData;
 
-    pageSize = signal(5);
-    first = signal(0);
-
-    selectedType: string | undefined;
-
-    hasSearchedIdentification: boolean = false;
-
-    //Para editarr una compañia
-    editMode = false;
-    companyId: string | null = null;
-
-    //Para eliminar una compañia
-    dialogDisableCompany: boolean = false;
-    companyToDisable: CompanyResponse | null = null;
-    isDisabling = signal(false);
-
-    dialogEnableCompany: boolean = false;
-    companyToEnable: CompanyResponse | null = null;
-
-    //Para buscar compañias
-    searchTerm: string = '';
-    isSubmitted = true;
-    isDisabled = false;
-
-    menuItems: MenuItem[] = [];
-    selectedCompany?: CompanyResponse;
-
+    // Tipos
     identificationTypes = this.companyService.getIdentificationTypes();
     companyTypes = this.companyService.getCompanyTypes();
+    typeCompany: any[] = [
+        { name: 'Cliente', value: 'client' },
+        { name: 'Transportista', value: 'carrier' },
+        { name: 'Ambos', value: 'both' }
+    ];
+
+    // RxJS
+    private destroy$ = new Subject<void>();
+    private searchSubject = new Subject<string>();
+
+    // ViewChild
+    @ViewChild('menu') menu!: Menu;
+    @ViewChild('paginator') paginator!: Paginator;
 
     constructor(
         private fb: FormBuilder,
-        private messageService: MessageService,
-        private confirmationService: ConfirmationService
+        private messageService: MessageService
     ) {
         this.registerFormCompany = this.fb.group({
             type: ['', Validators.required],
@@ -115,6 +123,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
             email: ['', Validators.email]
         });
 
+        // Mostrar errores globales
         effect(() => {
             const error = this.hasError();
             if (error) {
@@ -127,112 +136,69 @@ export class CompanyComponent implements OnInit, OnDestroy {
             }
         });
 
+        // Reiniciar advertencia al cambiar tipo de identificación
         this.registerFormCompany.get('identificationType')?.valueChanges.subscribe(() => {
             this.showNumberOnlyWarning = false;
         });
 
+        // Búsqueda reactiva
         this.searchSubject.pipe(takeUntil(this.destroy$), debounceTime(800), distinctUntilChanged()).subscribe((term) => {
+            const page = 1;
+            const size = this.pageSize();
             if (term.trim() === '') {
-                this.loadCompanies(1, this.pageSize(), this.selectedType);
+                this.loadCompanies(page, size, this.selectedType);
             } else {
-                this.searchCompanies(term, 1, this.pageSize(), this.selectedType);
+                this.searchCompanies(term, page, size, this.selectedType);
             }
         });
     }
+
+    // -------------------- Ciclo de vida --------------------
 
     ngOnInit(): void {
         this.loadCompanies();
         this.initMenuItems();
     }
 
-    selectCompany(company: CompanyResponse) {
-        this.selectedCompany = company;
-        console.log('Compañía seleccionada:', company.id);
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
     }
+
+    // -------------------- Inicialización --------------------
 
     initMenuItems(): void {
         this.menuItems = [
             {
                 label: 'Editar',
                 icon: 'pi pi-pencil',
-                command: () => {
-                    if (this.selectedCompany) {
-                        this.openDialogCompany(this.selectedCompany);
-                    }
-                }
+                command: () => this.selectedCompany && this.openDialogCompany(this.selectedCompany)
             },
             {
                 label: 'Eliminar',
                 icon: 'pi pi-trash',
-                command: () => {
-                    if (this.selectedCompany) {
-                        this.confirmDisableCompany(this.selectedCompany);
-                    }
-                }
+                command: () => this.selectedCompany && this.confirmDisableCompany(this.selectedCompany)
             }
         ];
     }
+
+    // -------------------- Acciones con el menú --------------------
 
     toggleMenu(event: Event, company: CompanyResponse): void {
         this.selectedCompany = company;
         this.menu.toggle(event);
     }
 
-    @ViewChild('menu') menu!: Menu;
-
-    typeCompany: any[] = [
-        { name: 'Cliente', value: 'client' },
-        { name: 'Transportista', value: 'carrier' },
-        { name: 'Ambos', value: 'both' }
-    ];
-
-    ngOnDestroy(): void {
-        this.destroy$.next();
-        this.destroy$.complete();
+    selectCompany(company: CompanyResponse): void {
+        this.selectedCompany = company;
+        console.log('Compañía seleccionada:', company.id);
     }
 
-    onSearchChange(): void {
-        // Resetear siempre a la primera página al cambiar el término de búsqueda
-        this.searchSubject.next(this.searchTerm);
-    }
-
-    disableCompany(): void {
-        if (!this.companyToDisable?.id) return;
-
-        this.isDisabling.set(true);
-
-        this.companyService.disableCompany(this.companyToDisable.id).subscribe({
-            next: () => {
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: 'Compañía deshabilitada correctamente',
-                    life: 5000
-                });
-                this.dialogDisableCompany = false;
-                this.loadCompanies(); // Recargar la lista
-            },
-            error: (err) => {
-                console.error('Error al deshabilitar compañía:', err);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'No se pudo deshabilitar la compañía',
-                    life: 5000
-                });
-            },
-            complete: () => {
-                this.isDisabling.set(false);
-                this.companyToDisable = null;
-            }
-        });
-    }
-
-    @ViewChild('paginator') paginator!: Paginator;
+    // -------------------- Carga y búsqueda --------------------
 
     loadCompanies(page: number = 1, limit: number = this.pageSize(), type?: string): void {
         this.companyService.loadCompanies({ status: true, page, limit, type }).subscribe(() => {
-            if (page === 1) this.first.set(0); // Reset si es nueva búsqueda
+            if (page === 1) this.first.set(0);
         });
     }
 
@@ -241,48 +207,56 @@ export class CompanyComponent implements OnInit, OnDestroy {
             if (page === 1) this.first.set(0);
         });
     }
-    onTypeChange(event: any) {
-        if (event && event.value !== undefined) {
-            this.selectedType = event.value;
-            // Buscar usando el texto actual del input de búsqueda
-            if (this.searchTerm.trim() === '') {
-                this.loadCompanies(1, this.pageSize(), event.value);
-            } else {
-                this.searchCompanies(this.searchTerm, 1, this.pageSize(), event.value);
-            }
+
+    onSearchChange(): void {
+        this.searchSubject.next(this.searchTerm);
+    }
+
+    onTypeChange(event: any): void {
+        const type = event?.value;
+        if (type !== undefined) {
+            this.selectedType = type;
+            this.searchTerm.trim() === '' ? this.loadCompanies(1, this.pageSize(), type) : this.searchCompanies(this.searchTerm, 1, this.pageSize(), type);
         }
     }
 
-    validarIdentificacion(control: AbstractControl): ValidationErrors | null {
-        const tipoIdentificacion = this.registerFormCompany?.get('identificationType')?.value;
-        const value = control.value;
-
-        if (!value) return null;
-
-        if (tipoIdentificacion === IdentificationType.passport) {
-            return null;
-        }
-
-        const onlyNumbers = /^\d+$/.test(value);
-        return onlyNumbers ? null : { onlyNumbers: true };
+    onPageChange(event: any): void {
+        const page = event.page + 1;
+        const rows = event.rows;
+        this.pageSize.set(rows);
+        this.searchTerm.trim() === '' ? this.loadCompanies(page, rows) : this.searchCompanies(this.searchTerm, page, rows);
     }
 
-    onKeyPressIdentificacion(event: KeyboardEvent) {
-        const identificationType = this.registerFormCompany.get('identificationType')?.value;
+    // -------------------- Registro / Edición --------------------
+    openDialogCompany(company?: CompanyResponse): void {
+        this.registerFormCompany.reset();
+        this.editMode = !!company;
+        this.companyId = company?.id || null;
+        this.isSubmitted = false;
 
-        if (identificationType && [IdentificationType.ruc, IdentificationType.dni].includes(identificationType)) {
-            const pattern = /[0-9]/;
-            const inputChar = String.fromCharCode(event.charCode);
+        this.habilitarControles(this.editMode);
 
-            if (!pattern.test(inputChar)) {
-                this.showNumberOnlyWarning = true;
-                setTimeout(() => (this.showNumberOnlyWarning = false), 2000);
-                event.preventDefault();
-            }
+        if (company) {
+            const formData = {
+                type: company.type,
+                identificationType: company.subject.identificationType,
+                identification: company.subject.identification.trim(),
+                name: company.subject.name,
+                address: company.subject.address,
+                phone: company.subject.phone,
+                email: company.subject.email || null
+            };
+            setTimeout(() => this.registerFormCompany.patchValue(formData, { emitEvent: false }));
         }
+
+        this.dialogCompany = true;
     }
 
-    onSubmitCompany() {
+    closeDialogCompany(): void {
+        this.dialogCompany = false;
+    }
+
+    onSubmitCompany(): void {
         if (!this.hasSearchedIdentification && !this.editMode) {
             this.messageService.add({
                 severity: 'warn',
@@ -293,13 +267,10 @@ export class CompanyComponent implements OnInit, OnDestroy {
             return;
         }
 
-        if (!this.checkFormValidity()) {
-            return;
-        }
+        if (!this.checkFormValidity()) return;
 
         this.isSubmitted = true;
         const formValue = this.registerFormCompany.getRawValue();
-
         let companyData: any = {
             name: formValue.name,
             address: formValue.address || null,
@@ -329,149 +300,50 @@ export class CompanyComponent implements OnInit, OnDestroy {
                 });
                 this.editMode = false;
                 this.companyId = null;
-                this.loadCompanies();
-                this.isSubmitted = false;
                 this.dialogCompany = false;
+                this.isSubmitted = false;
+                this.loadCompanies();
             },
             error: () => {
-                // Solo desactivamos el loading, el error se muestra con el efecto global
                 this.isSubmitted = false;
             }
         });
     }
 
-    openDialogCompany(company?: CompanyResponse) {
-        this.registerFormCompany.reset();
-        this.editMode = !!company;
-        this.companyId = company?.id || null;
-        this.isSubmitted = false;
-
-        this.habilitarControles(this.editMode);
-        this.registerFormCompany.get('identification')?.disable();
-        this.registerFormCompany.get('identificationType')?.disable();
-        if (!this.editMode) {
-            this.registerFormCompany.get('identification')?.enable();
-        }
-
-        if (company) {
-            const formData = {
-                type: company.type,
-                identificationType: company.subject.identificationType,
-                identification: company.subject.identification.trim(),
-                name: company.subject.name,
-                address: company.subject.address,
-                phone: company.subject.phone,
-                email: company.subject.email || null
-            };
-
-            setTimeout(() => {
-                this.registerFormCompany.patchValue(formData, { emitEvent: false });
-            });
-        }
-
-        this.dialogCompany = true;
-    }
-
-    closeDialogCompany() {
-        this.dialogCompany = false;
-    }
+    // -------------------- Habilitar / Deshabilitar --------------------
 
     confirmDisableCompany(company: CompanyResponse): void {
         this.companyToDisable = company;
         this.dialogDisableCompany = true;
     }
 
-    buscarIdentificacion() {
-        this.hasSearchedIdentification = false;
-        const identification = this.registerFormCompany.get('identification')?.value;
+    disableCompany(): void {
+        if (!this.companyToDisable?.id) return;
 
-        if (!identification) {
-            this.messageService.add({
-                severity: 'warn',
-                summary: 'Advertencia',
-                detail: 'Por favor ingrese un número de identificación',
-                life: 5000
-            });
-            return;
-        }
+        this.isDisabling.set(true);
 
-        this.companyService.searchByIdentification(identification).subscribe({
-            next: (response) => {
-                this.hasSearchedIdentification = true;
-
-                if (response.statusCode === 200 && response.data) {
-                    // Caso 1: Ya está registrado y habilitado como compañía
-                    if (response.data.isRegistered && response.data.company?.isEnabled) {
-                        this.messageService.add({
-                            severity: 'info',
-                            summary: 'Información',
-                            detail: 'Ya está registrada como compañía habilitada',
-                            life: 5000
-                        });
-                        this.dialogCompany = false;
-                    }
-                    // Caso 2: Está registrado pero deshabilitado
-                    else if (response.data.isRegistered && response.data.company && !response.data.company.isEnabled) {
-                        this.confirmEnableCompany(response.data.company);
-                    }
-                    // Caso 2: No está registrado como compañía, pero existe como persona (company no es null)
-                    else if (response.data.company) {
-                        this.patchFormWithOwnerData(response.data.company);
-                        this.messageService.add({
-                            severity: 'warn',
-                            summary: 'Advertencia',
-                            detail: 'No está registrado como compañía, por favor elija el tipo de compañía',
-                            life: 5000
-                        });
-                        this.habilitarControles(false);
-                        this.registerFormCompany.get('type')?.enable();
-                    }
-                    // Caso 3: No existe ningún registro (company: null)
-                    else {
-                        this.messageService.add({
-                            severity: 'info',
-                            summary: 'Información',
-                            detail: 'No se encontró un registro con esta identificación. Puede registrar uno nuevo.',
-                            life: 5000
-                        });
-
-                        // Guardamos el valor actual de identificación antes de resetear
-                        const currentIdentification = this.registerFormCompany.get('identification')?.value;
-                        const currentIdentificationType = this.registerFormCompany.get('identificationType')?.value;
-
-                        // Reseteamos el formulario pero preservamos identificación
-                        this.registerFormCompany.reset();
-
-                        // Restauramos la identificación
-                        this.registerFormCompany.patchValue({
-                            identification: currentIdentification,
-                            identificationType: currentIdentificationType
-                        });
-
-                        this.habilitarControles(true); // Habilitamos todos los controles
-                        this.editMode = false;
-                        this.companyId = null;
-                    }
-                } else {
-                    // Respuesta inesperada del servidor
-                    this.messageService.add({
-                        severity: 'error',
-                        summary: 'Error',
-                        detail: 'Respuesta inesperada del servidor',
-                        life: 5000
-                    });
-                    this.habilitarControles(true);
-                }
+        this.companyService.disableCompany(this.companyToDisable.id).subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Compañía deshabilitada correctamente',
+                    life: 5000
+                });
+                this.dialogDisableCompany = false;
+                this.loadCompanies();
             },
-            error: (err) => {
-                this.hasSearchedIdentification = false;
-                console.error('Error al buscar:', err);
+            error: () => {
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
-                    detail: 'Ocurrió un error al buscar la compañía',
+                    detail: 'No se pudo deshabilitar la compañía',
                     life: 5000
                 });
+            },
+            complete: () => {
+                this.isDisabling.set(false);
+                this.companyToDisable = null;
             }
         });
     }
@@ -496,7 +368,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
                 this.dialogCompany = false;
                 this.loadCompanies();
             },
-            error: (err) => {
+            error: () => {
                 this.messageService.add({
                     severity: 'error',
                     summary: 'Error',
@@ -507,7 +379,114 @@ export class CompanyComponent implements OnInit, OnDestroy {
         });
     }
 
-    private patchFormWithOwnerData(data: any) {
+    // -------------------- Validaciones e input --------------------
+
+    validarIdentificacion(control: AbstractControl): ValidationErrors | null {
+        const tipoIdentificacion = this.registerFormCompany?.get('identificationType')?.value;
+        const value = control.value;
+
+        if (!value || tipoIdentificacion === IdentificationType.passport) return null;
+
+        return /^\d+$/.test(value) ? null : { onlyNumbers: true };
+    }
+
+    onKeyPressIdentificacion(event: KeyboardEvent): void {
+        const type = this.registerFormCompany.get('identificationType')?.value;
+        const char = String.fromCharCode(event.charCode);
+        if ([IdentificationType.ruc, IdentificationType.dni].includes(type) && !/[0-9]/.test(char)) {
+            this.showNumberOnlyWarning = true;
+            setTimeout(() => (this.showNumberOnlyWarning = false), 2000);
+            event.preventDefault();
+        }
+    }
+
+    checkFormValidity(): boolean {
+        const required = ['type', 'identificationType', 'identification', 'name'];
+        const invalidFields: string[] = [];
+
+        required.forEach((field) => {
+            const control = this.registerFormCompany.get(field);
+            if (control?.invalid) {
+                control.markAsTouched();
+                invalidFields.push(field);
+            }
+        });
+
+        ['phone', 'email'].forEach((field) => {
+            const control = this.registerFormCompany.get(field);
+            if (control?.invalid) {
+                control.markAsTouched();
+                invalidFields.push(field);
+            }
+        });
+
+        if (invalidFields.length > 0) {
+            const fields = invalidFields.join(', ');
+            const translated = this.baseHttpService.translateFieldNames(fields);
+            const detail = invalidFields.length > 1 ? `Corrija los siguientes campos: ${translated}` : `Corrija el campo: ${translated}`;
+            this.messageService.add({ severity: 'warn', summary: 'Advertencia', detail, life: 5000 });
+            return false;
+        }
+
+        return true;
+    }
+
+    // -------------------- Identificación --------------------
+
+    buscarIdentificacion(): void {
+        this.hasSearchedIdentification = false;
+        const identification = this.registerFormCompany.get('identification')?.value;
+        if (!identification) {
+            this.messageService.add({ severity: 'warn', summary: 'Advertencia', detail: 'Ingrese un número de identificación', life: 5000 });
+            return;
+        }
+
+        this.companyService.searchByIdentification(identification).subscribe({
+            next: (response) => {
+                this.hasSearchedIdentification = true;
+                const data = response.data;
+
+                if (response.statusCode === 200 && data) {
+                    if (data.isRegistered && data.company?.isEnabled) {
+                        this.messageService.add({ severity: 'info', summary: 'Información', detail: 'Ya está registrada como compañía habilitada', life: 5000 });
+                        this.dialogCompany = false;
+                    } else if (data.isRegistered && data.company && !data.company.isEnabled) {
+                        this.confirmEnableCompany(data.company);
+                    } else if (data.company) {
+                        this.patchFormWithOwnerData(data.company);
+                        this.messageService.add({ severity: 'warn', summary: 'Advertencia', detail: 'No está registrado como compañía, elija tipo', life: 5000 });
+                        this.habilitarControles(false);
+                        this.registerFormCompany.get('type')?.enable();
+                    } else {
+                        this.handleNuevoRegistro();
+                    }
+                } else {
+                    this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Respuesta inesperada del servidor', life: 5000 });
+                    this.habilitarControles(true);
+                }
+            },
+            error: (err) => {
+                console.error('Error al buscar:', err);
+                this.messageService.add({ severity: 'error', summary: 'Error', detail: 'Ocurrió un error al buscar la compañía', life: 5000 });
+            }
+        });
+    }
+
+    private handleNuevoRegistro(): void {
+        const currentId = this.registerFormCompany.get('identification')?.value;
+        const currentType = this.registerFormCompany.get('identificationType')?.value;
+
+        this.registerFormCompany.reset();
+        this.registerFormCompany.patchValue({ identification: currentId, identificationType: currentType });
+
+        this.messageService.add({ severity: 'info', summary: 'Información', detail: 'No se encontró un registro. Puede registrar uno nuevo.', life: 5000 });
+
+        this.habilitarControles(true);
+        this.editMode = false;
+        this.companyId = null;
+    }
+
+    private patchFormWithOwnerData(data: any): void {
         const formData = {
             identificationType: data.subject.identificationType,
             identification: data.subject.identification?.trim(),
@@ -517,90 +496,20 @@ export class CompanyComponent implements OnInit, OnDestroy {
             email: data.subject.email || null,
             type: data.type || null
         };
-
         this.registerFormCompany.patchValue(formData, { emitEvent: false });
     }
 
-    habilitarControles(estado: boolean) {
-        if (estado === true) {
-            this.registerFormCompany.get('identification')?.enable();
-            this.registerFormCompany.get('identificationType')?.enable();
-            this.registerFormCompany.get('type')?.enable();
-            this.registerFormCompany.get('name')?.enable();
-            this.registerFormCompany.get('address')?.enable();
-            this.registerFormCompany.get('phone')?.enable();
-            this.registerFormCompany.get('email')?.enable();
-        } else {
-            this.registerFormCompany.get('identification')?.disable();
-            this.registerFormCompany.get('identificationType')?.disable();
-            this.registerFormCompany.get('type')?.disable();
-            this.registerFormCompany.get('name')?.disable();
-            this.registerFormCompany.get('address')?.disable();
-            this.registerFormCompany.get('phone')?.disable();
-            this.registerFormCompany.get('email')?.disable();
-        }
-    }
-
-    limpiarIdentificacion() {
+    limpiarIdentificacion(): void {
         this.registerFormCompany.reset();
         this.habilitarControles(false);
         this.registerFormCompany.get('identification')?.enable();
     }
 
-    checkFormValidity(): boolean {
-        const requiredFields = ['type', 'identificationType', 'identification', 'name'];
-        let isValid = true;
-        let invalidFields: string[] = [];
-
-        requiredFields.forEach((field) => {
+    habilitarControles(estado: boolean): void {
+        const controls = ['identification', 'identificationType', 'type', 'name', 'address', 'phone', 'email'];
+        controls.forEach((field) => {
             const control = this.registerFormCompany.get(field);
-            if (control && control.invalid) {
-                control.markAsTouched();
-                isValid = false;
-                invalidFields.push(field);
-            }
+            estado ? control?.enable() : control?.disable();
         });
-
-        const phoneControl = this.registerFormCompany.get('phone');
-        if (phoneControl && phoneControl.invalid) {
-            phoneControl.markAsTouched();
-            isValid = false;
-            invalidFields.push('phone');
-        }
-
-        const emailControl = this.registerFormCompany.get('email');
-        if (emailControl && emailControl.invalid) {
-            emailControl.markAsTouched();
-            isValid = false;
-            invalidFields.push('email');
-        }
-
-        if (!isValid) {
-            const fieldsList = invalidFields.join(', ');
-            const translatedMessage = this.baseHttpService.translateFieldNames(fieldsList);
-
-            const errorMessage = invalidFields.length > 1 ? `Corrija los siguientes campos: ${translatedMessage}` : `Corrija el campo: ${translatedMessage}`;
-
-            this.messageService.add({
-                severity: 'warn',
-                summary: 'Advertencia',
-                detail: errorMessage,
-                life: 5000
-            });
-        }
-        return isValid;
-    }
-
-    onPageChange(event: any): void {
-        const newPage = event.page + 1; // PrimeNG usa base 0
-        const newSize = event.rows;
-
-        this.pageSize.set(newSize);
-
-        if (this.searchTerm.trim() === '') {
-            this.loadCompanies(newPage, newSize);
-        } else {
-            this.searchCompanies(this.searchTerm, newPage, newSize);
-        }
     }
 }

@@ -1,5 +1,5 @@
 import { CommonModule } from '@angular/common';
-import { Component, effect, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, effect, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatPaginator, MatPaginatorIntl, MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinner, MatProgressSpinnerModule } from '@angular/material/progress-spinner';
@@ -50,47 +50,47 @@ import { Paginator, PaginatorModule } from 'primeng/paginator';
     styleUrl: './driver.component.scss',
     providers: [MessageService, { provide: MatPaginatorIntl, useValue: getSpanishPaginatorIntl() }]
 })
-export class DriverComponent implements OnInit {
-    showNumberOnlyWarning = false;
-
-    dialogDriver: boolean = false;
+export class DriverComponent implements OnInit, OnDestroy {
+    //Formularios
     formDriver: FormGroup;
 
+    //Estados reactivos
+    pageSize = signal(5);
+    first = signal(0);
+    isSubmitted = signal(true);
+    isDeleting = signal(false);
+
+    //Flags y controles de UI
+    showNumberOnlyWarning = false;
+    editMode = false;
+
+    //Dialogos
+    dialogDriver: boolean = false;
+    dialogDeleteDriver: boolean = false;
+
+    //Selecciones actuales
+    driverId: string | null = null;
+    driverToDelete: DriverResponse | null = null;
+    selectedDriver?: DriverResponse;
+
+    //Datos y servicios
     private companyService = inject(CompanyService);
     private driverService = inject(DriverService);
-    private destroy$ = new Subject<void>();
-    private searchSubject = new Subject<string>();
-
+    searchTerm: string = '';
+    menuItems: MenuItem[] = [];
     carriers = this.companyService.companiesList;
     drivers = this.driverService.driversList;
     isLoading = this.driverService.isLoading;
     hasError = this.driverService.hasError;
     pagination = this.driverService.paginationData;
-    
-    pageSize = signal(5);
-    first=signal(0);
 
-    //para editar un conductor
-    editMode = false;
-    driverId: string | null = null;
+    //RxJS
+    private destroy$ = new Subject<void>();
+    private searchSubject = new Subject<string>();
 
-    //para buscar un conductor
-    searchTerm: string = '';
-
-    //Para eliminar un conductor
-    dialogDeleteDriver: boolean = false;
-    driverToDelete: DriverResponse | null = null;
-
-    isSubmitted = true;
-
-    isDeleting = false;
-
-
-    menuItems:MenuItem[]=[];
-    selectedDriver?: DriverResponse;
-
+    //ViewChilds
     @ViewChild('paginator') paginator!: Paginator;
-    
+    @ViewChild('menu') menu!: Menu;
 
     constructor(
         private fb: FormBuilder,
@@ -104,6 +104,7 @@ export class DriverComponent implements OnInit {
             companyId: [null]
         });
 
+        //Mostrar errores de forma global
         effect(() => {
             const error = this.hasError();
             if (error) {
@@ -111,11 +112,12 @@ export class DriverComponent implements OnInit {
                     severity: 'error',
                     summary: 'Error',
                     detail: error,
-                    life: 5000,
+                    life: 5000
                 });
             }
         });
 
+        //Busqueda reactiva
         this.searchSubject.pipe(takeUntil(this.destroy$), debounceTime(800), distinctUntilChanged()).subscribe((term) => {
             if (term.trim() === '') {
                 this.loadDrivers(1, this.pageSize());
@@ -125,96 +127,11 @@ export class DriverComponent implements OnInit {
         });
     }
 
+    // ================ Ciclo de vida del componente =================
+
     ngOnInit(): void {
         this.loadDrivers();
         this.initMenuItems();
-    }
-
-
-    initMenuItems():void{
-        this.menuItems=[
-            {
-                label:" Editar",
-                icon:'pi pi-pencil',
-                command:()=>{
-                    if(this.selectedDriver){
-                        this.openDialogDriver(this.selectedDriver);
-                    }
-                }
-            },
-            {
-                label:'Eliminar',
-                icon:'pi pi-trash',
-                command:()=>{
-                    if(this.selectedDriver){
-                        this.confirmDeleteDriver(this.selectedDriver);
-                    }
-                }
-            }
-        ];
-    }
-
-    toggleMenu(event:Event, driver:DriverResponse):void{
-        this.selectedDriver=driver;
-        this.menu.toggle(event);
-    }
-
-     @ViewChild('menu') menu!: Menu;
-
-
-   
-
-    onSearchChange(): void {
-        // Resetear siempre a la primera página al cambiar el término de búsqueda
-        this.searchSubject.next(this.searchTerm);
-    }
-
-    searchDrivers(term: string, page: number = 1, limit: number = this.pageSize()): void {
-        this.driverService.searchDrivers(term, page, limit).subscribe(() => {
-            if(page===1)this.first.set(0);
-        });
-    }
-
-    confirmDeleteDriver(driver: DriverResponse): void {
-        this.driverToDelete = driver;
-        this.dialogDeleteDriver = true;
-    }
-
-    deleteDriver(): void {
-        if (!this.driverToDelete) return;
-        this.isDeleting = true;
-
-        this.driverService.deleteDriver(this.driverToDelete.id).subscribe({
-            next: (response) => {
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: 'Conductor eliminado correctamente',
-                    life: 5000
-                });
-                this.isDeleting = false;
-
-                // Recargar la lista de compañías
-                if (this.searchTerm.trim() === '') {
-                    this.loadDrivers(this.pagination().currentPage, this.pageSize());
-                } else {
-                    this.searchDrivers(this.searchTerm, this.pagination().currentPage, this.pageSize());
-                }
-            },
-            error: (err) => {
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'No se pudo eliminar la compañía',
-                    life: 5000
-                });
-            },
-            complete: () => {
-                this.dialogDeleteDriver = false;
-                this.isDeleting = false;
-                this.driverToDelete = null;
-            }
-        });
     }
 
     ngOnDestroy(): void {
@@ -222,24 +139,78 @@ export class DriverComponent implements OnInit {
         this.destroy$.complete();
     }
 
-    loadCompanies(): void {
-    this.companyService.loadCompanies({ status: false, type: 'carrier' }).subscribe();
-}
+    //=============Inicialización=================
+    initMenuItems(): void {
+        this.menuItems = [
+            {
+                label: ' Editar',
+                icon: 'pi pi-pencil',
+                command: () => {
+                    if (this.selectedDriver) {
+                        this.openDialogDriver(this.selectedDriver);
+                    }
+                }
+            },
+            {
+                label: 'Eliminar',
+                icon: 'pi pi-trash',
+                command: () => {
+                    if (this.selectedDriver) {
+                        this.confirmDeleteDriver(this.selectedDriver);
+                    }
+                }
+            }
+        ];
+    }
 
+    //================Acciones con el menú=================
+
+    toggleMenu(event: Event, driver: DriverResponse): void {
+        this.selectedDriver = driver;
+        this.menu.toggle(event);
+    }
+
+    //=================Carga y búsqueda=================
+
+    loadCompanies(): void {
+        this.companyService.loadCompanies({ status: false, type: 'carrier' }).subscribe();
+    }
 
     loadDrivers(page: number = 1, limit: number = this.pageSize()): void {
-    this.driverService.loadDrivers({ page, limit }).subscribe(() => {
-        if (this.paginator) {
-            if(page===1) this.first.set(0);
-        }
-    });
-}
+        this.driverService.loadDrivers({ page, limit }).subscribe(() => {
+            if (this.paginator) {
+                if (page === 1) this.first.set(0);
+            }
+        });
+    }
 
+    searchDrivers(term: string, page: number = 1, limit: number = this.pageSize()): void {
+        this.driverService.searchDrivers(term, page, limit).subscribe(() => {
+            if (page === 1) this.first.set(0);
+        });
+    }
+
+    onSearchChange(): void {
+        this.searchSubject.next(this.searchTerm);
+    }
+
+    onPageChange(event: any): void {
+        const newPage = event.page + 1;
+        const newSize = event.rows;
+        this.pageSize.set(newSize);
+        if (this.searchTerm.trim() === '') {
+            this.loadDrivers(newPage, newSize);
+        } else {
+            this.searchDrivers(this.searchTerm, newPage, newSize);
+        }
+    }
+
+    //=================Registro / Edición================
     openDialogDriver(driver?: DriverResponse) {
         this.formDriver.reset();
         this.editMode = !!driver;
         this.driverId = driver?.id || null;
-        this.isSubmitted = false;
+        this.isSubmitted = signal(false);
         this.dialogDriver = true;
         this.loadCompanies();
         if (this.editMode) {
@@ -267,22 +238,6 @@ export class DriverComponent implements OnInit {
         this.formDriver.reset();
     }
 
-    onKeyPressLicensePhone(event: KeyboardEvent) {
-        // Permitir solo números en los campos licenseNumber y phone
-        const allowedFields = ['licenseNumber', 'phone'];
-        const target = event.target as HTMLInputElement;
-        if (target && allowedFields.includes(target.getAttribute('formControlName') || '')) {
-            const pattern = /[0-9]/;
-            const inputChar = String.fromCharCode(event.charCode);
-
-            if (!pattern.test(inputChar)) {
-                this.showNumberOnlyWarning = true;
-                setTimeout(() => (this.showNumberOnlyWarning = false), 2000);
-                event.preventDefault();
-            }
-        }
-    }
-
     onSubmitDriver() {
         const nameControl = this.formDriver.get('name');
         const licenseNumberControl = this.formDriver.get('licenseNumber');
@@ -299,7 +254,7 @@ export class DriverComponent implements OnInit {
             });
             return;
         }
-        this.isSubmitted = true;
+        this.isSubmitted = signal(true);
         const formValue = this.formDriver.value;
         let driverData: any = {
             name: formValue.name,
@@ -330,25 +285,74 @@ export class DriverComponent implements OnInit {
                 this.editMode = false;
                 this.driverId = null;
                 this.loadDrivers();
-                this.isSubmitted = false;
+                this.isSubmitted = signal(false);
             },
             error: (err) => {
                 console.error('Error en el componente:', err);
-                this.isSubmitted = false;
+                this.isSubmitted = signal(false);
             }
         });
     }
 
-    onPageChange(event: any): void {
-        const newPage = event.page + 1; // PrimeNG usa base 0
-        const newSize = event.rows;
+    //=================Eliminación=================
 
-        this.pageSize.set(newSize);
+    confirmDeleteDriver(driver: DriverResponse): void {
+        this.driverToDelete = driver;
+        this.dialogDeleteDriver = true;
+    }
 
-        if (this.searchTerm.trim() === '') {
-            this.loadDrivers(newPage, newSize);
-        } else {
-            this.searchDrivers(this.searchTerm, newPage, newSize);
+    deleteDriver(): void {
+        if (!this.driverToDelete) return;
+        this.isDeleting = signal(true);
+
+        this.driverService.deleteDriver(this.driverToDelete.id).subscribe({
+            next: (response) => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Conductor eliminado correctamente',
+                    life: 5000
+                });
+                this.isDeleting = signal(false);
+
+                // Recargar la lista de compañías
+                if (this.searchTerm.trim() === '') {
+                    this.loadDrivers(this.pagination().currentPage, this.pageSize());
+                } else {
+                    this.searchDrivers(this.searchTerm, this.pagination().currentPage, this.pageSize());
+                }
+            },
+            error: (err) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo eliminar la compañía',
+                    life: 5000
+                });
+            },
+            complete: () => {
+                this.dialogDeleteDriver = false;
+                this.isDeleting = signal(false);
+                this.driverToDelete = null;
+            }
+        });
+    }
+
+    //=================Validaciones=================
+
+    onKeyPressLicensePhone(event: KeyboardEvent) {
+        // Permitir solo números en los campos licenseNumber y phone
+        const allowedFields = ['licenseNumber', 'phone'];
+        const target = event.target as HTMLInputElement;
+        if (target && allowedFields.includes(target.getAttribute('formControlName') || '')) {
+            const pattern = /[0-9]/;
+            const inputChar = String.fromCharCode(event.charCode);
+
+            if (!pattern.test(inputChar)) {
+                this.showNumberOnlyWarning = true;
+                setTimeout(() => (this.showNumberOnlyWarning = false), 2000);
+                event.preventDefault();
+            }
         }
     }
 }

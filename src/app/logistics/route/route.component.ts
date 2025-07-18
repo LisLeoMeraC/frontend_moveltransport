@@ -1,4 +1,4 @@
-import { Component, effect, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, effect, inject, OnDestroy, OnInit, signal, ViewChild } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
@@ -19,26 +19,28 @@ import { CommonModule } from '@angular/common';
     templateUrl: './route.component.html',
     styleUrl: './route.component.scss'
 })
-export class RouteComponent implements OnInit {
-    ngOnInit(): void {
-      this.loadRoutes();
-    }
+export class RouteComponent implements OnInit, OnDestroy {
+    //Estados reactivos
+    pageSize = signal(5);
+    first = signal(0);
 
+    //Datos y servicios
     private routeService = inject(RouteService);
-    private destroy$ = new Subject<void>();
-    private searchSubject = new Subject<string>();
-
     routes = this.routeService.routesList;
     isLoading = this.routeService.isLoading;
     hasError = this.routeService.hasError;
     pagination = this.routeService.paginationData;
-
-    pageSize = signal(5);
-    first = signal(0);
-
     searchTerm: string = '';
 
+    //RxJS
+    private destroy$ = new Subject<void>();
+    private searchSubject = new Subject<string>();
+
+    //ViewChild
+    @ViewChild('paginator') paginator!: Paginator;
+
     constructor(private messageService: MessageService) {
+        //Mostrar errores de forma globar
         effect(() => {
             const error = this.hasError();
             if (error) {
@@ -52,8 +54,15 @@ export class RouteComponent implements OnInit {
         });
     }
 
-    @ViewChild('paginator') paginator!: Paginator;
+    //=========Ciclo de vida del componente=========
+    ngOnInit(): void {
+        this.loadRoutes();
+    }
+    ngOnDestroy(): void {
+        throw new Error('Method not implemented.');
+    }
 
+    //=========Carga y Búsqueda=========
     loadRoutes(page: number = 1, limit: number = this.pageSize()): void {
         this.routeService.loadRoutes(page, limit).subscribe(() => {
             if (this.paginator) {
@@ -63,13 +72,11 @@ export class RouteComponent implements OnInit {
     }
 
     onPageChange(event: any): void {
-        const newPage = event.page + 1; // PrimeNG usa base 0
+        const newPage = event.page + 1;
         const newSize = event.rows;
-
         this.pageSize.set(newSize);
-
         if (this.searchTerm.trim() === '') {
             this.loadRoutes(newPage, newSize);
-        } 
+        }
     }
 }
