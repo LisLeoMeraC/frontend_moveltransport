@@ -1,22 +1,32 @@
-
 export interface RouteData {
-  id: string;
-  distanceInKm: number;
-  clientRate?: number;
-  carrierRate?: number;
-  originId: string;
-  destinationId: string;
+    id: string;
+    distanceInKm: number;
+    clientRate?: number;
+    carrierRate?: number;
+    originId: string;
+    destinationId: string;
 }
 
 export interface Location {
-  id: string;
-  name: string;
-  provinceId: string;
+    id: string;
+    name: string;
+    provinceId: string;
 }
 
 export interface RouteResponse extends RouteData {
-  clientRate: number;
-  carrierRate: number;
-  origin: Location;
-  destination: Location;
+    clientRate: number;
+    carrierRate: number;
+    origin: Location;
+    destination: Location;
+}
+
+export interface ProvinceResponse {
+    id: string;
+    name: string;
+}
+
+export interface CityResponse {
+    id: string;
+    name: string;
+    provinceId: string;
 }

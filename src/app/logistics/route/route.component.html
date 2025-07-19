@@ -7,7 +7,7 @@
     <p-table [scrollable]="true" scrollHeight="550px" styleClass="mt-4 w-full" [value]="routes()" [loading]="isLoading()">
         <ng-template #caption>
             <div class="flex justify-between items-center flex-column sm:flex-row gap-3">
-                <button pButton label="Agregar" icon="pi pi-plus"></button>
+                <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogRoutes()"></button>
 
                 <p-iconfield iconPosition="left" class="ml-auto">
                     <p-inputicon>
@@ -20,22 +20,24 @@
 
         <ng-template pTemplate="header">
             <tr>
-                <th style="min-width: 180px">Origen</th>
-                <th style="min-width: 180px">Destino</th>
-                <th style="min-width: 180px">Distancia (KM)</th>
-                <th style="min-width: 150px">Tarifa Compañia</th>
-                <th style="min-width: 180px">Tarifa Transporte</th>
-                <th style="min-width: 120px">Acciones</th>
+                <th class="text-center" style="min-width: 180px">Origen</th>
+                <th class="text-center" style="min-width: 180px">Destino</th>
+                <th class="text-center" style="min-width: 180px">Distancia (KM)</th>
+                <th class="text-center" style="min-width: 150px">Tarifa Compañia</th>
+                <th class="text-center" style="min-width: 180px">Tarifa Transporte</th>
+                <th class="text-center" style="min-width: 120px">Acciones</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-route>
             <tr>
-                <td>{{ route.origin?.name }}</td>
-                <td>{{ route.destination?.name }}</td>
-                <td>{{ route.distanceInKm }} Km</td>
-                <td>{{ route.clientRate | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
-                <td>{{ route.carrierRate | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
-                <td class="text-center"></td>
+                <td class="text-center">{{ route.origin?.name }}</td>
+                <td class="text-center">{{ route.destination?.name }}</td>
+                <td class="text-center">{{ route.distanceInKm }} Km</td>
+                <td class="text-center">{{ route.clientRate | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
+                <td class="text-center">{{ route.carrierRate | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
+                <td class="text-center">
+                    <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text" (click)="openDialogRoutes(route)"></button>
+                </td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
@@ -47,3 +49,143 @@
     <p-paginator [rows]="pageSize()" [first]="(pagination().currentPage - 1) * pageSize()" [totalRecords]="pagination().totalRecords" [rowsPerPageOptions]="[5, 10, 25, 100]" (onPageChange)="onPageChange($event)" styleClass="dark-paginator">
     </p-paginator>
 </div>
+
+<p-dialog [header]="editMode() ? 'Editar Ruta' : 'Agregar Ruta'" [(visible)]="dialogRoutes" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false" (onhide)="closeDialogRoutes()">
+    <form class="p-fluid" [formGroup]="formRoute" (ngSubmit)="onSubmitRoutes()">
+        <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-2 w-full">
+                <!-- Título del grupo -->
+                <span class="text-base font-semibold text-gray-700">Origen</span>
+
+                <div class="flex flex-wrap gap-4">
+                    <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                        <label for="province" class="text-sm">Provincia</label>
+                        <p-select
+                            id="province"
+                            [options]="provinces()"
+                            formControlName="originProvince"
+                            optionLabel="name"
+                            [optionValue]="'id'"
+                            placeholder="Seleccione la provincia"
+                            [showClear]="true"
+                            [appendTo]="'body'"
+                            [filter]="true"
+                            filterPlaceholder="Buscar provincia"
+                            [loading]="isLoading()"
+                            class="w-full custom-select"
+                            (onChange)="onProvinceOriginChange($event)"
+                        >
+                            <ng-template pTemplate="empty">
+                                <div class="p-2">
+                                    {{ isLoading() ? 'Cargando Provincias...' : 'No se encontraron las provincias' }}
+                                </div>
+                            </ng-template>
+                        </p-select>
+                    </div>
+
+                    <!-- Ciudad -->
+                    <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                        <label for="city" class="text-sm">Ciudad</label>
+                        <p-select
+                            id="city"
+                            [options]="originCities()"
+                            optionLabel="name"
+                            formControlName="originId"
+                            [optionValue]="'id'"
+                            placeholder="Seleccione la ciudad"
+                            [showClear]="true"
+                            [appendTo]="'body'"
+                            [filter]="true"
+                            filterPlaceholder="Buscar ciudad"
+                            [loading]="isLoading()"
+                            class="w-full custom-select"
+                        >
+                            <ng-template pTemplate="empty">
+                                <div class="p-2">
+                                    {{ isLoading() ? 'Cargando Ciudades...' : selectedProvinceOriginId() ? 'No se encontraron ciudades' : 'Seleccione una provincia primero' }}
+                                </div>
+                            </ng-template>
+                        </p-select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2 w-full">
+                <!-- Título del grupo -->
+                <span class="text-base font-semibold text-gray-700">Destino</span>
+
+                <div class="flex flex-wrap gap-4">
+                    <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                        <label for="province" class="text-sm">Provincia</label>
+                        <p-select
+                            id="province"
+                            [options]="provinces()"
+                            optionLabel="name"
+                            formControlName="destinationProvince"
+                            [optionValue]="'id'"
+                            placeholder="Seleccione la provincia"
+                            [showClear]="true"
+                            [appendTo]="'body'"
+                            [filter]="true"
+                            filterPlaceholder="Buscar provincia"
+                            [loading]="isLoading()"
+                            class="w-full custom-select"
+                            (onChange)="onProvinceDestinChange($event)"
+                        >
+                            <ng-template pTemplate="empty">
+                                <div class="p-2">
+                                    {{ isLoading() ? 'Cargando Provincias...' : 'No se encontraron las provincias' }}
+                                </div>
+                            </ng-template>
+                        </p-select>
+                    </div>
+
+                    <!-- Ciudad -->
+                    <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                        <label for="city" class="text-sm">Ciudad</label>
+                        <p-select
+                            id="city"
+                            [options]="destinationCities()"
+                            optionLabel="name"
+                            formControlName="destinationId"
+                            [optionValue]="'id'"
+                            placeholder="Seleccione la ciudad"
+                            [showClear]="true"
+                            [appendTo]="'body'"
+                            [filter]="true"
+                            filterPlaceholder="Buscar ciudad"
+                            [loading]="isLoading()"
+                            class="w-full custom-select"
+                        >
+                            <ng-template pTemplate="empty">
+                                <div class="p-2">
+                                    {{ isLoading() ? 'Cargando Ciudades...' : selectedProvinceDestinId() ? 'No se encontraron ciudades' : 'Seleccione una provincia primero' }}
+                                </div>
+                            </ng-template>
+                        </p-select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-wrap gap-4">
+                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                    <label for="distanceInKm" class="text-sm">Distancia (Km)</label>
+                    <input pInputText id="distanceInKm" type="text" class="w-full" autocomplete="off" formControlName="distanceInKm" />
+                </div>
+
+                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                    <label for="clientRate" class="text-sm">Tarifa Cliente</label>
+                    <input pInputText id="clientRate" type="text" class="w-full" autocomplete="off" formControlName="clientRate" />
+                </div>
+
+                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                    <label for="carrierRate" class="text-sm">Tarifa Transportista</label>
+                    <input pInputText id="carrierRate" type="text" class="w-full" autocomplete="off" formControlName="carrierRate" />
+                </div>
+            </div>
+        </div>
+        <div class="flex justify-end mt-4">
+            <button pButton [label]="editMode() ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary"></button>
+        </div>
+    </form>
+</p-dialog>
