@@ -50,7 +50,7 @@ export class RouteService extends BaseHttpService<RouteResponse> {
     }
 
     loadProvinces(params?: { page?: number; limit?: number }): Observable<ApiResponse<ProvinceResponse[]>> {
-        this.loading.set(false);
+        // this.loading.set(true);
         this.clearError();
         let httpParams = new HttpParams();
         if (params?.page) httpParams = httpParams.set('page', params.page.toString());
@@ -69,7 +69,7 @@ export class RouteService extends BaseHttpService<RouteResponse> {
     }
 
     loadCitiesForProvinceOrigin(provinceId: string, params?: { page?: number; limit?: number }): Observable<ApiResponse<CityResponse[]>> {
-        this.loading.set(false);
+        // this.loading.set(true);
         this.clearError();
 
         let httpParams = new HttpParams().set('provinceId', provinceId);
@@ -89,7 +89,7 @@ export class RouteService extends BaseHttpService<RouteResponse> {
     }
 
     loadCitiesForProvinceDestination(provinceId: string, params?: { page?: number; limit?: number }): Observable<ApiResponse<CityResponse[]>> {
-        this.loading.set(false);
+        //this.loading.set(true);
         this.clearError();
 
         let httpParams = new HttpParams().set('provinceId', provinceId);
@@ -116,8 +116,8 @@ export class RouteService extends BaseHttpService<RouteResponse> {
         this.destinationCities.set([]);
     }
     registerRoute(routeData: RouteData): Observable<ApiResponse<RouteResponse>> {
-        //this.loading.set(true);
         this.clearError();
+        this.loading.set(true);
         return this.http.post<ApiResponse<RouteResponse>>(`${this.baseUrl}/route`, routeData).pipe(
             tap((response) => this.handleApiResponse(response)),
             catchError(this.handleHttpError<ApiResponse<RouteResponse>>('Error al registrar ruta')),
