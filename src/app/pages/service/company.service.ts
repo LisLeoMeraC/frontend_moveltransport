@@ -21,7 +21,7 @@ export class CompanyService extends BaseHttpService<CompanyResponse> {
         super();
     }
 
-    loadCompanies(params: {status:boolean, page?: number; limit?: number; type?: string }): Observable<ApiResponse<CompanyResponse[]>> {
+    loadCompanies(params: { status: boolean; page?: number; limit?: number; type?: string }): Observable<ApiResponse<CompanyResponse[]>> {
         const { status, ...restParams } = params;
         this.loading.set(status);
         this.clearError();
@@ -43,7 +43,6 @@ export class CompanyService extends BaseHttpService<CompanyResponse> {
         );
     }
 
-    
     registerCompany(companyData: CompanyData): Observable<ApiResponse<CompanyResponse>> {
         this.loading.set(true);
         this.clearError();
@@ -54,7 +53,6 @@ export class CompanyService extends BaseHttpService<CompanyResponse> {
             finalize(() => this.loading.set(false))
         );
     }
-
 
     updateCompany(id: string, companyData: CompanyData): Observable<ApiResponse<CompanyResponse>> {
         this.loading.set(true);
@@ -93,7 +91,6 @@ export class CompanyService extends BaseHttpService<CompanyResponse> {
         );
     }
 
-    
     searchCompanies(term: string, page: number = 1, limit: number = 10, type?: string): Observable<ApiResponse<CompanyResponse[]>> {
         this.loading.set(true);
         this.error.set(null);
@@ -127,7 +124,6 @@ export class CompanyService extends BaseHttpService<CompanyResponse> {
             finalize(() => this.loading.set(false))
         );
     }
-
 
     getIdentificationTypes(): { label: string; value: IdentificationType }[] {
         return [

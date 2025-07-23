@@ -25,6 +25,8 @@ import { SelectModule } from 'primeng/select';
 import { CompanyResponse } from '../../pages/models/company.model';
 import { IdentificationType } from '../../pages/models/shared.model';
 import { BaseHttpService } from '../../pages/service/base-http.service';
+import { RouteService } from '../../pages/service/route.service';
+import { RouteResponse } from '../../pages/models/routess.model';
 
 @Component({
     selector: 'app-company',
@@ -74,6 +76,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
     dialogCompany = false;
     dialogDisableCompany = false;
     dialogEnableCompany = false;
+    dialogRatesClient = false;
 
     // Selecciones actuales
     selectedType: string | undefined;
@@ -84,10 +87,12 @@ export class CompanyComponent implements OnInit, OnDestroy {
 
     // Datos y servicios
     private companyService = inject(CompanyService);
+    private routesService = inject(RouteService);
     private baseHttpService = inject(BaseHttpService);
     searchTerm = '';
     menuItems: MenuItem[] = [];
     companies = this.companyService.companiesList;
+    routes = this.routesService.routesList;
     isLoading = this.companyService.isLoading;
     hasError = this.companyService.hasError;
     pagination = this.companyService.paginationData;
@@ -178,6 +183,11 @@ export class CompanyComponent implements OnInit, OnDestroy {
                 label: 'Eliminar',
                 icon: 'pi pi-trash',
                 command: () => this.selectedCompany && this.confirmDisableCompany(this.selectedCompany)
+            },
+            {
+                label: 'Tarifas',
+                icon: 'pi pi-money-bill',
+                command: () => this.selectedCompany && this.openDialogRatesClient()
             }
         ];
     }
@@ -377,6 +387,20 @@ export class CompanyComponent implements OnInit, OnDestroy {
                 });
             }
         });
+    }
+
+    // ====================Tarifas de clientes====================
+    openDialogRatesClient(): void {
+        this.routesService.resetRoutes();
+        if (this.selectedCompany) {
+            this.dialogRatesClient = true;
+            this.routesService.getRoutesClientRates(1, 10, '', '', this.selectedCompany.id).subscribe();
+        }
+    }
+
+    closeDialogRatesClient(): void {
+        this.dialogRatesClient = false;
+        this.routesService.resetRoutes();
     }
 
     // -------------------- Validaciones e input --------------------

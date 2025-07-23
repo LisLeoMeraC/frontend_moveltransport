@@ -9,12 +9,21 @@
             <div class="flex justify-between items-center flex-column sm:flex-row gap-3">
                 <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogRoutes()"></button>
 
-                <p-iconfield iconPosition="left" class="ml-auto">
-                    <p-inputicon>
-                        <i class="pi pi-search"></i>
-                    </p-inputicon>
-                    <input pInputText type="text" placeholder="Buscar..." />
-                </p-iconfield>
+                <div class="flex gap-2 ml-auto">
+                    <p-iconfield iconPosition="left">
+                        <p-inputicon>
+                            <i class="pi pi-search"></i>
+                        </p-inputicon>
+                        <input pInputText type="text" placeholder="Buscar origen..." [value]="searchOriginTerm()" (input)="onSearchOriginChange($event)" />
+                    </p-iconfield>
+
+                    <p-iconfield iconPosition="left">
+                        <p-inputicon>
+                            <i class="pi pi-search"></i>
+                        </p-inputicon>
+                        <input pInputText type="text" placeholder="Buscar destino..." [value]="searchDestinationTerm()" (input)="onSearchDestinationChange($event)" />
+                    </p-iconfield>
+                </div>
             </div>
         </ng-template>
 
@@ -36,7 +45,8 @@
                 <td class="text-center">{{ route.clientRate | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
                 <td class="text-center">{{ route.carrierRate | currency: 'USD' : 'symbol' : '1.2-2' }}</td>
                 <td class="text-center">
-                    <button pButton icon="pi pi-pencil" class="p-button-rounded p-button-text" (click)="openDialogRoutes(route)"></button>
+                    <p-button label="Opciones" severity="secondary" icon="pi pi-angle-down" iconPos="right" (click)="toogleMenu($event, route)" class="p-button-text p-button-ro" />
+                    <p-menu #menu [popup]="true" [model]="menuItems" [appendTo]="'body'"></p-menu>
                 </td>
             </tr>
         </ng-template>
@@ -170,22 +180,26 @@
             <div class="flex flex-wrap gap-4">
                 <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="distanceInKm" class="text-sm">Distancia (Km)</label>
-                    <input pInputText id="distanceInKm" type="text" class="w-full" autocomplete="off" formControlName="distanceInKm" />
+                    <input pInputText id="distanceInKm" type="text" class="w-full" autocomplete="off" formControlName="distanceInKm" (keypress)="allowOnlyDecimal($event)" />
                 </div>
 
                 <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="clientRate" class="text-sm">Tarifa Cliente</label>
-                    <input pInputText id="clientRate" type="text" class="w-full" autocomplete="off" formControlName="clientRate" />
+                    <input pInputText id="clientRate" type="text" class="w-full" autocomplete="off" formControlName="clientRate" (keypress)="allowOnlyDecimal($event)" />
                 </div>
 
                 <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                     <label for="carrierRate" class="text-sm">Tarifa Transportista</label>
-                    <input pInputText id="carrierRate" type="text" class="w-full" autocomplete="off" formControlName="carrierRate" />
+                    <input pInputText id="carrierRate" type="text" class="w-full" autocomplete="off" formControlName="carrierRate" (keypress)="allowOnlyDecimal($event)" />
                 </div>
+            </div>
+            <div *ngIf="invalidRateComparison()" class="flex items-center gap-2 mt-2 p-2 rounded bg-yellow-50 border border-yellow-200">
+                <i class="pi pi-exclamation-triangle text-yellow-600"></i>
+                <span class="text-yellow-800 font-medium">La tarifa transportista debe ser menor o igual a la tarifa cliente</span>
             </div>
         </div>
         <div class="flex justify-end mt-4">
-            <button pButton [label]="editMode() ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary"></button>
+            <button pButton [label]="editMode() ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary" [disabled]="invalidRateComparison() || formRoute.invalid"></button>
         </div>
     </form>
 </p-dialog>

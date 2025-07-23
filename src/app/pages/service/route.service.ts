@@ -3,7 +3,7 @@ import { environment } from '../../../environments/environment';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
 import { catchError, finalize, Observable, tap, throwError } from 'rxjs';
-import { CityResponse, ProvinceResponse, RouteData, RouteResponse } from '../models/routess.model';
+import { CityResponse, CreateRouteData, ProvinceResponse, RouteData, RouteResponse, UpdateRouteData } from '../models/routess.model';
 import { ApiResponse, Pagination } from '../models/shared.model';
 import { BaseHttpService } from './base-http.service';
 
@@ -115,7 +115,7 @@ export class RouteService extends BaseHttpService<RouteResponse> {
     clearCitiesDestination(): void {
         this.destinationCities.set([]);
     }
-    registerRoute(routeData: RouteData): Observable<ApiResponse<RouteResponse>> {
+    registerRoute(routeData: CreateRouteData): Observable<ApiResponse<RouteResponse>> {
         this.clearError();
         this.loading.set(true);
         return this.http.post<ApiResponse<RouteResponse>>(`${this.baseUrl}/route`, routeData).pipe(
@@ -125,7 +125,7 @@ export class RouteService extends BaseHttpService<RouteResponse> {
         );
     }
 
-    updateRoute(id: string, routeData: RouteData): Observable<ApiResponse<RouteResponse>> {
+    updateRoute(id: string, routeData: UpdateRouteData): Observable<ApiResponse<RouteResponse>> {
         this.loading.set(true);
         this.clearError();
         return this.http.put<ApiResponse<RouteResponse>>(`${this.baseUrl}/route/${id}`, routeData).pipe(
@@ -133,5 +133,56 @@ export class RouteService extends BaseHttpService<RouteResponse> {
             catchError(this.handleHttpError<ApiResponse<RouteResponse>>('Error al actualizar ruta')),
             finalize(() => this.loading.set(false))
         );
+    }
+
+    searchRoute(page: number = 1, limit: number = 10, origin?: string, destination?: string): Observable<ApiResponse<RouteResponse[]>> {
+        this.loading.set(true);
+        this.clearError();
+
+        let params = new HttpParams().set('page', page.toString()).set('limit', limit.toString());
+        if (origin !== undefined) {
+            params = params.set('origin', origin);
+        }
+        if (destination !== undefined) {
+            params = params.set('destination', destination);
+        }
+
+        return this.http.get<ApiResponse<RouteResponse[]>>(`${this.baseUrl}/route/search`, { params }).pipe(
+            tap((response) => {
+                if (this.handleApiResponse(response)) {
+                    this.routes.set(response.data || []);
+                    if (response.pagination) this.setPagination(response.pagination);
+                }
+            }),
+            catchError(this.handleHttpError<ApiResponse<RouteResponse[]>>('Error al buscar rutas')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+
+    getRoutesClientRates(page: number = 1, limit: number = 10, origin?: string, destination?: string, companyId: string = ''): Observable<ApiResponse<RouteResponse[]>> {
+        this.loading.set(true);
+        this.clearError();
+
+        let params = new HttpParams().set('page', page.toString()).set('limit', limit.toString()).set('companyId', companyId);
+        if (origin) {
+            params = params.set('origin', origin);
+        }
+        if (destination) {
+            params = params.set('destination', destination);
+        }
+
+        return this.http.get<ApiResponse<RouteResponse[]>>(`${this.baseUrl}/route-client-rate/filter-by-cities`, { params }).pipe(
+            tap((response) => {
+                if (this.handleApiResponse(response)) {
+                    this.routes.set(response.data || []);
+                    if (response.pagination) this.setPagination(response.pagination);
+                }
+            }),
+            catchError(this.handleHttpError<ApiResponse<RouteResponse[]>>('Error al obtener tarifas de cliente')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+    resetRoutes() {
+        this.routes.set([]); // Modificamos la señal privada
     }
 }

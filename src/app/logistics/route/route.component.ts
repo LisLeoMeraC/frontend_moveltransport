@@ -7,19 +7,20 @@ import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { RouteService } from '../../pages/service/route.service';
-import { Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
 import { Paginator, PaginatorModule } from 'primeng/paginator';
-import { MessageService } from 'primeng/api';
+import { MenuItem, MessageService } from 'primeng/api';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
+import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { SelectModule } from 'primeng/select';
 import { DialogModule } from 'primeng/dialog';
-import { RouteResponse } from '../../pages/models/routess.model';
+import { CreateRouteData, RouteResponse, UpdateRouteData } from '../../pages/models/routess.model';
+import { Menu, MenuModule } from 'primeng/menu';
 
 @Component({
     selector: 'app-route',
     standalone: true,
-    imports: [ToastModule, ToolbarModule, ReactiveFormsModule, DialogModule, SelectModule, TableModule, IconFieldModule, InputIconModule, ButtonModule, InputTextModule, PaginatorModule, CommonModule],
+    imports: [ToastModule, ToolbarModule, FormsModule, ReactiveFormsModule, MenuModule, DialogModule, SelectModule, TableModule, IconFieldModule, InputIconModule, ButtonModule, InputTextModule, PaginatorModule, CommonModule],
     templateUrl: './route.component.html',
     styleUrl: './route.component.scss'
 })
@@ -41,6 +42,9 @@ export class RouteComponent implements OnInit, OnDestroy {
     hasError = this.routeService.hasError;
     pagination = this.routeService.paginationData;
     searchTerm: string = '';
+    menuItems: MenuItem[] = [];
+    searchOriginTerm = signal('');
+    searchDestinationTerm = signal('');
 
     //Flags y controles de UI
     isSubmitted = true;
@@ -50,16 +54,20 @@ export class RouteComponent implements OnInit, OnDestroy {
     selectedProvinceOriginId = signal<string | null>(null);
     selectedProvinceDestinId = signal<string | null>(null);
     routeId: string | null = null;
+    selectedRoute?: RouteResponse;
+    invalidRateComparison = signal(false);
 
     //Dialogos
     dialogRoutes = signal(false);
 
     //RxJS
     private destroy$ = new Subject<void>();
-    private searchSubject = new Subject<string>();
+    private searchOriginSubject = new Subject<string>();
+    private searchDestinationSubject = new Subject<string>();
 
     //ViewChild
     @ViewChild('paginator') paginator!: Paginator;
+    @ViewChild('menu') menu!: Menu;
 
     constructor(
         private messageService: MessageService,
@@ -78,15 +86,52 @@ export class RouteComponent implements OnInit, OnDestroy {
             }
         });
 
-        this.formRoute = this.fb.group({
-            id: [''],
-            originProvince: [null, Validators.required],
-            distanceInKm: [null, [Validators.required, Validators.min(1)]],
-            clientRate: [null, [Validators.min(0)]],
-            carrierRate: [null, [Validators.min(0)]],
-            originId: [{ value: '', disabled: true }, Validators.required],
-            destinationId: [{ value: '', disabled: true }, Validators.required],
-            destinationProvince: [null, Validators.required]
+        this.formRoute = this.fb.group(
+            {
+                id: [''],
+                originProvince: [null, Validators.required],
+                distanceInKm: [null, [Validators.required, Validators.min(1)]],
+                clientRate: [null, [Validators.min(0)]],
+                carrierRate: [null, [Validators.min(0)]],
+                originId: [{ value: '', disabled: true }, Validators.required],
+                destinationId: [{ value: '', disabled: true }, Validators.required],
+                destinationProvince: [null, Validators.required]
+            },
+            { validators: this.validateRateComparison.bind(this) }
+        );
+        this.formRoute.get('clientRate')?.valueChanges.subscribe(() => {
+            this.checkRateComparison();
+        });
+
+        this.formRoute.get('carrierRate')?.valueChanges.subscribe(() => {
+            this.checkRateComparison();
+        });
+
+        //Busquedas reactivas
+        this.searchOriginSubject.pipe(takeUntil(this.destroy$), debounceTime(800), distinctUntilChanged()).subscribe((term) => {
+            const trimmedOrigin = term.trim();
+            const trimmedDestination = this.searchDestinationTerm().trim();
+
+            this.searchOriginTerm.set(trimmedOrigin);
+
+            if (trimmedOrigin === '' && trimmedDestination === '') {
+                this.loadRoutes();
+            } else {
+                this.searchRoutes();
+            }
+        });
+
+        this.searchDestinationSubject.pipe(takeUntil(this.destroy$), debounceTime(800), distinctUntilChanged()).subscribe((term) => {
+            const trimmedDestination = term.trim();
+            const trimmedOrigin = this.searchOriginTerm().trim();
+
+            this.searchDestinationTerm.set(trimmedDestination);
+
+            if (trimmedDestination === '' && trimmedOrigin === '') {
+                this.loadRoutes();
+            } else {
+                this.searchRoutes();
+            }
         });
     }
 
@@ -94,10 +139,32 @@ export class RouteComponent implements OnInit, OnDestroy {
     ngOnInit(): void {
         this.loadRoutes();
         this.loadAllProvinces();
+        this.initMenuItems();
     }
     ngOnDestroy(): void {
         this.destroy$.next();
         this.destroy$.complete();
+    }
+
+    //==========Inicialización=================
+    initMenuItems(): void {
+        this.menuItems = [
+            {
+                label: 'Editar',
+                icon: 'pi pi-pencil',
+                command: () => {
+                    if (this.selectedRoute) {
+                        this.openDialogRoutes(this.selectedRoute);
+                    }
+                }
+            }
+        ];
+    }
+
+    //============Acciones con el menú  ===========
+    toogleMenu(event: Event, route: RouteResponse): void {
+        this.selectedRoute = route;
+        this.menu.toggle(event);
     }
 
     //=========Carga y Búsqueda=========
@@ -160,13 +227,45 @@ export class RouteComponent implements OnInit, OnDestroy {
         this.routeService.loadCitiesForProvinceDestination(term).subscribe();
     }
 
+    private searchRoutes(): void {
+        const page = 1;
+        const size = this.pageSize();
+
+        if (this.searchOriginTerm().trim() === '' && this.searchDestinationTerm().trim() === '') {
+            this.loadRoutes(page, size);
+        } else {
+            this.routeService.searchRoute(page, size, this.searchOriginTerm().trim() || undefined, this.searchDestinationTerm().trim() || undefined).subscribe();
+        }
+    }
+
+    onSearchOriginChange(event: Event): void {
+        const value = (event.target as HTMLInputElement).value;
+        this.searchOriginSubject.next(value);
+    }
+
+    onSearchDestinationChange(event: Event): void {
+        const value = (event.target as HTMLInputElement).value;
+        this.searchDestinationSubject.next(value);
+    }
+
+    clearSearchOrigin(): void {
+        this.searchOriginTerm.set('');
+        this.searchOriginSubject.next('');
+    }
+
+    clearSearchDestination(): void {
+        this.searchDestinationTerm.set('');
+        this.searchDestinationSubject.next('');
+    }
+
     //===========Regustrar y Actualizar===========
 
     openDialogRoutes(route?: RouteResponse) {
         this.formRoute.reset();
         this.selectedProvinceDestinId.set(null);
+        this.selectedProvinceOriginId.set(null);
         this.routeService.clearCitiesOrigin();
-        this.routeService.clearCitiesOrigin();
+        this.routeService.clearCitiesDestination();
         this.editMode.set(!!route);
         this.routeId = route ? route.id : null;
         this.isSubmitted = false;
@@ -178,21 +277,36 @@ export class RouteComponent implements OnInit, OnDestroy {
                 clientRate: route.clientRate,
                 carrierRate: route.carrierRate,
                 originId: route.originId,
-                destinationId: route.destinationId
+                destinationId: route.destinationId,
+                originProvince: route.origin.provinceId,
+                destinationProvince: route.destination.provinceId
             };
+
+            this.loadCitiesForProvinceOrigin(route.origin.provinceId);
+            this.loadCitiesForProvinceDestin(route.destination.provinceId);
+
             setTimeout(() => {
                 this.formRoute.patchValue(formData, { emitEvent: false });
+                this.formRoute.get('originId')?.disable();
+                this.formRoute.get('destinationId')?.disable();
+                this.formRoute.get('originProvince')?.disable();
+                this.formRoute.get('destinationProvince')?.disable();
             });
+        } else {
+            this.formRoute.get('originId')?.disable();
+            this.formRoute.get('destinationId')?.disable();
+            this.formRoute.get('originProvince')?.enable();
+            this.formRoute.get('destinationProvince')?.enable();
         }
         this.loadAllProvinces();
         this.dialogRoutes.set(true);
     }
     closeDialogRoutes(): void {
         this.dialogRoutes.set(false);
+        this.formRoute.reset();
     }
 
     onSubmitRoutes() {
-        console.log('Form submitted:', this.formRoute.value);
         if (!this.checkFormValidity()) {
             this.messageService.add({
                 severity: 'error',
@@ -205,15 +319,21 @@ export class RouteComponent implements OnInit, OnDestroy {
 
         this.isSubmitted = true;
         const formValue = this.formRoute.getRawValue();
-        let data: any = {
+
+        let baseData: UpdateRouteData = {
             distanceInKm: formValue.distanceInKm,
-            clientRate: formValue.clientRate || '',
-            carrierRate: formValue.carrierRate || '',
+            clientRate: formValue.clientRate || 0,
+            carrierRate: formValue.carrierRate || 0
+        };
+
+        let fullData: CreateRouteData = {
+            ...baseData,
             originId: formValue.originId,
             destinationId: formValue.destinationId
         };
 
-        const operation = this.editMode() && this.routeId ? this.routeService.updateRoute(this.routeId, data) : this.routeService.registerRoute(data);
+        const operation = this.editMode() && this.routeId ? this.routeService.updateRoute(this.routeId, baseData) : this.routeService.registerRoute(fullData);
+
         operation.subscribe({
             next: () => {
                 this.messageService.add({
@@ -229,13 +349,21 @@ export class RouteComponent implements OnInit, OnDestroy {
                 this.editMode.set(false);
                 this.loadRoutes();
             },
-            error: () => {
+            error: (error) => {
+                console.error('Error:', error);
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'Ocurrió un error al procesar la solicitud',
+                    life: 3000
+                });
                 this.isSubmitted = false;
             }
         });
     }
 
-    //validaciones del formulario
+    //======================validaciones del formulario=====================
+
     checkFormValidity(): boolean {
         const required = ['distanceInKm', 'originId', 'destinationId'];
         let isValid = true;
@@ -263,6 +391,51 @@ export class RouteComponent implements OnInit, OnDestroy {
             isValid = false;
             invalidFields.push('carrierRate');
         }
+
+        if (this.invalidRateComparison()) {
+            isValid = false;
+        }
+
         return isValid;
+    }
+
+    private validateRateComparison(formGroup: FormGroup): ValidationErrors | null {
+        const clientRate = formGroup.get('clientRate')?.value;
+        const carrierRate = formGroup.get('carrierRate')?.value;
+
+        if (clientRate !== null && carrierRate !== null && typeof clientRate === 'number' && typeof carrierRate === 'number') {
+            return carrierRate > clientRate ? { invalidRateComparison: true } : null;
+        }
+        return null;
+    }
+
+    private checkRateComparison(): void {
+        const clientRate = this.formRoute.get('clientRate')?.value;
+        const carrierRate = this.formRoute.get('carrierRate')?.value;
+
+        if (clientRate !== null && carrierRate !== null && !isNaN(clientRate) && !isNaN(carrierRate)) {
+            this.invalidRateComparison.set(Number(carrierRate) > Number(clientRate));
+        } else {
+            this.invalidRateComparison.set(false);
+        }
+    }
+
+    allowOnlyDecimal(event: KeyboardEvent): void {
+        const inputChar = String.fromCharCode(event.charCode);
+
+        // Solo permite números y el punto decimal (pero no múltiples puntos)
+        const allowedRegex = /^[0-9.]$/;
+        if (!allowedRegex.test(inputChar)) {
+            event.preventDefault();
+            return;
+        }
+
+        const input = event.target as HTMLInputElement;
+        const currentValue = input.value;
+
+        // Evita múltiples puntos
+        if (inputChar === '.' && currentValue.includes('.')) {
+            event.preventDefault();
+        }
     }
 }

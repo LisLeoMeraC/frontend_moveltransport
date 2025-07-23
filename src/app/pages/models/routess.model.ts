@@ -3,8 +3,8 @@ export interface RouteData {
     distanceInKm: number;
     clientRate?: number;
     carrierRate?: number;
-    originId: string;
-    destinationId: string;
+    originId?: string;
+    destinationId?: string;
 }
 
 export interface Location {
@@ -30,3 +30,7 @@ export interface CityResponse {
     name: string;
     provinceId: string;
 }
+
+export type CreateRouteData = Omit<RouteData, 'id'>;
+
+export type UpdateRouteData = Pick<RouteData, 'distanceInKm' | 'clientRate' | 'carrierRate'>;
