@@ -13,7 +13,7 @@
                     <p-inputicon>
                         <i class="pi pi-search"></i>
                     </p-inputicon>
-                    <input pInputText type="text" placeholder="Buscar..." [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()"/>
+                    <input pInputText type="text" placeholder="Buscar..." [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" />
                 </p-iconfield>
             </div>
         </ng-template>
@@ -33,7 +33,7 @@
                 <td>{{ driver.name || 'No registra' }}</td>
                 <td>{{ driver.licenseNumber || 'No registra' }}</td>
                 <td>{{ driver.alias || 'No registra' }}</td>
-                <td> {{ driver.phone || 'No registra' }}</td>
+                <td>{{ driver.phone || 'No registra' }}</td>
                 <td>{{ driver.company?.subject.name || 'No registra' }}</td>
                 <td class="text-center">
                     <p-button label="Opciones" severity="secondary" icon="pi pi-angle-down" iconPos="right" (click)="toggleMenu($event, driver)" class="p-button-text p-button-ro" />
@@ -51,68 +51,58 @@
     </p-paginator>
 </div>
 
-<p-dialog [header]="editMode ?'Editar Conductor': 'Agregar Conductor'" [(visible)]="dialogDriver" [breakpoints]="{ '960px': '75vw' }" 
-          [style]="{ width: '22vw' }" [modal]="true" [draggable]="false" [resizable]="false">
+<p-dialog [header]="editMode ? 'Editar Conductor' : 'Agregar Conductor'" [(visible)]="dialogDriver" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '22vw' }" [modal]="true" [draggable]="false" [resizable]="false">
     <form class="p-fluid" [formGroup]="formDriver" (ngSubmit)="onSubmitDriver()">
-    <div class="flex flex-col gap-4">
+        <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
+                <label for="licenseNumber" class="text-sm">Nro. Licencia <span class="text-red-500">*</span></label>
+                <input pInputText id="licenseNumber" type="text" class="w-full" autocomplete="off" formControlName="licenseNumber" (keypress)="onKeyPressLicensePhone($event)" maxlength="10" required />
+            </div>
 
-         <div class="flex flex-col gap-1">
-            <label for="licenseNumber" class="text-sm">Nro. Licencia <span class="text-red-500">*</span></label>
-            <input pInputText id="licenseNumber" type="text" class="w-full" autocomplete="off" formControlName="licenseNumber" (keypress)="onKeyPressLicensePhone($event)" maxlength="10" required />
+            <div class="flex flex-col gap-1">
+                <label for="nombre" class="text-sm">Nombre <span class="text-red-500">*</span></label>
+                <input pInputText id="nombre" type="text" class="w-full" autocomplete="off" formControlName="name" required />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label for="phone" class="text-sm">Nro. Celular</label>
+                <input pInputText id="phone" type="text" class="w-full" autocomplete="off" formControlName="phone" (keypress)="onKeyPressLicensePhone($event)" maxlength="10" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label for="compania" class="text-sm">Compañía</label>
+                <p-select
+                    id="compania"
+                    [options]="carriers()"
+                    optionLabel="subject.name"
+                    formControlName="companyId"
+                    [optionValue]="'id'"
+                    placeholder="Seleccione la compañía"
+                    [showClear]="true"
+                    [appendTo]="'body'"
+                    [filter]="true"
+                    filterPlaceholder="Buscar compañía"
+                    [loading]="isLoading()"
+                    scrollHeight="170px"
+                    class="w-full"
+                >
+                    <ng-template pTemplate="empty">
+                        <div class="p-2">No existe la compañia.</div>
+                    </ng-template>
+                </p-select>
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label for="alias" class="text-sm">Alias</label>
+                <input pInputText id="alias" type="text" class="w-full" autocomplete="off" formControlName="alias" />
+            </div>
         </div>
 
-        <div class="flex flex-col gap-1">
-            <label for="nombre" class="text-sm">Nombre <span class="text-red-500">*</span></label>
-            <input pInputText id="nombre" type="text" class="w-full" autocomplete="off" formControlName="name" required />
+        <div class="flex justify-end mt-4">
+            <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary" [disabled]="isSubmitted"></button>
         </div>
-
-        
-
-        <div class="flex flex-col gap-1">
-            <label for="phone" class="text-sm">Nro. Celular</label>
-            <input pInputText id="phone" type="text" class="w-full" autocomplete="off" formControlName="phone" (keypress)="onKeyPressLicensePhone($event)" maxlength="10"/>
-        </div>
-
-        <div class="flex flex-col gap-1">
-            <label for="compania" class="text-sm">Compañía</label>
-            <p-select
-            id="compania"
-            [options]="carriers()"
-            optionLabel="subject.name"
-            formControlName="companyId"
-            [optionValue]="'id'"
-            placeholder="Seleccione la compañía"
-            [showClear]="true"
-            [appendTo]="'body'"
-            [filter]="true"
-            filterPlaceholder="Buscar compañía"
-            [loading]="isLoading()"
-            scrollHeight="170px"  
-            class="w-full"
-            >
-            <ng-template pTemplate="empty">
-                <div class="p-2">
-                No existe la compañia.
-                </div>
-            </ng-template>
-            </p-select>
-        </div>
-
-        <div class="flex flex-col gap-1">
-            <label for="alias" class="text-sm">Alias</label>
-            <input pInputText id="alias" type="text" class="w-full" autocomplete="off" formControlName="alias" />
-        </div>
-
-       
-    </div>
-
-    <div class="flex justify-end mt-4">
-        <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary" [disabled]="isSubmitted"></button>
-    </div>
-</form>
+    </form>
 </p-dialog>
-
-
 
 <p-dialog [(visible)]="dialogDeleteDriver" [modal]="true" [closable]="false" [style]="{ width: '100%', maxWidth: '400px' }" header="Confirmación requerida">
     <div class="border-l-4 border-yellow-500 bg-yellow-50 p-4 rounded">
@@ -127,7 +117,6 @@
             </div>
         </div>
     </div>
-        
 
     <ng-template pTemplate="footer">
         <div class="flex justify-end gap-2 pt-3">

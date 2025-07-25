@@ -31,6 +31,20 @@ export interface CityResponse {
     provinceId: string;
 }
 
+export interface ClientRateResponse {
+    id: string;
+    routeId: string;
+    clientId: string;
+    rate: number;
+    route: {
+        origin: Location;
+        destination: Location;
+        distanceInKm: number;
+        clientRate: number;
+        carrierRate: number;
+    };
+}
+
 export type CreateRouteData = Omit<RouteData, 'id'>;
 
 export type UpdateRouteData = Pick<RouteData, 'distanceInKm' | 'clientRate' | 'carrierRate'>;

@@ -16,7 +16,6 @@ export class RouteService extends BaseHttpService<RouteResponse> {
     readonly routesList = this.routes.asReadonly();
     private provinces = signal<ProvinceResponse[]>([]);
     readonly provinceList = this.provinces.asReadonly();
-
     private originCities = signal<CityResponse[]>([]);
     readonly originCityList = this.originCities.asReadonly();
 
@@ -184,5 +183,21 @@ export class RouteService extends BaseHttpService<RouteResponse> {
     }
     resetRoutes() {
         this.routes.set([]); // Modificamos la señal privada
+    }
+
+    deleteRouteClientRate(id: string): Observable<ApiResponse<RouteResponse>> {
+        this.loading.set(true);
+        this.clearError();
+
+        return this.http.delete<ApiResponse<RouteResponse>>(`${this.baseUrl}/route-client-rate/${id}`).pipe(
+            tap((response) => {
+                if (this.handleApiResponse(response, 'Error al eliminar tarifa de cliente')) {
+                    const updatedRoutes = this.routes().filter((route) => route.id !== id);
+                    this.routes.set(updatedRoutes);
+                }
+            }),
+            catchError(this.handleHttpError<ApiResponse<RouteResponse>>('Error al eliminar tarifa de cliente')),
+            finalize(() => this.loading.set(false))
+        );
     }
 }

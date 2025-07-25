@@ -26,7 +26,8 @@ import { CompanyResponse } from '../../pages/models/company.model';
 import { IdentificationType } from '../../pages/models/shared.model';
 import { BaseHttpService } from '../../pages/service/base-http.service';
 import { RouteService } from '../../pages/service/route.service';
-import { RouteResponse } from '../../pages/models/routess.model';
+import { ClientRateResponse, RouteResponse } from '../../pages/models/routess.model';
+import { fakeAsync } from '@angular/core/testing';
 
 @Component({
     selector: 'app-company',
@@ -60,11 +61,13 @@ import { RouteResponse } from '../../pages/models/routess.model';
 export class CompanyComponent implements OnInit, OnDestroy {
     // Formularios
     registerFormCompany: FormGroup;
+    formRoute: FormGroup;
 
     // Estados reactivos
     pageSize = signal(5);
     first = signal(0);
     isDisabling = signal(false);
+    isDeleting = signal(false);
 
     // Flags y controles de UI
     showNumberOnlyWarning = false;
@@ -77,23 +80,37 @@ export class CompanyComponent implements OnInit, OnDestroy {
     dialogDisableCompany = false;
     dialogEnableCompany = false;
     dialogRatesClient = false;
+    dialogDeleteRate = false;
+    dialogRoutes = signal(false);
 
     // Selecciones actuales
     selectedType: string | undefined;
     selectedCompany?: CompanyResponse;
     companyToDisable: CompanyResponse | null = null;
     companyToEnable: CompanyResponse | null = null;
+    rateToDelete: ClientRateResponse | null = null;
+    selectedRate?: ClientRateResponse;
     companyId: string | null = null;
+    selectedProvinceOriginId = signal<string | null>(null);
+    selectedProvinceDestinId = signal<string | null>(null);
+    routeId: string | null = null;
+    selectedRoute?: RouteResponse;
+    invalidRateComparison = signal(false);
 
     // Datos y servicios
     private companyService = inject(CompanyService);
-    private routesService = inject(RouteService);
+    private routeService = inject(RouteService);
     private baseHttpService = inject(BaseHttpService);
+    routes = this.routeService.routesList;
+    provinces = this.routeService.provinceList;
+    originCities = this.routeService.originCityList;
+    destinationCities = this.routeService.destinationCitiesList;
     searchTerm = '';
     menuItems: MenuItem[] = [];
+    menuItemsRate: MenuItem[] = [];
     companies = this.companyService.companiesList;
-    routes = this.routesService.routesList;
     isLoading = this.companyService.isLoading;
+    isloadingRoutes = this.routeService.isLoading;
     hasError = this.companyService.hasError;
     pagination = this.companyService.paginationData;
 
@@ -112,6 +129,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
 
     // ViewChild
     @ViewChild('menu') menu!: Menu;
+    @ViewChild('menuRate') menuRate!: Menu;
     @ViewChild('paginator') paginator!: Paginator;
 
     constructor(
@@ -126,6 +144,26 @@ export class CompanyComponent implements OnInit, OnDestroy {
             address: [''],
             phone: [''],
             email: ['', Validators.email]
+        });
+        this.formRoute = this.fb.group(
+            {
+                id: [''],
+                originProvince: [null, Validators.required],
+                distanceInKm: [null, [Validators.required, Validators.min(1)]],
+                clientRate: [null, [Validators.min(0)]],
+                carrierRate: [null, [Validators.min(0)]],
+                originId: [{ value: '', disabled: true }, Validators.required],
+                destinationId: [{ value: '', disabled: true }, Validators.required],
+                destinationProvince: [null, Validators.required]
+            },
+            { validators: this.validateRateComparison.bind(this) }
+        );
+        this.formRoute.get('clientRate')?.valueChanges.subscribe(() => {
+            this.checkRateComparison();
+        });
+
+        this.formRoute.get('carrierRate')?.valueChanges.subscribe(() => {
+            this.checkRateComparison();
         });
 
         // Mostrar errores globales
@@ -192,6 +230,20 @@ export class CompanyComponent implements OnInit, OnDestroy {
         ];
     }
 
+    initMenuItemsRate(): void {
+        this.menuItemsRate = [
+            {
+                label: 'Eliminar',
+                icon: 'pi pi-trash',
+                command: () => {
+                    if (this.selectedRate) {
+                        this.confirmDeleteRates(this.selectedRate);
+                    }
+                }
+            }
+        ];
+    }
+
     // -------------------- Acciones con el menú --------------------
 
     toggleMenu(event: Event, company: CompanyResponse): void {
@@ -199,9 +251,19 @@ export class CompanyComponent implements OnInit, OnDestroy {
         this.menu.toggle(event);
     }
 
+    toggleMenuRate(event: Event, rate: ClientRateResponse): void {
+        this.selectedRate = rate;
+        this.menuRate.toggle(event);
+    }
+
     selectCompany(company: CompanyResponse): void {
         this.selectedCompany = company;
         console.log('Compañía seleccionada:', company.id);
+    }
+
+    selectRate(rate: ClientRateResponse): void {
+        this.selectedRate = rate;
+        console.log('route selecionada:', rate.id);
     }
 
     // -------------------- Carga y búsqueda --------------------
@@ -235,6 +297,49 @@ export class CompanyComponent implements OnInit, OnDestroy {
         const rows = event.rows;
         this.pageSize.set(rows);
         this.searchTerm.trim() === '' ? this.loadCompanies(page, rows) : this.searchCompanies(this.searchTerm, page, rows);
+    }
+
+    loadAllProvinces(): void {
+        this.routeService.loadProvinces().subscribe();
+    }
+
+    onProvinceOriginChange(event: { value: string }): void {
+        const provinceId = event.value;
+        this.selectedProvinceOriginId.set(provinceId);
+
+        if (provinceId) {
+            this.formRoute.get('originId')?.enable();
+            const selectedOriginProvince = this.routeService.provinceList().find((p) => p.id === provinceId);
+            const provinceName = selectedOriginProvince?.id || '';
+            this.loadCitiesForProvinceOrigin(provinceName);
+        } else {
+            this.formRoute.get('originId')?.disable();
+            this.formRoute.get('originId')?.setValue(null);
+            this.routeService.clearCitiesOrigin();
+        }
+    }
+    onProvinceDestinChange(event: { value: string }): void {
+        const provinceId = event.value;
+        this.selectedProvinceDestinId.set(provinceId);
+
+        if (provinceId) {
+            this.formRoute.get('destinationId')?.enable();
+            const selectedDestinProvince = this.routeService.provinceList().find((p) => p.id === provinceId);
+            const provinceName = selectedDestinProvince?.id || '';
+            this.loadCitiesForProvinceDestin(provinceName);
+        } else {
+            this.formRoute.get('destinationId')?.disable();
+            this.formRoute.get('destinationId')?.setValue(null);
+            this.routeService.clearCitiesDestination();
+        }
+    }
+
+    loadCitiesForProvinceOrigin(term: string): void {
+        this.routeService.loadCitiesForProvinceOrigin(term).subscribe();
+    }
+
+    loadCitiesForProvinceDestin(term: string): void {
+        this.routeService.loadCitiesForProvinceDestination(term).subscribe();
     }
 
     // -------------------- Registro / Edición --------------------
@@ -391,17 +496,100 @@ export class CompanyComponent implements OnInit, OnDestroy {
 
     // ====================Tarifas de clientes====================
     openDialogRatesClient(): void {
-        this.routesService.resetRoutes();
+        this.routeService.resetRoutes();
+        this.initMenuItemsRate();
         if (this.selectedCompany) {
             this.dialogRatesClient = true;
-            this.routesService.getRoutesClientRates(1, 10, '', '', this.selectedCompany.id).subscribe();
+            this.routeService.getRoutesClientRates(1, 10, '', '', this.selectedCompany.id).subscribe();
         }
     }
 
     closeDialogRatesClient(): void {
         this.dialogRatesClient = false;
-        this.routesService.resetRoutes();
+        this.routeService.resetRoutes();
     }
+
+    //=====================Eliminar Tarifas====================
+    confirmDeleteRates(rate: ClientRateResponse): void {
+        console.log('Datos recibidos:', rate);
+        this.rateToDelete = rate;
+        this.dialogDeleteRate = true;
+    }
+    deleteRate(): void {
+        if (!this.rateToDelete) return;
+        this.isDeleting = signal(true);
+
+        this.routeService.deleteRouteClientRate(this.rateToDelete.id).subscribe({
+            next: (response) => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Tarifa eliminada correctamente',
+                    life: 5000
+                });
+                this.isDeleting = signal(false);
+                this.dialogDeleteRate = false;
+                this.routeService.getRoutesClientRates(1, 10, '', '', this.selectedCompany?.id).subscribe();
+            },
+            error: (err) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo eliminar la tarifa',
+                    life: 5000
+                });
+            }
+        });
+    }
+
+    //=======================registrar nueva tarifa===============================ç
+    openDialogRoutes(route?: RouteResponse) {
+        this.formRoute.reset();
+        this.selectedProvinceDestinId.set(null);
+        this.selectedProvinceOriginId.set(null);
+        this.routeService.clearCitiesOrigin();
+        this.routeService.clearCitiesDestination();
+        this.editMode = false;
+        this.routeId = route ? route.id : null;
+        this.isSubmitted = false;
+
+        if (route) {
+            const formData = {
+                id: route.id,
+                distanceInKm: route.distanceInKm,
+                clientRate: route.clientRate,
+                carrierRate: route.carrierRate,
+                originId: route.originId,
+                destinationId: route.destinationId,
+                originProvince: route.origin.provinceId,
+                destinationProvince: route.destination.provinceId
+            };
+
+            this.loadCitiesForProvinceOrigin(route.origin.provinceId);
+            this.loadCitiesForProvinceDestin(route.destination.provinceId);
+
+            setTimeout(() => {
+                this.formRoute.patchValue(formData, { emitEvent: false });
+                this.formRoute.get('originId')?.disable();
+                this.formRoute.get('destinationId')?.disable();
+                this.formRoute.get('originProvince')?.disable();
+                this.formRoute.get('destinationProvince')?.disable();
+            });
+        } else {
+            this.formRoute.get('originId')?.disable();
+            this.formRoute.get('destinationId')?.disable();
+            this.formRoute.get('originProvince')?.enable();
+            this.formRoute.get('destinationProvince')?.enable();
+        }
+        this.loadAllProvinces();
+        this.dialogRoutes.set(true);
+    }
+    closeDialogRoutes(): void {
+        this.dialogRoutes.set(false);
+        this.formRoute.reset();
+    }
+
+    onSubmitRoutes() {}
 
     // -------------------- Validaciones e input --------------------
 
@@ -535,5 +723,80 @@ export class CompanyComponent implements OnInit, OnDestroy {
             const control = this.registerFormCompany.get(field);
             estado ? control?.enable() : control?.disable();
         });
+    }
+
+    checkFormValidities(): boolean {
+        const required = ['distanceInKm', 'originId', 'destinationId'];
+        let isValid = true;
+        const invalidFields = [];
+
+        for (const field of required) {
+            const control = this.formRoute.get(field);
+            if (control?.invalid) {
+                control.markAsTouched();
+                isValid = false;
+                invalidFields.push(field);
+            }
+        }
+
+        const clientRate = this.formRoute.get('clientRate');
+        if (clientRate?.invalid) {
+            clientRate.markAsTouched();
+            isValid = false;
+            invalidFields.push('clientRate');
+        }
+
+        const carrierRate = this.formRoute.get('carrierRate');
+        if (carrierRate?.invalid) {
+            carrierRate.markAsTouched();
+            isValid = false;
+            invalidFields.push('carrierRate');
+        }
+
+        if (this.invalidRateComparison()) {
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    private validateRateComparison(formGroup: FormGroup): ValidationErrors | null {
+        const clientRate = formGroup.get('clientRate')?.value;
+        const carrierRate = formGroup.get('carrierRate')?.value;
+
+        if (clientRate !== null && carrierRate !== null && typeof clientRate === 'number' && typeof carrierRate === 'number') {
+            return carrierRate > clientRate ? { invalidRateComparison: true } : null;
+        }
+        return null;
+    }
+
+    private checkRateComparison(): void {
+        const clientRate = this.formRoute.get('clientRate')?.value;
+        const carrierRate = this.formRoute.get('carrierRate')?.value;
+
+        if (clientRate !== null && carrierRate !== null && !isNaN(clientRate) && !isNaN(carrierRate)) {
+            this.invalidRateComparison.set(Number(carrierRate) > Number(clientRate));
+        } else {
+            this.invalidRateComparison.set(false);
+        }
+    }
+
+    allowOnlyDecimal(event: KeyboardEvent): void {
+        const inputChar = String.fromCharCode(event.charCode);
+
+        // Solo permite números y el punto decimal (pero no múltiples puntos)
+        const allowedRegex = /^[0-9.]$/;
+        if (!allowedRegex.test(inputChar)) {
+            event.preventDefault();
+            return;
+        }
+
+        const input = event.target as HTMLInputElement;
+        const currentValue = input.value;
+
+        // Evita múltiples puntos
+        if (inputChar === '.' && currentValue.includes('.')) {
+            event.preventDefault();
+        }
     }
 }

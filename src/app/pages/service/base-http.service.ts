@@ -7,7 +7,7 @@ import { Pagination, ApiResponse } from '../models/shared.model';
     providedIn: 'root'
 })
 export abstract class BaseHttpService<T> {
-    protected loading = signal<boolean>(false);
+    loading = signal<boolean>(false);
     protected error = signal<string | null>(null);
     protected pagination = signal<Pagination>({
         currentPage: 1,
