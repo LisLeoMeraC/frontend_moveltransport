@@ -22,6 +22,10 @@ export class RouteService extends BaseHttpService<RouteResponse> {
     private destinationCities = signal<CityResponse[]>([]);
     readonly destinationCitiesList = this.destinationCities.asReadonly();
 
+    private destinationCitiesPage = 1;
+    private destinationCitiesPageSize = 10;
+    private isScrolling = signal(false);
+
     constructor(
         private http: HttpClient,
         private messageService: MessageService
@@ -197,6 +201,20 @@ export class RouteService extends BaseHttpService<RouteResponse> {
                 }
             }),
             catchError(this.handleHttpError<ApiResponse<RouteResponse>>('Error al eliminar tarifa de cliente')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+
+    //Verificar si existe una rurta
+    findRouteByCities(originId: string, destinationId: string): Observable<ApiResponse<RouteResponse>> {
+        // this.loading.set(true);
+        this.clearError();
+
+        const params = new HttpParams().set('originId', originId).set('destinationId', destinationId);
+
+        return this.http.get<ApiResponse<RouteResponse>>(`${this.baseUrl}/route/find-by-cities`, { params }).pipe(
+            tap((response) => this.handleApiResponse(response)),
+            catchError(this.handleHttpError<ApiResponse<RouteResponse>>('Error al buscar ruta')),
             finalize(() => this.loading.set(false))
         );
     }

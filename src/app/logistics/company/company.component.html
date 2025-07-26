@@ -353,6 +353,7 @@
                             filterPlaceholder="Buscar ciudad"
                             [loading]="isLoading()"
                             class="w-full custom-select"
+                            (onChange)="onDestinationCityChange()"
                         >
                             <ng-template pTemplate="empty">
                                 <div class="p-2">
@@ -371,18 +372,9 @@
                 </div>
 
                 <div class="flex flex-col grow basis-0 gap-1 min-w-0">
-                    <label for="clientRate" class="text-sm">Tarifa Cliente</label>
-                    <input pInputText id="clientRate" type="text" class="w-full" autocomplete="off" formControlName="clientRate" (keypress)="allowOnlyDecimal($event)" />
+                    <label for="clientRate" class="text-sm">Tarifa ($)</label>
+                    <input pInputText id="clientRate" type="text" class="w-full" autocomplete="off" formControlName="clientRate" [placeholder]="referentialRateText" (keypress)="allowOnlyDecimal($event)" />
                 </div>
-
-                <div class="flex flex-col grow basis-0 gap-1 min-w-0">
-                    <label for="carrierRate" class="text-sm">Tarifa Transportista</label>
-                    <input pInputText id="carrierRate" type="text" class="w-full" autocomplete="off" formControlName="carrierRate" (keypress)="allowOnlyDecimal($event)" />
-                </div>
-            </div>
-            <div *ngIf="invalidRateComparison()" class="flex items-center gap-2 mt-2 p-2 rounded bg-yellow-50 border border-yellow-200">
-                <i class="pi pi-exclamation-triangle text-yellow-600"></i>
-                <span class="text-yellow-800 font-medium">La tarifa transportista debe ser menor o igual a la tarifa cliente</span>
             </div>
         </div>
         <div class="flex justify-end mt-4">

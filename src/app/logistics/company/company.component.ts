@@ -113,6 +113,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
     isloadingRoutes = this.routeService.isLoading;
     hasError = this.companyService.hasError;
     pagination = this.companyService.paginationData;
+    referentialRateText: string = '';
 
     // Tipos
     identificationTypes = this.companyService.getIdentificationTypes();
@@ -151,7 +152,6 @@ export class CompanyComponent implements OnInit, OnDestroy {
                 originProvince: [null, Validators.required],
                 distanceInKm: [null, [Validators.required, Validators.min(1)]],
                 clientRate: [null, [Validators.min(0)]],
-                carrierRate: [null, [Validators.min(0)]],
                 originId: [{ value: '', disabled: true }, Validators.required],
                 destinationId: [{ value: '', disabled: true }, Validators.required],
                 destinationProvince: [null, Validators.required]
@@ -334,14 +334,21 @@ export class CompanyComponent implements OnInit, OnDestroy {
         }
     }
 
-    loadCitiesForProvinceOrigin(term: string): void {
-        this.routeService.loadCitiesForProvinceOrigin(term).subscribe();
+    loadCitiesForProvinceOrigin(term: string, page: number = 1, limit: number = 30): void {
+        this.routeService.loadCitiesForProvinceOrigin(term, { page, limit }).subscribe(() => {
+            if (this.paginator) {
+                if (page === 1) this.first.set(0);
+            }
+        });
     }
 
-    loadCitiesForProvinceDestin(term: string): void {
-        this.routeService.loadCitiesForProvinceDestination(term).subscribe();
+    loadCitiesForProvinceDestin(term: string, page: number = 1, limit: number = 30): void {
+        this.routeService.loadCitiesForProvinceDestination(term, { page, limit }).subscribe(() => {
+            if (this.paginator) {
+                if (page === 1) this.first.set(0);
+            }
+        });
     }
-
     // -------------------- Registro / Edición --------------------
     openDialogCompany(company?: CompanyResponse): void {
         this.registerFormCompany.reset();
@@ -589,7 +596,46 @@ export class CompanyComponent implements OnInit, OnDestroy {
         this.formRoute.reset();
     }
 
-    onSubmitRoutes() {}
+    onSubmitRoutes() {
+        alert('No funca XDDDDDDD');
+    }
+
+    onDestinationCityChange(): void {
+        const originId = this.formRoute.get('originId')?.value;
+        const destinationId = this.formRoute.get('destinationId')?.value;
+
+        if (originId && destinationId) {
+            this.routeService.findRouteByCities(originId, destinationId).subscribe({
+                next: (response) => {
+                    if (response.data) {
+                        // Si existe la ruta, autocompletamos la distancia
+                        this.formRoute.patchValue({
+                            distanceInKm: response.data.distanceInKm
+                        });
+                        const rate = response.data.clientRate;
+                        this.referentialRateText = rate ? `${rate} (referencial)` : '';
+                    } else {
+                        // Si no existe, reseteamos los campos numéricos
+                        this.formRoute.patchValue({
+                            distanceInKm: null,
+                            clientRate: null,
+                            carrierRate: null
+                        });
+                        this.referentialRateText = '';
+                    }
+                },
+                error: (err) => {
+                    console.error('Error al buscar ruta:', err);
+                    // Reseteamos los campos en caso de error
+                    this.formRoute.patchValue({
+                        distanceInKm: null,
+                        clientRate: null,
+                        carrierRate: null
+                    });
+                }
+            });
+        }
+    }
 
     // -------------------- Validaciones e input --------------------
 

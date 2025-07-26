@@ -16,6 +16,7 @@ import { SelectModule } from 'primeng/select';
 import { DialogModule } from 'primeng/dialog';
 import { CreateRouteData, RouteResponse, UpdateRouteData } from '../../pages/models/routess.model';
 import { Menu, MenuModule } from 'primeng/menu';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
 @Component({
     selector: 'app-route',
@@ -219,12 +220,20 @@ export class RouteComponent implements OnInit, OnDestroy {
         }
     }
 
-    loadCitiesForProvinceOrigin(term: string): void {
-        this.routeService.loadCitiesForProvinceOrigin(term).subscribe();
+    loadCitiesForProvinceOrigin(term: string, page: number = 1, limit: number = 30): void {
+        this.routeService.loadCitiesForProvinceOrigin(term, { page, limit }).subscribe(() => {
+            if (this.paginator) {
+                if (page === 1) this.first.set(0);
+            }
+        });
     }
 
-    loadCitiesForProvinceDestin(term: string): void {
-        this.routeService.loadCitiesForProvinceDestination(term).subscribe();
+    loadCitiesForProvinceDestin(term: string, page: number = 1, limit: number = 30): void {
+        this.routeService.loadCitiesForProvinceDestination(term, { page, limit }).subscribe(() => {
+            if (this.paginator) {
+                if (page === 1) this.first.set(0);
+            }
+        });
     }
 
     private searchRoutes(): void {
