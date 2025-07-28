@@ -360,12 +360,6 @@ export class RouteComponent implements OnInit, OnDestroy {
             },
             error: (error) => {
                 console.error('Error:', error);
-                this.messageService.add({
-                    severity: 'error',
-                    summary: 'Error',
-                    detail: 'Ocurrió un error al procesar la solicitud',
-                    life: 3000
-                });
                 this.isSubmitted = false;
             }
         });

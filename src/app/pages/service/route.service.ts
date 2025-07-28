@@ -3,7 +3,7 @@ import { environment } from '../../../environments/environment';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
 import { catchError, finalize, Observable, tap, throwError } from 'rxjs';
-import { CityResponse, CreateRouteData, ProvinceResponse, RouteData, RouteResponse, UpdateRouteData } from '../models/routess.model';
+import { CityResponse, ClientRateResponse, CreateRouteData, ProvinceResponse, RateClientData, RouteResponse, UpdateRouteData } from '../models/routess.model';
 import { ApiResponse, Pagination } from '../models/shared.model';
 import { BaseHttpService } from './base-http.service';
 
@@ -217,5 +217,16 @@ export class RouteService extends BaseHttpService<RouteResponse> {
             catchError(this.handleHttpError<ApiResponse<RouteResponse>>('Error al buscar ruta')),
             finalize(() => this.loading.set(false))
         );
+    }
+
+    //registrar nueva tarifa
+    registerRouteClientRate(rateClient: RateClientData): Observable<ApiResponse<ClientRateResponse>> {
+        this.clearError();
+        this.loading.set(true);
+        return this.http.post<ApiResponse<ClientRateResponse>>(`${this.baseUrl}/route-client-rate`, rateClient).pipe(
+            tap((response) => this.handleApiResponse(response)),
+            catchError(this.handleHttpError<ApiResponse<ClientRateResponse>>('Error al registrar tarifa de cliente')),
+            finalize(() => this.loading.set(false))
+        )
     }
 }

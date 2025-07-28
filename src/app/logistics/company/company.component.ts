@@ -26,7 +26,7 @@ import { CompanyResponse } from '../../pages/models/company.model';
 import { IdentificationType } from '../../pages/models/shared.model';
 import { BaseHttpService } from '../../pages/service/base-http.service';
 import { RouteService } from '../../pages/service/route.service';
-import { ClientRateResponse, RouteResponse } from '../../pages/models/routess.model';
+import { ClientRateResponse, CreateRateClientData, RouteResponse } from '../../pages/models/routess.model';
 import { fakeAsync } from '@angular/core/testing';
 
 @Component({
@@ -111,7 +111,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
     companies = this.companyService.companiesList;
     isLoading = this.companyService.isLoading;
     isloadingRoutes = this.routeService.isLoading;
-    hasError = this.companyService.hasError;
+    //hasError = this.companyService.hasError;
     pagination = this.companyService.paginationData;
     referentialRateText: string = '';
 
@@ -151,24 +151,20 @@ export class CompanyComponent implements OnInit, OnDestroy {
                 id: [''],
                 originProvince: [null, Validators.required],
                 distanceInKm: [null, [Validators.required, Validators.min(1)]],
-                clientRate: [null, [Validators.min(0)]],
+                rate: [null, [Validators.min(0)]],
                 originId: [{ value: '', disabled: true }, Validators.required],
                 destinationId: [{ value: '', disabled: true }, Validators.required],
                 destinationProvince: [null, Validators.required]
-            },
-            { validators: this.validateRateComparison.bind(this) }
+            }
         );
-        this.formRoute.get('clientRate')?.valueChanges.subscribe(() => {
-            this.checkRateComparison();
-        });
 
-        this.formRoute.get('carrierRate')?.valueChanges.subscribe(() => {
-            this.checkRateComparison();
-        });
 
         // Mostrar errores globales
         effect(() => {
-            const error = this.hasError();
+            const companyError = this.companyService.hasError();
+            const routeError = this.routeService.hasError();
+
+            const error = companyError || routeError;
             if (error) {
                 this.messageService.add({
                     severity: 'error',
@@ -507,7 +503,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
         this.initMenuItemsRate();
         if (this.selectedCompany) {
             this.dialogRatesClient = true;
-            this.routeService.getRoutesClientRates(1, 10, '', '', this.selectedCompany.id).subscribe();
+            this.routeService.getRoutesClientRates(1, 10, '', '', this.selectedCompany?.id).subscribe();
         }
     }
 
@@ -597,7 +593,49 @@ export class CompanyComponent implements OnInit, OnDestroy {
     }
 
     onSubmitRoutes() {
-        alert('No funca XDDDDDDD');
+        if (!this.checkFormValidities()) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Por favor, complete todos los campos requeridos correctamente.',
+                life: 3000
+            });
+            return;
+        }
+        this.isSubmitted = true;
+        const formValue = this.formRoute.getRawValue();
+
+        let createData: CreateRateClientData = {
+            rate: formValue.rate,
+            originId: formValue.originId,
+            destinationId: formValue.destinationId,
+            clientId: this.selectedCompany?.id ?? '',
+            distanceInKm: formValue.distanceInKm
+        }
+        console.log(createData);
+
+        const operation = this.routeService.registerRouteClientRate(createData);
+
+        operation.subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'La ruta ha sido registrada correctamente.',
+                    life: 3000
+                });
+                this.closeDialogRoutes();
+                this.formRoute.reset();
+                this.isSubmitted = false;
+                this.routeService.getRoutesClientRates(1, 10, '', '', this.selectedCompany?.id).subscribe();
+            },
+            error: (error) => {
+                console.error('Error:', error);
+
+                this.isSubmitted = false;
+            }
+
+        })
     }
 
     onDestinationCityChange(): void {
@@ -612,14 +650,13 @@ export class CompanyComponent implements OnInit, OnDestroy {
                         this.formRoute.patchValue({
                             distanceInKm: response.data.distanceInKm
                         });
-                        const rate = response.data.clientRate;
-                        this.referentialRateText = rate ? `${rate} (referencial)` : '';
+                        const rateClient = response.data.clientRate;
+                        this.referentialRateText = rateClient ? `${rateClient} (referencial)` : '';
                     } else {
                         // Si no existe, reseteamos los campos numéricos
                         this.formRoute.patchValue({
                             distanceInKm: null,
-                            clientRate: null,
-                            carrierRate: null
+                            rate: null
                         });
                         this.referentialRateText = '';
                     }
