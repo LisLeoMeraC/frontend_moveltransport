@@ -26,7 +26,7 @@ import { CompanyResponse } from '../../pages/models/company.model';
 import { IdentificationType } from '../../pages/models/shared.model';
 import { BaseHttpService } from '../../pages/service/base-http.service';
 import { RouteService } from '../../pages/service/route.service';
-import { ClientRateResponse, CreateRateClientData, RouteResponse } from '../../pages/models/routess.model';
+import { ClientRateResponse, CreateRateClientData, RateClientData, RouteResponse, UpdateRateClientData } from '../../pages/models/routess.model';
 import { fakeAsync } from '@angular/core/testing';
 
 @Component({
@@ -93,7 +93,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
     companyId: string | null = null;
     selectedProvinceOriginId = signal<string | null>(null);
     selectedProvinceDestinId = signal<string | null>(null);
-    routeId: string | null = null;
+    rateId: string | null = null;
     selectedRoute?: RouteResponse;
     invalidRateComparison = signal(false);
 
@@ -114,6 +114,8 @@ export class CompanyComponent implements OnInit, OnDestroy {
     //hasError = this.companyService.hasError;
     pagination = this.companyService.paginationData;
     referentialRateText: string = '';
+    searchOriginTerm = signal('');
+    searchDestinationTerm = signal('');
 
     // Tipos
     identificationTypes = this.companyService.getIdentificationTypes();
@@ -127,6 +129,8 @@ export class CompanyComponent implements OnInit, OnDestroy {
     // RxJS
     private destroy$ = new Subject<void>();
     private searchSubject = new Subject<string>();
+    private searchOriginSubject = new Subject<string>();
+    private searchDestinationSubject = new Subject<string>();
 
     // ViewChild
     @ViewChild('menu') menu!: Menu;
@@ -146,18 +150,15 @@ export class CompanyComponent implements OnInit, OnDestroy {
             phone: [''],
             email: ['', Validators.email]
         });
-        this.formRoute = this.fb.group(
-            {
-                id: [''],
-                originProvince: [null, Validators.required],
-                distanceInKm: [null, [Validators.required, Validators.min(1)]],
-                rate: [null, [Validators.min(0)]],
-                originId: [{ value: '', disabled: true }, Validators.required],
-                destinationId: [{ value: '', disabled: true }, Validators.required],
-                destinationProvince: [null, Validators.required]
-            }
-        );
-
+        this.formRoute = this.fb.group({
+            id: [''],
+            originProvince: [null, Validators.required],
+            distanceInKm: [null, [Validators.required, Validators.min(1)]],
+            rate: [null, [Validators.min(0)]],
+            originId: [{ value: '', disabled: true }, Validators.required],
+            destinationId: [{ value: '', disabled: true }, Validators.required],
+            destinationProvince: [null, Validators.required]
+        });
 
         // Mostrar errores globales
         effect(() => {
@@ -188,6 +189,32 @@ export class CompanyComponent implements OnInit, OnDestroy {
                 this.loadCompanies(page, size, this.selectedType);
             } else {
                 this.searchCompanies(term, page, size, this.selectedType);
+            }
+        });
+
+        this.searchOriginSubject.pipe(takeUntil(this.destroy$), debounceTime(800), distinctUntilChanged()).subscribe((term) => {
+            const trimmedOrigin = term.trim();
+            const trimmedDestination = this.searchDestinationTerm().trim();
+
+            this.searchOriginTerm.set(trimmedOrigin);
+
+            if (trimmedOrigin === '' && trimmedDestination === '') {
+                this.loadClientRates();
+            } else {
+                this.searchClientRates();
+            }
+        });
+
+        this.searchDestinationSubject.pipe(takeUntil(this.destroy$), debounceTime(800), distinctUntilChanged()).subscribe((term) => {
+            const trimmedDestination = term.trim();
+            const trimmedOrigin = this.searchOriginTerm().trim();
+
+            this.searchDestinationTerm.set(trimmedDestination);
+
+            if (trimmedDestination === '' && trimmedOrigin === '') {
+                this.loadClientRates();
+            } else {
+                this.searchClientRates();
             }
         });
     }
@@ -234,6 +261,15 @@ export class CompanyComponent implements OnInit, OnDestroy {
                 command: () => {
                     if (this.selectedRate) {
                         this.confirmDeleteRates(this.selectedRate);
+                    }
+                }
+            },
+            {
+                label: 'Editar',
+                icon: 'pi pi-pencil',
+                command: () => {
+                    if (this.selectedRate) {
+                        this.openDialogRoutes(this.selectedRate);
                     }
                 }
             }
@@ -314,6 +350,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
             this.routeService.clearCitiesOrigin();
         }
     }
+
     onProvinceDestinChange(event: { value: string }): void {
         const provinceId = event.value;
         this.selectedProvinceDestinId.set(provinceId);
@@ -503,8 +540,43 @@ export class CompanyComponent implements OnInit, OnDestroy {
         this.initMenuItemsRate();
         if (this.selectedCompany) {
             this.dialogRatesClient = true;
-            this.routeService.getRoutesClientRates(1, 10, '', '', this.selectedCompany?.id).subscribe();
+            this.loadClientRates();
         }
+    }
+
+    loadClientRates() {
+        this.routeService.getRoutesClientRates(1, 10, '', '', this.selectedCompany?.id).subscribe();
+    }
+
+    private searchClientRates(): void {
+        const page = 1;
+        const size = this.pageSize();
+
+        if (this.searchOriginTerm().trim() === '' && this.searchDestinationTerm().trim() === '') {
+            this.loadClientRates();
+        } else {
+            this.routeService.getRoutesClientRates(page, size, this.searchOriginTerm().trim() || undefined, this.searchDestinationTerm().trim() || undefined, this.selectedCompany?.id).subscribe();
+        }
+    }
+
+    onSearchOriginChange(event: Event): void {
+        const value = (event.target as HTMLInputElement).value;
+        this.searchOriginSubject.next(value);
+    }
+
+    onSearchDestinationChange(event: Event): void {
+        const value = (event.target as HTMLInputElement).value;
+        this.searchDestinationSubject.next(value);
+    }
+
+    clearSearchOrigin(): void {
+        this.searchOriginTerm.set('');
+        this.searchOriginSubject.next('');
+    }
+
+    clearSearchDestination(): void {
+        this.searchDestinationTerm.set('');
+        this.searchDestinationSubject.next('');
     }
 
     closeDialogRatesClient(): void {
@@ -546,30 +618,28 @@ export class CompanyComponent implements OnInit, OnDestroy {
     }
 
     //=======================registrar nueva tarifa===============================ç
-    openDialogRoutes(route?: RouteResponse) {
+    openDialogRoutes(rate?: ClientRateResponse) {
         this.formRoute.reset();
         this.selectedProvinceDestinId.set(null);
         this.selectedProvinceOriginId.set(null);
         this.routeService.clearCitiesOrigin();
         this.routeService.clearCitiesDestination();
-        this.editMode = false;
-        this.routeId = route ? route.id : null;
+        (this.editMode = !!rate), (this.rateId = rate ? rate.id : null);
         this.isSubmitted = false;
 
-        if (route) {
+        if (rate) {
             const formData = {
-                id: route.id,
-                distanceInKm: route.distanceInKm,
-                clientRate: route.clientRate,
-                carrierRate: route.carrierRate,
-                originId: route.originId,
-                destinationId: route.destinationId,
-                originProvince: route.origin.provinceId,
-                destinationProvince: route.destination.provinceId
+                id: rate.id,
+                distanceInKm: rate.route.distanceInKm,
+                rate: rate.rate,
+                originId: rate.route.originId,
+                destinationId: rate.route.destinationId,
+                originProvince: rate.route.origin.provinceId,
+                destinationProvince: rate.route.destination.provinceId
             };
 
-            this.loadCitiesForProvinceOrigin(route.origin.provinceId);
-            this.loadCitiesForProvinceDestin(route.destination.provinceId);
+            this.loadCitiesForProvinceOrigin(rate.route.origin.provinceId);
+            this.loadCitiesForProvinceDestin(rate.route.destination.provinceId);
 
             setTimeout(() => {
                 this.formRoute.patchValue(formData, { emitEvent: false });
@@ -577,12 +647,14 @@ export class CompanyComponent implements OnInit, OnDestroy {
                 this.formRoute.get('destinationId')?.disable();
                 this.formRoute.get('originProvince')?.disable();
                 this.formRoute.get('destinationProvince')?.disable();
+                this.formRoute.get('distanceInKm')?.disable();
             });
         } else {
             this.formRoute.get('originId')?.disable();
             this.formRoute.get('destinationId')?.disable();
             this.formRoute.get('originProvince')?.enable();
             this.formRoute.get('destinationProvince')?.enable();
+            this.formRoute.get('distanceInKm')?.enable();
         }
         this.loadAllProvinces();
         this.dialogRoutes.set(true);
@@ -611,17 +683,20 @@ export class CompanyComponent implements OnInit, OnDestroy {
             destinationId: formValue.destinationId,
             clientId: this.selectedCompany?.id ?? '',
             distanceInKm: formValue.distanceInKm
-        }
-        console.log(createData);
+        };
 
-        const operation = this.routeService.registerRouteClientRate(createData);
+        let updateDate: UpdateRateClientData = {
+            rate: formValue.rate
+        };
+
+        const operation = this.editMode && this.rateId ? this.routeService.updateRouteClientRate(this.rateId, updateDate) : this.routeService.registerRouteClientRate(createData);
 
         operation.subscribe({
             next: () => {
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
-                    detail: 'La ruta ha sido registrada correctamente.',
+                    detail: this.editMode ? 'La tarifa ha sido actualiza correctamente.' : 'La ruta ha sido creada correctamente',
                     life: 3000
                 });
                 this.closeDialogRoutes();
@@ -634,8 +709,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
 
                 this.isSubmitted = false;
             }
-
-        })
+        });
     }
 
     onDestinationCityChange(): void {
@@ -646,14 +720,22 @@ export class CompanyComponent implements OnInit, OnDestroy {
             this.routeService.findRouteByCities(originId, destinationId).subscribe({
                 next: (response) => {
                     if (response.data) {
-                        // Si existe la ruta, autocompletamos la distancia
+                        this.messageService.add({
+                            severity: 'info',
+                            summary: 'Aviso',
+                            detail: 'Ya existe la ruta, ingrese la tarifa de viaje, por favor',
+                            life: 3000
+                        });
+
                         this.formRoute.patchValue({
                             distanceInKm: response.data.distanceInKm
                         });
+                        this.formRoute.get('distanceInKm')?.disable();
+
                         const rateClient = response.data.clientRate;
                         this.referentialRateText = rateClient ? `${rateClient} (referencial)` : '';
                     } else {
-                        // Si no existe, reseteamos los campos numéricos
+                        this.formRoute.get('distanceInKm')?.enable();
                         this.formRoute.patchValue({
                             distanceInKm: null,
                             rate: null

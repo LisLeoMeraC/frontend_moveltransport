@@ -181,14 +181,14 @@
                         <p-inputicon>
                             <i class="pi pi-search"></i>
                         </p-inputicon>
-                        <input pInputText type="text" placeholder="Buscar origen..." />
+                        <input pInputText type="text" placeholder="Buscar origen..." [value]="searchOriginTerm()" (input)="onSearchOriginChange($event)" />
                     </p-iconfield>
 
                     <p-iconfield iconPosition="left">
                         <p-inputicon>
                             <i class="pi pi-search"></i>
                         </p-inputicon>
-                        <input pInputText type="text" placeholder="Buscar destino..." />
+                        <input pInputText type="text" placeholder="Buscar destino..." [value]="searchDestinationTerm()" (input)="onSearchDestinationChange($event)" />
                     </p-iconfield>
                 </div>
             </div>
@@ -247,7 +247,7 @@
     </ng-template>
 </p-dialog>
 
-<p-dialog header="Agregar Ruta" [(visible)]="dialogRoutes" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false" (onhide)="closeDialogRoutes()">
+<p-dialog [header]="editMode ? 'Editar Tarifa de Ruta' : 'Agregar Ruta'" [(visible)]="dialogRoutes" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false" (onhide)="closeDialogRoutes()">
     <form class="p-fluid" [formGroup]="formRoute" (ngSubmit)="onSubmitRoutes()">
         <div class="flex flex-col gap-4">
             <div class="flex flex-col gap-2 w-full">
@@ -378,7 +378,7 @@
             </div>
         </div>
         <div class="flex justify-end mt-4">
-            <button pButton label="Registrar" icon="pi pi-save" type="submit" class="p-button-primary" [disabled]="invalidRateComparison() || formRoute.invalid"></button>
+            <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary" [disabled]="invalidRateComparison() || formRoute.invalid"></button>
         </div>
     </form>
 </p-dialog>

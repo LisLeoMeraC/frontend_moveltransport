@@ -3,7 +3,7 @@ import { environment } from '../../../environments/environment';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
 import { catchError, finalize, Observable, tap, throwError } from 'rxjs';
-import { CityResponse, ClientRateResponse, CreateRouteData, ProvinceResponse, RateClientData, RouteResponse, UpdateRouteData } from '../models/routess.model';
+import { CityResponse, ClientRateResponse, CreateRateClientData, CreateRouteData, ProvinceResponse, RateClientData, RouteResponse, UpdateRateClientData, UpdateRouteData } from '../models/routess.model';
 import { ApiResponse, Pagination } from '../models/shared.model';
 import { BaseHttpService } from './base-http.service';
 
@@ -13,6 +13,7 @@ import { BaseHttpService } from './base-http.service';
 export class RouteService extends BaseHttpService<RouteResponse> {
     private readonly baseUrl = environment.apiUrl;
     private routes = signal<RouteResponse[]>([]);
+    private ratesClient = signal<ClientRateResponse[]>([]);
     readonly routesList = this.routes.asReadonly();
     private provinces = signal<ProvinceResponse[]>([]);
     readonly provinceList = this.provinces.asReadonly();
@@ -220,13 +221,48 @@ export class RouteService extends BaseHttpService<RouteResponse> {
     }
 
     //registrar nueva tarifa
-    registerRouteClientRate(rateClient: RateClientData): Observable<ApiResponse<ClientRateResponse>> {
+    registerRouteClientRate(rateClient: CreateRateClientData): Observable<ApiResponse<ClientRateResponse>> {
         this.clearError();
         this.loading.set(true);
         return this.http.post<ApiResponse<ClientRateResponse>>(`${this.baseUrl}/route-client-rate`, rateClient).pipe(
             tap((response) => this.handleApiResponse(response)),
             catchError(this.handleHttpError<ApiResponse<ClientRateResponse>>('Error al registrar tarifa de cliente')),
             finalize(() => this.loading.set(false))
-        )
+        );
+    }
+
+    updateRouteClientRate(id: string, rateClient: UpdateRateClientData): Observable<ApiResponse<ClientRateResponse>> {
+        this.loading.set(true);
+        this.clearError();
+        return this.http.put<ApiResponse<ClientRateResponse>>(`${this.baseUrl}/route-client-rate/${id}`, rateClient).pipe(
+            tap((response) => this.handleApiResponse(response)),
+            catchError(this.handleHttpError<ApiResponse<ClientRateResponse>>('Error al actualizar ruta')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+
+    searchClientRateByCities(companyId: string, page: number = 1, limit: number = 10, origin?: string, destination?: string): Observable<ApiResponse<ClientRateResponse[]>> {
+        this.loading.set(true);
+        this.clearError();
+
+        let params = new HttpParams().set('page', page.toString()).set('limit', limit.toString()).set('companyId', companyId);
+
+        if (origin) {
+            params = params.set('origin', origin);
+        }
+        if (destination) {
+            params = params.set('destination', destination);
+        }
+
+        return this.http.get<ApiResponse<ClientRateResponse[]>>(`${this.baseUrl}/route-client-rate/filter-by-cities`, { params }).pipe(
+            tap((response) => {
+                if (this.handleApiResponse(response)) {
+                    this.ratesClient.set(response.data || []);
+                    if (response.pagination) this.setPagination(response.pagination);
+                }
+            }),
+            catchError(this.handleHttpError<ApiResponse<ClientRateResponse[]>>('Error al buscar tarifas del cliente')),
+            finalize(() => this.loading.set(false))
+        );
     }
 }
