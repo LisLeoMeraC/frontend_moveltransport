@@ -48,10 +48,31 @@ export interface ClientRateResponse {
     route: RouteResponse;
 }
 
+export interface RateCarrierData {
+    id?: string;
+    rate: number;
+    originId: string;
+    destinationId: string;
+    carrierId: string;
+    distanceInKm: number;
+}
+
+export interface RateCarrierResponse {
+    id: string;
+    routeId: string;
+    carrierId: string;
+    rate: number;
+    route: RouteResponse;
+}
+
 export type CreateRouteData = Omit<RouteData, 'id'>;
 
 export type CreateRateClientData = Omit<RateClientData, 'id'>;
 
+export type CreateRateCarrierData = Omit<RateCarrierData, 'id'>;
+
 export type UpdateRouteData = Pick<RouteData, 'distanceInKm' | 'clientRate' | 'carrierRate'>;
 
 export type UpdateRateClientData = Pick<RateClientData, 'rate'>;
+
+export type UpdateRateCarrierData = Pick<RateCarrierData, 'rate'>;

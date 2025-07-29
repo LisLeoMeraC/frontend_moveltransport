@@ -111,7 +111,6 @@ export class CompanyComponent implements OnInit, OnDestroy {
     companies = this.companyService.companiesList;
     isLoading = this.companyService.isLoading;
     isloadingRoutes = this.routeService.isLoading;
-    //hasError = this.companyService.hasError;
     pagination = this.companyService.paginationData;
     referentialRateText: string = '';
     searchOriginTerm = signal('');
@@ -696,7 +695,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
-                    detail: this.editMode ? 'La tarifa ha sido actualiza correctamente.' : 'La ruta ha sido creada correctamente',
+                    detail: this.editMode ? 'La tarifa ha sido actualizada correctamente.' : 'La ruta ha sido creada correctamente',
                     life: 3000
                 });
                 this.closeDialogRoutes();

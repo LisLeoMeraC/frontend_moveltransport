@@ -22,6 +22,8 @@ import { Menu, MenuModule } from 'primeng/menu';
 import { Paginator, PaginatorModule } from 'primeng/paginator';
 import { SelectModule } from 'primeng/select';
 import { IdentificationType } from '../../pages/models/shared.model';
+import { RouteService } from '../../pages/service/route.service';
+import { CreateRateCarrierData, RateCarrierResponse, RouteResponse, UpdateRateCarrierData } from '../../pages/models/routess.model';
 
 @Component({
     selector: 'app-vehicle-owner',
@@ -53,16 +55,17 @@ import { IdentificationType } from '../../pages/models/shared.model';
 export class VehicleOwnerComponent implements OnInit, OnDestroy {
     //Formulario
     registerFormVehicleOwner: FormGroup;
+    formCarrierRate: FormGroup;
 
     //Estados reactivos
     pageSize = signal(5);
     first = signal(0);
     isDisabling = signal(false);
+    isDeleting = signal(false);
 
     //Flags y controles de UI
     showNumberOnlyWarning = false;
     isSubmitted = true;
-    isDeleting = false;
     editMode = false;
 
     //Diálogos
@@ -70,22 +73,44 @@ export class VehicleOwnerComponent implements OnInit, OnDestroy {
     dialogDeleteVehicleOwner: boolean = false;
     dialogDisableVehicleOwner: boolean = false;
     dialogEnableVehicleOwner: boolean = false;
+    dialogRatesCarrier = signal(false);
+    dialogDeleteRate = signal(false);
+    dialogRoutes = signal(false);
 
     //Selecciones actuales
     selectedVehicleOwner?: VehicleOwnerResponse;
     vehicleOwnerToEnable: VehicleOwnerResponse | null = null;
     vehicleOwnerToDisable: VehicleOwnerResponse | null = null;
     vehicleOwnerToDelete: VehicleOwnerResponse | null = null;
+    rateToDelete: RateCarrierResponse | null = null;
+    selectedRate?: RateCarrierResponse;
     vehicleOwnerId: string | null = null;
+
+    selectedProvinceOriginId = signal<string | null>(null);
+    selectedProvinceDestinId = signal<string | null>(null);
+    rateId: string | null = null;
+    selectedRoute?: RouteResponse;
+    invalidRateComparison = signal(false);
 
     //Dattos y servicios
     private vehicleOwnerService = inject(VehicleOwnerService);
+    private routeService = inject(RouteService);
     vehicleOwners = this.vehicleOwnerService.vehicleOwnersList;
     isLoading = this.vehicleOwnerService.isLoading;
     hasError = this.vehicleOwnerService.hasError;
     pagination = this.vehicleOwnerService.paginationData;
     searchTerm: string = '';
     menuItems: MenuItem[] = [];
+    menuItemsRate: MenuItem[] = [];
+
+    routes = this.routeService.routesList;
+    provinces = this.routeService.provinceList;
+    originCities = this.routeService.originCityList;
+    destinationCities = this.routeService.destinationCitiesList;
+    isLoadingRoutes = this.routeService.isLoading;
+    referentialRateText: string = '';
+    searchOriginTerm = signal('');
+    searchDestinationTerm = signal('');
 
     //Tipos
     identificationTypes = this.vehicleOwnerService.getIdentificationTypes();
@@ -93,10 +118,13 @@ export class VehicleOwnerComponent implements OnInit, OnDestroy {
     //RxJS
     private destroy$ = new Subject<void>();
     private searchSubject = new Subject<string>();
+    private searchOriginSubject = new Subject<string>();
+    private searchDestinationSubject = new Subject<string>();
 
     //ViewChild
     @ViewChild('paginator') paginator!: Paginator;
     @ViewChild('menu') menu!: Menu;
+    @ViewChild('menuRate') menuRate!: Menu;
 
     constructor(
         private fb: FormBuilder,
@@ -110,6 +138,17 @@ export class VehicleOwnerComponent implements OnInit, OnDestroy {
             phone: [''],
             email: ['', Validators.email]
         });
+
+        this.formCarrierRate = this.fb.group({
+            id: [''],
+            originProvince: [null, Validators.required],
+            distanceInKm: [null, [Validators.required, Validators.min(1)]],
+            rate: [null, [Validators.min(0)]],
+            originId: [{ value: '', disabled: true }, Validators.required],
+            destinationId: [{ value: '', disabled: true }, Validators.required],
+            destinationProvince: [null, Validators.required]
+        });
+
         //Mostrar errores de forma global
         effect(() => {
             const error = this.hasError();
@@ -133,6 +172,32 @@ export class VehicleOwnerComponent implements OnInit, OnDestroy {
                 this.loadVehicleOwners(1, this.pageSize());
             } else {
                 this.searchVehicleOwner(term, 1, this.pageSize());
+            }
+        });
+
+        this.searchOriginSubject.pipe(takeUntil(this.destroy$), debounceTime(800), distinctUntilChanged()).subscribe((term) => {
+            const trimmedOrigin = term.trim();
+            const trimmedDestination = this.searchDestinationTerm().trim();
+
+            this.searchOriginTerm.set(trimmedOrigin);
+
+            if (trimmedOrigin === '' && trimmedDestination === '') {
+                this.loadCarrierRates();
+            } else {
+                this.searchCarrierRates();
+            }
+        });
+
+        this.searchDestinationSubject.pipe(takeUntil(this.destroy$), debounceTime(800), distinctUntilChanged()).subscribe((term) => {
+            const trimmedDestination = term.trim();
+            const trimmedOrigin = this.searchOriginTerm().trim();
+
+            this.searchDestinationTerm.set(trimmedDestination);
+
+            if (trimmedDestination === '' && trimmedOrigin === '') {
+                this.loadCarrierRates();
+            } else {
+                this.searchCarrierRates();
             }
         });
     }
@@ -165,13 +230,48 @@ export class VehicleOwnerComponent implements OnInit, OnDestroy {
                         this.confirmDisableVehicleOwner(this.selectedVehicleOwner);
                     }
                 }
+            },
+            {
+                label: 'Tarifas',
+                icon: 'pi pi-money-bill',
+                command: () => this.selectedVehicleOwner && this.openDialogCarrierRates()
             }
         ];
     }
+
+    initMenuItemsRate(): void {
+        this.menuItemsRate = [
+            {
+                label: 'Editar',
+                icon: 'pi pi-pencil',
+                command: () => {
+                    if (this.selectedRate) {
+                        this.openDialogRoutes(this.selectedRate);
+                    }
+                }
+            },
+            {
+                label: 'Eliminar',
+                icon: 'pi pi-trash',
+                command: () => {
+                    if (this.selectedRate) {
+                        this.confirmDeleteRates(this.selectedRate);
+                    }
+                }
+            }
+        ];
+    }
+
     toggleMenu(event: Event, vehicleOwner: VehicleOwnerResponse): void {
         this.selectedVehicleOwner = vehicleOwner;
         this.menu.toggle(event);
     }
+
+    toggleMenuRate(event: Event, rate: RateCarrierResponse): void {
+        this.selectedRate = rate;
+        this.menuRate.toggle(event);
+    }
+
     onPageChange(event: any): void {
         const newPage = event.page + 1;
         const newSize = event.rows;
@@ -189,6 +289,59 @@ export class VehicleOwnerComponent implements OnInit, OnDestroy {
             if (page === 1) this.first.set(0);
         });
     }
+
+    loadAllProvinces(): void {
+        this.routeService.loadProvinces().subscribe();
+    }
+
+    onProvinceOriginChange(event: { value: string }): void {
+        const provinceId = event.value;
+        this.selectedProvinceOriginId.set(provinceId);
+
+        if (provinceId) {
+            this.formCarrierRate.get('originId')?.enable();
+            const selectedOriginProvince = this.routeService.provinceList().find((p) => p.id === provinceId);
+            const provinceName = selectedOriginProvince?.id || '';
+            this.loadCitiesForProvinceOrigin(provinceName);
+        } else {
+            this.formCarrierRate.get('originId')?.disable();
+            this.formCarrierRate.get('originId')?.setValue(null);
+            this.routeService.clearCitiesOrigin();
+        }
+    }
+
+    onProvinceDestinChange(event: { value: string }): void {
+        const provinceId = event.value;
+        this.selectedProvinceDestinId.set(provinceId);
+
+        if (provinceId) {
+            this.formCarrierRate.get('destinationId')?.enable();
+            const selectedDestinProvince = this.routeService.provinceList().find((p) => p.id === provinceId);
+            const provinceName = selectedDestinProvince?.id || '';
+            this.loadCitiesForProvinceDestin(provinceName);
+        } else {
+            this.formCarrierRate.get('destinationId')?.disable();
+            this.formCarrierRate.get('destinationId')?.setValue(null);
+            this.routeService.clearCitiesDestination();
+        }
+    }
+
+    loadCitiesForProvinceOrigin(term: string, page: number = 1, limit: number = 30): void {
+        this.routeService.loadCitiesForProvinceOrigin(term, { page, limit }).subscribe(() => {
+            if (this.paginator) {
+                if (page === 1) this.first.set(0);
+            }
+        });
+    }
+
+    loadCitiesForProvinceDestin(term: string, page: number = 1, limit: number = 30): void {
+        this.routeService.loadCitiesForProvinceDestination(term, { page, limit }).subscribe(() => {
+            if (this.paginator) {
+                if (page === 1) this.first.set(0);
+            }
+        });
+    }
+
     //========== Validaciones ==========
     validarIdentificacion(control: AbstractControl): ValidationErrors | null {
         const tipoIdentificacion = this.registerFormVehicleOwner?.get('identificationType')?.value;
@@ -444,7 +597,7 @@ export class VehicleOwnerComponent implements OnInit, OnDestroy {
     }
     deleteVehicleOwner(): void {
         if (!this.vehicleOwnerToDelete) return;
-        this.isDeleting = true;
+        this.isDeleting.set(true);
 
         this.vehicleOwnerService.deleteCompany(this.vehicleOwnerToDelete.id).subscribe({
             next: () => {
@@ -460,11 +613,227 @@ export class VehicleOwnerComponent implements OnInit, OnDestroy {
             },
             complete: () => {
                 this.dialogDeleteVehicleOwner = false;
-                this.isDeleting = false;
+                this.isDeleting.set(false);
                 this.vehicleOwnerToDelete = null;
             }
         });
     }
+
+    //==================Tarifas del transportista=======================
+    openDialogCarrierRates(): void {
+        this.routeService.resetRoutes();
+        this.initMenuItemsRate();
+        if (this.selectedVehicleOwner) {
+            this.dialogRatesCarrier.set(true);
+            this.loadCarrierRates();
+        }
+    }
+
+    loadCarrierRates() {
+        this.routeService.getRoutesCarrierRates(1, 10, '', '', this.selectedVehicleOwner?.id).subscribe();
+    }
+
+    private searchCarrierRates(): void {
+        const page = 1;
+        const size = this.pageSize();
+
+        if (this.searchOriginTerm().trim() === '' && this.searchDestinationTerm().trim() === '') {
+            this.loadCarrierRates();
+        } else {
+            this.routeService.getRoutesCarrierRates(page, size, this.searchOriginTerm().trim() || undefined, this.searchDestinationTerm().trim() || undefined, this.selectedVehicleOwner?.id).subscribe();
+        }
+    }
+
+    onSearchOriginChange(event: Event): void {
+        const value = (event.target as HTMLInputElement).value;
+        this.searchOriginSubject.next(value);
+    }
+
+    onSearchDestinationChange(event: Event): void {
+        const value = (event.target as HTMLInputElement).value;
+        this.searchDestinationSubject.next(value);
+    }
+
+    clearSearchOrigin(): void {
+        this.searchOriginTerm.set('');
+        this.searchOriginSubject.next('');
+    }
+
+    clearSearchDestination(): void {
+        this.searchDestinationTerm.set('');
+        this.searchDestinationSubject.next('');
+    }
+
+    //================PARA REGISTRAR UNA NUVA TARIFA=======================
+    openDialogRoutes(rate?: RateCarrierResponse) {
+        this.formCarrierRate.reset();
+        this.selectedProvinceDestinId.set(null);
+        this.selectedProvinceOriginId.set(null);
+        this.routeService.clearCitiesOrigin();
+        this.routeService.clearCitiesDestination();
+        (this.editMode = !!rate), (this.rateId = rate ? rate.id : null);
+        this.isSubmitted = false;
+
+        if (rate) {
+            const formData = {
+                id: rate.id,
+                distanceInKm: rate.route.distanceInKm,
+                rate: rate.rate,
+                originId: rate.route.originId,
+                destinationId: rate.route.destinationId,
+                originProvince: rate.route.origin.provinceId,
+                destinationProvince: rate.route.destination.provinceId
+            };
+
+            this.loadCitiesForProvinceOrigin(rate.route.origin.provinceId);
+            this.loadCitiesForProvinceDestin(rate.route.destination.provinceId);
+
+            setTimeout(() => {
+                this.formCarrierRate.patchValue(formData, { emitEvent: false });
+                this.formCarrierRate.get('originId')?.disable();
+                this.formCarrierRate.get('destinationId')?.disable();
+                this.formCarrierRate.get('originProvince')?.disable();
+                this.formCarrierRate.get('destinationProvince')?.disable();
+                this.formCarrierRate.get('distanceInKm')?.disable();
+            });
+        } else {
+            this.formCarrierRate.get('originId')?.disable();
+            this.formCarrierRate.get('destinationId')?.disable();
+            this.formCarrierRate.get('originProvince')?.enable();
+            this.formCarrierRate.get('destinationProvince')?.enable();
+            this.formCarrierRate.get('distanceInKm')?.enable();
+        }
+        this.loadAllProvinces();
+        this.dialogRoutes.set(true);
+    }
+
+    closeDialogRoutes() {
+        this.dialogRoutes.set(false);
+        this.formCarrierRate.reset();
+    }
+
+    onSubmitRoutes() {
+        if (!this.checkFormValidities()) {
+            this.messageService.add({
+                severity: 'error',
+                summary: 'Error',
+                detail: 'Por favor, complete los campos requeridos',
+                life: 3000
+            });
+        }
+        this.isSubmitted = true;
+        const formValue = this.formCarrierRate.getRawValue();
+
+        let createData: CreateRateCarrierData = {
+            rate: formValue.rate,
+            originId: formValue.originId,
+            destinationId: formValue.destinationId,
+            carrierId: this.selectedVehicleOwner?.id ?? '',
+            distanceInKm: formValue.distanceInKm
+        };
+
+        let updateDate: UpdateRateCarrierData = {
+            rate: formValue.rate
+        };
+
+        const operation = this.editMode && this.rateId ? this.routeService.updateRouteCarrierRate(this.rateId, updateDate) : this.routeService.registerRouteCarrierRate(createData);
+        operation.subscribe({
+            next: () => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: this.editMode ? 'La tarifa ha sido actualizada correctamente' : 'La ruta ha sido creada correctamente',
+                    life: 3000
+                });
+                this.closeDialogRoutes();
+                this.formCarrierRate.reset();
+                this.isSubmitted = false;
+                this.loadCarrierRates();
+            },
+            error: (error) => {
+                console.error('Error:', error);
+                this.isSubmitted = false;
+            }
+        });
+    }
+
+    onDestinationCityChange(): void {
+        const originId = this.formCarrierRate.get('originId')?.value;
+        const destinationId = this.formCarrierRate.get('destinationId')?.value;
+
+        if (originId && destinationId) {
+            this.routeService.findRouteByCities(originId, destinationId).subscribe({
+                next: (response) => {
+                    if (response.data) {
+                        this.messageService.add({
+                            severity: 'info',
+                            summary: 'Aviso',
+                            detail: 'Ya existe la ruta, ingrese la tarifa de viaje, por favor',
+                            life: 3000
+                        });
+
+                        this.formCarrierRate.patchValue({
+                            distanceInKm: response.data.distanceInKm
+                        });
+                        this.formCarrierRate.get('distanceInKm')?.disable();
+
+                        const rateClient = response.data.clientRate;
+                        this.referentialRateText = rateClient ? `${rateClient} (referencial)` : '';
+                    } else {
+                        this.formCarrierRate.get('distanceInKm')?.enable();
+                        this.formCarrierRate.patchValue({
+                            distanceInKm: null,
+                            rate: null
+                        });
+                        this.referentialRateText = '';
+                    }
+                },
+                error: (err) => {
+                    console.error('Error al buscar ruta:', err);
+                    // Reseteamos los campos en caso de error
+                    this.formCarrierRate.patchValue({
+                        distanceInKm: null,
+                        clientRate: null,
+                        carrierRate: null
+                    });
+                }
+            });
+        }
+    }
+
+    //==============Para eliminar una tarifa============================
+    confirmDeleteRates(rate: RateCarrierResponse): void {
+        console.log('Datos recibidos:', rate);
+        this.rateToDelete = rate;
+        this.dialogDeleteRate.set(true);
+    }
+    deleteRate(): void {
+        if (!this.rateToDelete) return;
+        this.isDeleting.set(true);
+
+        this.routeService.deleteRouteCarriertRate(this.rateToDelete.id).subscribe({
+            next: (response) => {
+                this.messageService.add({
+                    severity: 'success',
+                    summary: 'Éxito',
+                    detail: 'Tarifa eliminada correctamente',
+                    life: 5000
+                });
+                this.isDeleting = signal(false);
+                this.dialogDeleteRate.set(false);
+                this.loadCarrierRates();
+            },
+            error: (err) => {
+                this.messageService.add({
+                    severity: 'error',
+                    summary: 'Error',
+                    detail: 'No se pudo eliminar la tarifa',
+                    life: 5000
+                });
+            }
+        });
+    }
+
     //========== Utilidades ==========
     limpiarIdentificacion() {
         this.registerFormVehicleOwner.reset();
@@ -498,5 +867,80 @@ export class VehicleOwnerComponent implements OnInit, OnDestroy {
         ['identification', 'identificationType', 'name', 'address', 'phone', 'email'].forEach((field) => {
             this.registerFormVehicleOwner.get(field)?.[action]();
         });
+    }
+
+    checkFormValidities(): boolean {
+        const required = ['distanceInKm', 'originId', 'destinationId'];
+        let isValid = true;
+        const invalidFields = [];
+
+        for (const field of required) {
+            const control = this.formCarrierRate.get(field);
+            if (control?.invalid) {
+                control.markAsTouched();
+                isValid = false;
+                invalidFields.push(field);
+            }
+        }
+
+        const clientRate = this.formCarrierRate.get('clientRate');
+        if (clientRate?.invalid) {
+            clientRate.markAsTouched();
+            isValid = false;
+            invalidFields.push('clientRate');
+        }
+
+        const carrierRate = this.formCarrierRate.get('carrierRate');
+        if (carrierRate?.invalid) {
+            carrierRate.markAsTouched();
+            isValid = false;
+            invalidFields.push('carrierRate');
+        }
+
+        if (this.invalidRateComparison()) {
+            isValid = false;
+        }
+
+        return isValid;
+    }
+
+    private validateRateComparison(formGroup: FormGroup): ValidationErrors | null {
+        const clientRate = formGroup.get('clientRate')?.value;
+        const carrierRate = formGroup.get('carrierRate')?.value;
+
+        if (clientRate !== null && carrierRate !== null && typeof clientRate === 'number' && typeof carrierRate === 'number') {
+            return carrierRate > clientRate ? { invalidRateComparison: true } : null;
+        }
+        return null;
+    }
+
+    private checkRateComparison(): void {
+        const clientRate = this.formCarrierRate.get('clientRate')?.value;
+        const carrierRate = this.formCarrierRate.get('carrierRate')?.value;
+
+        if (clientRate !== null && carrierRate !== null && !isNaN(clientRate) && !isNaN(carrierRate)) {
+            this.invalidRateComparison.set(Number(carrierRate) > Number(clientRate));
+        } else {
+            this.invalidRateComparison.set(false);
+        }
+    }
+
+    allowOnlyDecimal(event: KeyboardEvent): void {
+        const inputChar = String.fromCharCode(event.charCode);
+
+        // Solo permite números y el punto decimal (pero no múltiples puntos)
+        const allowedRegex = /^[0-9.]$/;
+        if (!allowedRegex.test(inputChar)) {
+            event.preventDefault();
+            return;
+        }
+
+        const input = event.target as HTMLInputElement;
+        const currentValue = input.value;
+
+        // Evita múltiples puntos
+        if (inputChar === '.' && currentValue.includes('.')) {
+            event.preventDefault();
+        }
     }
 }

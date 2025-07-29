@@ -3,7 +3,20 @@ import { environment } from '../../../environments/environment';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
 import { catchError, finalize, Observable, tap, throwError } from 'rxjs';
-import { CityResponse, ClientRateResponse, CreateRateClientData, CreateRouteData, ProvinceResponse, RateClientData, RouteResponse, UpdateRateClientData, UpdateRouteData } from '../models/routess.model';
+import {
+    CityResponse,
+    ClientRateResponse,
+    CreateRateCarrierData,
+    CreateRateClientData,
+    CreateRouteData,
+    ProvinceResponse,
+    RateCarrierResponse,
+    RateClientData,
+    RouteResponse,
+    UpdateRateCarrierData,
+    UpdateRateClientData,
+    UpdateRouteData
+} from '../models/routess.model';
 import { ApiResponse, Pagination } from '../models/shared.model';
 import { BaseHttpService } from './base-http.service';
 
@@ -262,6 +275,66 @@ export class RouteService extends BaseHttpService<RouteResponse> {
                 }
             }),
             catchError(this.handleHttpError<ApiResponse<ClientRateResponse[]>>('Error al buscar tarifas del cliente')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+
+    getRoutesCarrierRates(page: number = 1, limit: number = 10, origin?: string, destination?: string, carrierId: string = ''): Observable<ApiResponse<RouteResponse[]>> {
+        this.loading.set(true);
+        this.clearError();
+
+        let params = new HttpParams().set('page', page.toString()).set('limit', limit.toString()).set('carrierId', carrierId);
+        if (origin) {
+            params = params.set('origin', origin);
+        }
+        if (destination) {
+            params = params.set('destination', destination);
+        }
+
+        return this.http.get<ApiResponse<RouteResponse[]>>(`${this.baseUrl}/route-carrier-rate/filter-by-cities`, { params }).pipe(
+            tap((response) => {
+                if (this.handleApiResponse(response)) {
+                    this.routes.set(response.data || []);
+                    if (response.pagination) this.setPagination(response.pagination);
+                }
+            }),
+            catchError(this.handleHttpError<ApiResponse<RouteResponse[]>>('Error al obtener tarifas del Transportista')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+
+    registerRouteCarrierRate(rateCarrier: CreateRateCarrierData): Observable<ApiResponse<RateCarrierResponse>> {
+        this.clearError();
+        this.loading.set(true);
+        return this.http.post<ApiResponse<RateCarrierResponse>>(`${this.baseUrl}/route-carrier-rate`, rateCarrier).pipe(
+            tap((response) => this.handleApiResponse(response)),
+            catchError(this.handleHttpError<ApiResponse<RateCarrierResponse>>('Error al registrar tarifa de Transportista')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+
+    updateRouteCarrierRate(id: string, rateCarrier: UpdateRateCarrierData): Observable<ApiResponse<RateCarrierResponse>> {
+        this.loading.set(true);
+        this.clearError();
+        return this.http.put<ApiResponse<RateCarrierResponse>>(`${this.baseUrl}/route-carrier-rate/${id}`, rateCarrier).pipe(
+            tap((response) => this.handleApiResponse(response)),
+            catchError(this.handleHttpError<ApiResponse<RateCarrierResponse>>('Error al actualizar la tarifa de transporte')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+
+    deleteRouteCarriertRate(id: string): Observable<ApiResponse<RouteResponse>> {
+        this.loading.set(true);
+        this.clearError();
+
+        return this.http.delete<ApiResponse<RouteResponse>>(`${this.baseUrl}/route-carrier-rate/${id}`).pipe(
+            tap((response) => {
+                if (this.handleApiResponse(response, 'Error al eliminar tarifa de cliente')) {
+                    const updatedRoutes = this.routes().filter((route) => route.id !== id);
+                    this.routes.set(updatedRoutes);
+                }
+            }),
+            catchError(this.handleHttpError<ApiResponse<RouteResponse>>('Error al eliminar tarifa de transportista')),
             finalize(() => this.loading.set(false))
         );
     }
