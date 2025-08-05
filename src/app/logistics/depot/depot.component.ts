@@ -167,9 +167,9 @@ export class DepotComponent implements OnInit, OnDestroy {
             this.formDepot.patchValue({
                 name: depot.name,
                 address: depot.address,
-                contact: depot.phone,
+                phone: depot.phone,
                 email: depot.email,
-                observations: depot.remarks
+                remark: depot.remarks
             });
         }
     }
