@@ -23,7 +23,7 @@ export class AppMenu {
             {
                 label: 'Home',
                 items: [
-                    { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/app/dashboard'] }, // Con slash inicial
+                    { label: 'Dashboard', icon: 'pi pi-fw pi-home', routerLink: ['/app/dashboard'] } // Con slash inicial
                 ]
             },
             {
@@ -33,19 +33,16 @@ export class AppMenu {
                     { label: 'Propietarios', icon: 'pi pi-users', routerLink: ['/app/logistics/vehicle-owner'] },
                     { label: 'Conductores', icon: 'pi pi-users', routerLink: ['/app/logistics/drivers'] },
                     { label: 'Vehiculos', icon: 'pi pi-car', routerLink: ['/app/logistics/vehicle'] },
+                    { label: 'Depósitos', icon: 'pi pi-shop', routerLink: ['/app/logistics/depot'] }
                 ]
             },
             {
                 label: 'Operaciones',
-                items: [
-                    { label: 'Rutas', icon: 'pi pi-truck', routerLink: ['/app/logistics/routes'] },
-                ]
+                items: [{ label: 'Rutas', icon: 'pi pi-truck', routerLink: ['/app/logistics/routes'] }]
             },
             {
                 label: 'Finanzas',
-                items: [
-                    { label: 'Liquidaciones', icon: 'pi pi-receipt', routerLink: ['/app/logistics/liquidaciones'] }
-                ]
+                items: [{ label: 'Liquidaciones', icon: 'pi pi-receipt', routerLink: ['/app/logistics/liquidaciones'] }]
             }
         ];
     }

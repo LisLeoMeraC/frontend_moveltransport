@@ -711,7 +711,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
         });
     }
 
-    onDestinationCityChange(): void {
+    validityRoutes(): void {
         const originId = this.formRoute.get('originId')?.value;
         const destinationId = this.formRoute.get('destinationId')?.value;
 
@@ -719,13 +719,6 @@ export class CompanyComponent implements OnInit, OnDestroy {
             this.routeService.findRouteByCities(originId, destinationId).subscribe({
                 next: (response) => {
                     if (response.data) {
-                        this.messageService.add({
-                            severity: 'info',
-                            summary: 'Aviso',
-                            detail: 'Ya existe la ruta, ingrese la tarifa de viaje, por favor',
-                            life: 3000
-                        });
-
                         this.formRoute.patchValue({
                             distanceInKm: response.data.distanceInKm
                         });
@@ -734,6 +727,12 @@ export class CompanyComponent implements OnInit, OnDestroy {
                         const rateClient = response.data.clientRate;
                         this.referentialRateText = rateClient ? `${rateClient} (referencial)` : '';
                     } else {
+                        this.messageService.add({
+                            severity: 'info',
+                            summary: 'Aviso',
+                            detail: 'No existe la ruta, ingrese la distancia y la tarifa de viaje, por favor',
+                            life: 3000
+                        });
                         this.formRoute.get('distanceInKm')?.enable();
                         this.formRoute.patchValue({
                             distanceInKm: null,

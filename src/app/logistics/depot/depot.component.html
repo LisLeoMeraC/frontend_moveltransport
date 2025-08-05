@@ -1,0 +1,87 @@
+<p-toast></p-toast>
+<p-toolbar styleClass="p-toolbar p-component mb-0 py-2">
+    <h3 class="m-0 flex align-items-center">Depósitos</h3>
+</p-toolbar>
+
+<div class="card mt-4">
+    <p-table [scrollable]="true" scrollHeight="550px" styleClass="mt-4 w-full" [value]="depots()" [loading]="isLoading()">
+        <ng-template #caption>
+            <div class="flex justify-between items-center flex-column sm:flex-row gap-3">
+                <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogDepot()"></button>
+
+                <p-iconfield iconPosition="left" class="ml-auto">
+                    <p-inputicon>
+                        <i class="pi pi-search"></i>
+                    </p-inputicon>
+                    <input pInputText type="text" placeholder="Buscar..." [(ngModel)]="searchTerm" (ngModelChange)="onSearchChange()" />
+                </p-iconfield>
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+            <tr>
+                <th style="min-width: 200px">Nombre</th>
+                <th style="min-width: 250px">Dirección</th>
+                <th style="min-width: 150px">Contacto</th>
+                <th style="min-width: 200px">Correo</th>
+                <th style="min-width: 250px">Observaciones</th>
+                <th style="min-width: 120px">Acciones</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body" let-depot>
+            <tr>
+                <td>{{ depot.name || 'No registra' }}</td>
+                <td>{{ depot.address || 'No registra' }}</td>
+                <td>{{ depot.phone || 'No registra' }}</td>
+                <td>{{ depot.email || 'No registra' }}</td>
+                <td>{{ depot.remarks || 'No registra' }}</td>
+                <td class="text-center">
+                    <p-button label="Opciones" severity="secondary" icon="pi pi-angle-down" iconPos="right" (click)="toggleMenu($event, depot)" class="p-button-text p-button-ro" />
+                    <p-menu #menu [popup]="true" [model]="menuItems" [appendTo]="'body'"></p-menu>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="6">No existen registros.</td>
+            </tr>
+        </ng-template>
+    </p-table>
+    <p-paginator [rows]="pageSize()" [first]="(pagination().currentPage - 1) * pageSize()" [totalRecords]="pagination().totalRecords" [rowsPerPageOptions]="[5, 10, 25, 100]" (onPageChange)="onPageChange($event)" styleClass="dark-paginator">
+    </p-paginator>
+</div>
+
+<p-dialog [header]="editMode ? 'Editar Depósito' : 'Agregar Depósito'" [(visible)]="dialogDepot" [breakpoints]="{ '960px': '75vw' }" [style]="{ width: '30vw' }" [modal]="true" [draggable]="false" [resizable]="false">
+    <form class="p-fluid" [formGroup]="formDepot" (ngSubmit)="onSubmitDepot()">
+        <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
+                <label for="name" class="text-sm">Nombre <span class="text-red-500">*</span></label>
+                <input pInputText id="name" type="text" class="w-full" autocomplete="off" formControlName="name" required />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label for="address" class="text-sm">Dirección <span class="text-red-500">*</span></label>
+                <input pInputText id="address" type="text" class="w-full" autocomplete="off" formControlName="address" required />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label for="phone" class="text-sm">Teléfono</label>
+                <input pInputText id="phone" type="text" class="w-full" autocomplete="off" formControlName="phone" maxlength="15" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label for="email" class="text-sm">Email</label>
+                <input pInputText id="email" type="email" class="w-full" autocomplete="off" formControlName="email" />
+            </div>
+
+            <div class="flex flex-col gap-1">
+                <label for="remarks" class="text-sm">Observaciones</label>
+                <textarea pInputTextarea id="remarks" rows="3" class="w-full" autocomplete="off" formControlName="remarks"></textarea>
+            </div>
+        </div>
+
+        <div class="flex justify-end mt-4">
+            <button pButton [label]="editMode ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit" class="p-button-primary"></button>
+        </div>
+    </form>
+</p-dialog>
