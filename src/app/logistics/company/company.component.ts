@@ -388,9 +388,15 @@ export class CompanyComponent implements OnInit, OnDestroy {
         this.companyId = company?.id || null;
         this.isSubmitted = false;
 
-        this.habilitarControles(this.editMode);
-
         if (company) {
+            // En modo edición, cargar los datos y habilitar campos editables
+            this.habilitarControles(false);
+            this.registerFormCompany.get('type')?.enable();
+            this.registerFormCompany.get('name')?.enable();
+            this.registerFormCompany.get('address')?.enable();
+            this.registerFormCompany.get('phone')?.enable();
+            this.registerFormCompany.get('email')?.enable();
+
             const formData = {
                 type: company.type,
                 identificationType: company.subject.identificationType,
@@ -401,6 +407,10 @@ export class CompanyComponent implements OnInit, OnDestroy {
                 email: company.subject.email || null
             };
             setTimeout(() => this.registerFormCompany.patchValue(formData, { emitEvent: false }));
+        } else {
+            // En modo agregar, deshabilitar todos los controles excepto identificación
+            this.habilitarControles(false);
+            this.registerFormCompany.get('identification')?.enable();
         }
 
         this.dialogCompany = true;

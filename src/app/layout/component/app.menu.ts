@@ -32,13 +32,16 @@ export class AppMenu {
                     { label: 'Compañias', icon: 'pi pi-building-columns', routerLink: ['/app/logistics/company'] },
                     { label: 'Propietarios', icon: 'pi pi-users', routerLink: ['/app/logistics/vehicle-owner'] },
                     { label: 'Conductores', icon: 'pi pi-users', routerLink: ['/app/logistics/drivers'] },
-                    { label: 'Vehiculos', icon: 'pi pi-car', routerLink: ['/app/logistics/vehicle'] },
-                    { label: 'Depósitos', icon: 'pi pi-shop', routerLink: ['/app/logistics/depot'] }
+                    { label: 'Vehiculos', icon: 'pi pi-car', routerLink: ['/app/logistics/vehicle'] }
                 ]
             },
             {
                 label: 'Operaciones',
-                items: [{ label: 'Rutas', icon: 'pi pi-truck', routerLink: ['/app/logistics/routes'] }]
+                items: [
+                    { label: 'Rutas', icon: 'pi pi-directions', routerLink: ['/app/logistics/routes'] },
+                    { label: 'Depósitos', icon: 'pi pi-shop', routerLink: ['/app/logistics/depot'] },
+                    { label: 'Fletes', icon: 'pi pi-truck', routerLink: ['/app/logistics/freight'] }
+                ]
             },
             {
                 label: 'Finanzas',

@@ -1,0 +1,206 @@
+<p-toast></p-toast>
+
+<p-toolbar styleClass="p-toolbar p-component mb-0 py-2">
+    <h3 class="m-0 flex align-items-center">Fletes</h3>
+</p-toolbar>
+
+<div class="card mt-4 w-full">
+    <p-table [scrollable]="true" scrollHeight="550px" scrollDirection="both" styleClass="mt-4 w-full" [value]="freights()">
+        <ng-template #caption>
+            <div class="flex justify-between items-center flex-column sm:flex-row gap-3">
+                <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogFreight()"></button>
+
+                <p-iconfield iconPosition="left" class="ml-auto">
+                    <p-inputicon>
+                        <i class="pi pi-search"></i>
+                    </p-inputicon>
+                    <input pInputText type="text" placeholder="Buscar..." />
+                </p-iconfield>
+            </div>
+        </ng-template>
+
+        <ng-template pTemplate="header">
+            <tr>
+                <th>Cliente</th>
+                <th>Tipo de Flete</th>
+                <th>Estado</th>
+                <th>Serial / Referencia</th>
+                <th>Fecha Solicitada</th>
+                <th>Acciones</th>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="body">
+            <tr>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td></td>
+                <td class="text-center">
+                    <p-button label="Opciones" severity="secondary" icon="pi pi-angle-down" iconPos="right" class="p-button-text p-button-ro" />
+                    <p-menu #menu [popup]="true" [model]="menuItems" [appendTo]="'body'"></p-menu>
+                </td>
+            </tr>
+        </ng-template>
+        <ng-template pTemplate="emptymessage">
+            <tr>
+                <td colspan="6">No hay fletes registrados.</td>
+            </tr>
+        </ng-template>
+    </p-table>
+</div>
+
+<p-dialog header="{{ editMode() ? 'Editar Flete' : 'Registrar Flete' }}" [(visible)]="dialogFreight" [modal]="true" [style]="{ width: '50vw' }" [breakpoints]="{ '960px': '90vw' }" [closable]="true" (onHide)="closeDialogFreight()">
+    <form [formGroup]="freightForm" (ngSubmit)="onSubmitFreight()">
+        <!-- Stepper personalizado -->
+        <div class="stepper-container mb-4">
+            <div class="stepper-nav">
+                <div class="stepper-item" [class.active]="currentStep === 1" [class.completed]="currentStep > 1">
+                    <div class="stepper-number">1</div>
+                    <div class="stepper-title">Cliente</div>
+                </div>
+                <div class="stepper-separator"></div>
+                <div class="stepper-item" [class.active]="currentStep === 2" [class.completed]="currentStep > 2">
+                    <div class="stepper-number">2</div>
+                    <div class="stepper-title">Carga</div>
+                </div>
+                <div class="stepper-separator"></div>
+                <div class="stepper-item" [class.active]="currentStep === 3" [class.completed]="currentStep > 3">
+                    <div class="stepper-number">3</div>
+                    <div class="stepper-title">Origen y Destino</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contenido de los pasos -->
+        <div class="stepper-content">
+            <!-- Paso 1: Datos del Cliente -->
+            <div *ngIf="currentStep === 1" class="step-content">
+                <h4 class="step-header">Datos del Cliente</h4>
+                <div class="flex flex-col gap-4">
+                    <div class="flex flex-wrap gap-4">
+                        <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                            <label for="client" class="text-sm">Cliente <span class="text-red-500">*</span></label>
+                            <p-dropdown id="client" formControlName="client" optionLabel="label" optionValue="value" placeholder="Seleccione un cliente" [showClear]="true"></p-dropdown>
+                        </div>
+                        <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                            <label for="freightType" class="text-sm">Tipo de Flete <span class="text-red-500">*</span></label>
+                            <p-dropdown id="freightType" formControlName="freightType" optionLabel="label" optionValue="value" placeholder="Seleccione tipo de flete" [showClear]="true"></p-dropdown>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                            <label for="status" class="text-sm">Estado <span class="text-red-500">*</span></label>
+                            <p-dropdown id="status" formControlName="status" optionLabel="label" optionValue="value" placeholder="Seleccione estado" [showClear]="true"></p-dropdown>
+                        </div>
+                        <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                            <label for="serialReference" class="text-sm">Serial / Referencia <span class="text-red-500">*</span></label>
+                            <input pInputText id="serialReference" formControlName="serialReference" maxlength="25" placeholder="Ingrese serial o referencia" />
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                            <label for="requestedDate" class="text-sm">Fecha Solicitada <span class="text-red-500">*</span></label>
+                            <p-calendar id="requestedDate" formControlName="requestedDate" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Seleccione fecha"></p-calendar>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-4">
+                    <button pButton label="Siguiente" icon="pi pi-arrow-right" iconPos="right" type="button" (click)="nextStep()"></button>
+                </div>
+            </div>
+
+            <!-- Paso 2: Carga -->
+            <div *ngIf="currentStep === 2" class="step-content">
+                <h4 class="step-header">Información de Carga</h4>
+                <div class="flex flex-col gap-4">
+                    <div class="flex flex-wrap gap-4">
+                        <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                            <label for="unitsRequired" class="text-sm">Nº unidades requeridas <span class="text-red-500">*</span></label>
+                            <input pInputText id="unitsRequired" formControlName="unitsRequired" type="number" min="1" placeholder="Ingrese número de unidades" />
+                        </div>
+                        <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                            <label for="cargoUnitType" class="text-sm">Tipo de unidad de carga <span class="text-red-500">*</span></label>
+                            <p-dropdown id="cargoUnitType" formControlName="cargoUnitType" optionLabel="label" optionValue="value" placeholder="Seleccione tipo de unidad" [showClear]="true"></p-dropdown>
+                        </div>
+                    </div>
+                    <div class="flex flex-wrap gap-4">
+                        <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                            <label for="cargoCondition" class="text-sm">Condición de la carga <span class="text-red-500">*</span></label>
+                            <p-dropdown id="cargoCondition" formControlName="cargoCondition" optionLabel="label" optionValue="value" placeholder="Seleccione condición" [showClear]="true"></p-dropdown>
+                        </div>
+                    </div>
+                    <div class="flex flex-col gap-1">
+                        <label for="observations" class="text-sm">Observaciones</label>
+                        <textarea pInputTextarea id="observations" formControlName="observations" rows="4" maxlength="250" placeholder="Ingrese observaciones adicionales (máximo 250 caracteres)"></textarea>
+                        <small class="text-gray-500">{{ freightForm.get('observations')?.value?.length || 0 }}/250 caracteres</small>
+                    </div>
+                </div>
+                <div class="flex justify-between mt-4">
+                    <button pButton label="Anterior" icon="pi pi-arrow-left" type="button" (click)="previousStep()" class="p-button-secondary"></button>
+                    <button pButton label="Siguiente" icon="pi pi-arrow-right" iconPos="right" type="button" (click)="nextStep()"></button>
+                </div>
+            </div>
+
+            <!-- Paso 3: Origen y Destino -->
+            <div *ngIf="currentStep === 3" class="step-content">
+                <h4 class="step-header">Origen y Destino</h4>
+                <div class="flex flex-col gap-4">
+                    <!-- Origen -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h5 class="text-base font-semibold text-gray-700 mb-3">Origen</h5>
+                        <div class="flex flex-wrap gap-4">
+                            <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                                <label for="originProvince" class="text-sm">Provincia de origen <span class="text-red-500">*</span></label>
+                                <p-dropdown id="originProvince" formControlName="originProvince" optionLabel="label" optionValue="value" placeholder="Seleccione provincia" [showClear]="true"></p-dropdown>
+                            </div>
+                            <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                                <label for="originCity" class="text-sm">Ciudad de origen <span class="text-red-500">*</span></label>
+                                <p-dropdown id="originCity" formControlName="originCity" optionLabel="label" optionValue="value" placeholder="Seleccione ciudad" [showClear]="true"></p-dropdown>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-4 mt-3">
+                            <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                                <label for="originReference" class="text-sm">Referencia origen</label>
+                                <input pInputText id="originReference" formControlName="originReference" placeholder="Dirección exacta, punto de referencia, etc." />
+                            </div>
+                            <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                                <label for="originDepot" class="text-sm">Depósito origen (opcional)</label>
+                                <p-dropdown id="originDepot" formControlName="originDepot" optionLabel="label" optionValue="value" placeholder="Seleccione depósito" [showClear]="true"></p-dropdown>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Destino -->
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h5 class="text-base font-semibold text-gray-700 mb-3">Destino</h5>
+                        <div class="flex flex-wrap gap-4">
+                            <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                                <label for="destinationProvince" class="text-sm">Provincia de destino <span class="text-red-500">*</span></label>
+                                <p-dropdown id="destinationProvince" formControlName="destinationProvince" optionLabel="label" optionValue="value" placeholder="Seleccione provincia" [showClear]="true"></p-dropdown>
+                            </div>
+                            <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                                <label for="destinationCity" class="text-sm">Ciudad de destino <span class="text-red-500">*</span></label>
+                                <p-dropdown id="destinationCity" formControlName="destinationCity" optionLabel="label" optionValue="value" placeholder="Seleccione ciudad" [showClear]="true"></p-dropdown>
+                            </div>
+                        </div>
+                        <div class="flex flex-wrap gap-4 mt-3">
+                            <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                                <label for="destinationReference" class="text-sm">Referencia destino</label>
+                                <input pInputText id="destinationReference" formControlName="destinationReference" placeholder="Dirección exacta, punto de referencia, etc." />
+                            </div>
+                            <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                                <label for="destinationDepot" class="text-sm">Depósito destino (opcional)</label>
+                                <p-dropdown id="destinationDepot" formControlName="destinationDepot" optionLabel="label" optionValue="value" placeholder="Seleccione depósito" [showClear]="true"></p-dropdown>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="flex justify-between mt-4">
+                    <button pButton label="Anterior" icon="pi pi-arrow-left" type="button" (click)="previousStep()" class="p-button-secondary"></button>
+                    <button pButton [label]="editMode() ? 'Actualizar' : 'Registrar'" icon="pi pi-save" type="submit"></button>
+                </div>
+            </div>
+        </div>
+    </form>
+</p-dialog>
