@@ -5,7 +5,7 @@
 </p-toolbar>
 
 <div class="card mt-4 w-full">
-    <p-table [scrollable]="true" scrollHeight="550px" scrollDirection="both" styleClass="mt-4 w-full" [value]="freights()">
+    <p-table [scrollable]="true" scrollHeight="550px" scrollDirection="both" styleClass="mt-4 w-full" [value]="freightService.freightsList()" [loading]="freightService.isLoading()">
         <ng-template #caption>
             <div class="flex justify-between items-center flex-column sm:flex-row gap-3">
                 <button pButton label="Agregar" icon="pi pi-plus" (click)="openDialogFreight()"></button>
@@ -14,37 +14,73 @@
                     <p-inputicon>
                         <i class="pi pi-search"></i>
                     </p-inputicon>
-                    <input pInputText type="text" placeholder="Buscar..." />
+                    <input pInputText type="text" placeholder="Buscar..." [(ngModel)]="searchTerm" />
                 </p-iconfield>
             </div>
         </ng-template>
 
         <ng-template pTemplate="header">
             <tr>
-                <th>Cliente</th>
-                <th>Tipo de Flete</th>
-                <th>Estado</th>
                 <th>Serial / Referencia</th>
+                <th>Tipo</th>
+                <th>Estado Flete</th>
+                <th>Estado Pago</th>
                 <th>Fecha Solicitada</th>
+                <th>Unidades</th>
+                <th>Tipo Carga</th>
+                <th>Origen</th>
+                <th>Destino</th>
                 <th>Acciones</th>
             </tr>
         </ng-template>
-        <ng-template pTemplate="body">
+        <ng-template pTemplate="body" let-freight>
             <tr>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
-                <td></td>
+                <td>{{ freight.serialReference }}</td>
+                <td>
+                    <p-tag
+                        [value]="freight.type === 'export' ? 'Exportación' : freight.type === 'import' ? 'Importación' : freight.type === 'internal' ? 'Interno' : 'Rescate'"
+                        [severity]="freight.type === 'export' ? 'info' : freight.type === 'import' ? 'success' : 'warning'"
+                    >
+                    </p-tag>
+                </td>
+                <td>
+                    <p-tag
+                        [value]="
+                            freight.freightStatus === 'pending'
+                                ? 'Pendiente'
+                                : freight.freightStatus === 'in_transit'
+                                  ? 'En Tránsito'
+                                  : freight.freightStatus === 'delayed'
+                                    ? 'Retrasado'
+                                    : freight.freightStatus === 'completed'
+                                      ? 'Completado'
+                                      : 'Cancelado'
+                        "
+                        [severity]="getStatusSeverity(freight.freightStatus)"
+                    >
+                    </p-tag>
+                </td>
+                <td>
+                    <p-tag
+                        [value]="freight.paymentStatus === 'pending' ? 'Pendiente' : freight.paymentStatus === 'paid' ? 'Pagado' : 'Vencido'"
+                        [severity]="freight.paymentStatus === 'pending' ? 'warning' : freight.paymentStatus === 'paid' ? 'success' : 'danger'"
+                    >
+                    </p-tag>
+                </td>
+                <td>{{ freight.requestedDate | date: 'dd/MM/yyyy' }}</td>
+                <td>{{ freight.requestedUnits }}</td>
+                <td>{{ freight.cargoUnitType }}</td>
+                <td>{{ freight.originReference }}</td>
+                <td>{{ freight.destinationReference }}</td>
                 <td class="text-center">
-                    <p-button label="Opciones" severity="secondary" icon="pi pi-angle-down" iconPos="right" class="p-button-text p-button-ro" />
+                    <p-button label="Opciones" severity="secondary" icon="pi pi-angle-down" iconPos="right" class="p-button-text p-button-ro" (click)="toggleMenu($event, freight)" />
                     <p-menu #menu [popup]="true" [model]="menuItems" [appendTo]="'body'"></p-menu>
                 </td>
             </tr>
         </ng-template>
         <ng-template pTemplate="emptymessage">
             <tr>
-                <td colspan="6">No hay fletes registrados.</td>
+                <td colspan="10" class="text-center">No hay fletes registrados.</td>
             </tr>
         </ng-template>
     </p-table>
@@ -81,17 +117,28 @@
                     <div class="flex flex-wrap gap-4">
                         <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                             <label for="client" class="text-sm">Cliente <span class="text-red-500">*</span></label>
-                            <p-dropdown id="client" formControlName="client" optionLabel="label" optionValue="value" placeholder="Seleccione un cliente" [showClear]="true"></p-dropdown>
+                            <p-dropdown id="client" formControlName="client" [options]="clients()" optionLabel="label" optionValue="value" placeholder="Seleccione un cliente" [showClear]="true" appendTo="body">
+                                <ng-template pTemplate="header">
+                                    <div class="p-2">
+                                        <input type="text" pInputText placeholder="Buscar cliente..." [(ngModel)]="clientSearchTerm" (ngModelChange)="onClientSearchChange()" [ngModelOptions]="{ standalone: true }" class="w-full" />
+                                    </div>
+                                </ng-template>
+                                <ng-template pTemplate="footer">
+                                    <div class="p-2 border-t">
+                                        <p-paginator [first]="(clientsPage() - 1) * clientsPageSize" [rows]="clientsPageSize" [totalRecords]="clientsTotalRecords()" (onPageChange)="onClientsPageChange($event)"></p-paginator>
+                                    </div>
+                                </ng-template>
+                            </p-dropdown>
                         </div>
                         <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                             <label for="freightType" class="text-sm">Tipo de Flete <span class="text-red-500">*</span></label>
-                            <p-dropdown id="freightType" formControlName="freightType" optionLabel="label" optionValue="value" placeholder="Seleccione tipo de flete" [showClear]="true"></p-dropdown>
+                            <p-dropdown id="freightType" formControlName="freightType" [options]="freightTypes" optionLabel="label" optionValue="value" placeholder="Seleccione tipo de flete" [showClear]="true" appendTo="body"></p-dropdown>
                         </div>
                     </div>
                     <div class="flex flex-wrap gap-4">
                         <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                             <label for="status" class="text-sm">Estado <span class="text-red-500">*</span></label>
-                            <p-dropdown id="status" formControlName="status" optionLabel="label" optionValue="value" placeholder="Seleccione estado" [showClear]="true"></p-dropdown>
+                            <p-dropdown id="status" formControlName="status" [options]="freightStatuses" optionLabel="label" optionValue="value" placeholder="Seleccione estado" [showClear]="true" appendTo="body"></p-dropdown>
                         </div>
                         <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                             <label for="serialReference" class="text-sm">Serial / Referencia <span class="text-red-500">*</span></label>
@@ -121,13 +168,13 @@
                         </div>
                         <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                             <label for="cargoUnitType" class="text-sm">Tipo de unidad de carga <span class="text-red-500">*</span></label>
-                            <p-dropdown id="cargoUnitType" formControlName="cargoUnitType" optionLabel="label" optionValue="value" placeholder="Seleccione tipo de unidad" [showClear]="true"></p-dropdown>
+                            <p-dropdown id="cargoUnitType" formControlName="cargoUnitType" [options]="cargoUnitTypes" optionLabel="label" optionValue="value" placeholder="Seleccione tipo de unidad" [showClear]="true" appendTo="body"></p-dropdown>
                         </div>
                     </div>
                     <div class="flex flex-wrap gap-4">
                         <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                             <label for="cargoCondition" class="text-sm">Condición de la carga <span class="text-red-500">*</span></label>
-                            <p-dropdown id="cargoCondition" formControlName="cargoCondition" optionLabel="label" optionValue="value" placeholder="Seleccione condición" [showClear]="true"></p-dropdown>
+                            <p-dropdown id="cargoCondition" formControlName="cargoCondition" [options]="cargoConditions" optionLabel="label" optionValue="value" placeholder="Seleccione condición" [showClear]="true" appendTo="body"></p-dropdown>
                         </div>
                     </div>
                     <div class="flex flex-col gap-1">

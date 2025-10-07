@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, signal, ViewChild } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, signal, ViewChild } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -7,7 +7,6 @@ import { DropdownModule } from 'primeng/dropdown';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
-import { InputTextarea } from 'primeng/inputtextarea';
 import { CalendarModule } from 'primeng/calendar';
 import { StepperModule } from 'primeng/stepper';
 import { TagModule } from 'primeng/tag';
@@ -19,24 +18,11 @@ import { MenuModule } from 'primeng/menu';
 import { MenuItem, MessageService } from 'primeng/api';
 import { Menu } from 'primeng/menu';
 import { FreightService } from '../../pages/service/freight.service';
-
-// Interfaces para los datos ficticios
-interface FreightData {
-    id: string;
-    clientName: string;
-    freightType: string;
-    status: string;
-    serialReference: string;
-    requestedDate: Date;
-    unitsRequired: number;
-    cargoUnitType: string;
-    cargoCondition: string;
-    originProvince: string;
-    originCity: string;
-    destinationProvince: string;
-    destinationCity: string;
-    observations?: string;
-}
+import { FreightResponse } from '../../pages/models/freight.model';
+import { CompanyService } from '../../pages/service/company.service';
+import { ApiResponse } from '../../pages/models/shared.model';
+import { CompanyResponse } from '../../pages/models/company.model';
+import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 
 @Component({
     selector: 'app-freight',
@@ -51,7 +37,6 @@ interface FreightData {
         IconFieldModule,
         InputIconModule,
         InputTextModule,
-        InputTextarea,
         CalendarModule,
         StepperModule,
         TableModule,
@@ -65,31 +50,51 @@ interface FreightData {
     styleUrl: './freight.component.scss',
     providers: [MessageService]
 })
-export class FreightComponent implements OnInit {
-    // Formulario
+export class FreightComponent implements OnInit, OnDestroy {
+    // ==================== SERVICIOS ====================
+    freightService = inject(FreightService);
+    private companyService = inject(CompanyService);
+
+    // ==================== FORMULARIOS ====================
     freightForm: FormGroup;
 
-    // Estados reactivos
+    // ==================== ESTADOS DE UI ====================
     pageSize = signal(5);
     first = signal(1);
     currentStep = 1;
+    searchTerm = '';
 
-    // Diálogos
+    // ==================== DIÁLOGOS ====================
     dialogFreight = signal(false);
     editMode = signal(false);
 
-    // Dato
-    private freightService = inject(FreightService);
-    freights = signal<FreightData[]>([]);
-    selectedFreight?: FreightData;
+    // ==================== DATOS DE FLETES ====================
+    selectedFreight?: FreightResponse;
 
-    // Menú
+    // ==================== DATOS DE CLIENTES ====================
+    clients = signal<any[]>([]);
+    clientsPage = signal(1);
+    clientsPageSize = 5;
+    clientsTotalPages = signal(1);
+    clientsTotalRecords = signal(0);
+    loadingClients = signal(false);
+    clientSearchTerm = '';
+
+    // ==================== MENÚS ====================
     menuItems: MenuItem[] = [];
     @ViewChild('menu') menu!: Menu;
 
-    // Búsqueda
-    searchTerm = '';
+    // ==================== OPCIONES PARA DROPDOWNS ====================
+    freightTypes = this.freightService.getFreightTypes();
+    freightStatuses = this.freightService.getFreightStatuses();
+    cargoUnitTypes = this.freightService.getCargoUnitTypes();
+    cargoConditions = this.freightService.getCargoConditions();
 
+    // ==================== RXJS ====================
+    private destroy$ = new Subject<void>();
+    private clientSearchSubject = new Subject<string>();
+
+    // ==================== CONSTRUCTOR ====================
     constructor(
         private fb: FormBuilder,
         private messageService: MessageService
@@ -118,13 +123,39 @@ export class FreightComponent implements OnInit {
             destinationReference: [''],
             destinationDepot: ['']
         });
+        this.setupClientSearch();
     }
 
+    // ==================== CICLO DE VIDA ====================
     ngOnInit(): void {
         this.initMenuItems();
+        this.loadFreights();
+        this.loadClients();
     }
 
-    initMenuItems(): void {
+    ngOnDestroy(): void {
+        this.destroy$.next();
+        this.destroy$.complete();
+    }
+
+    // ==================== INICIALIZACIÓN ====================
+    private initializeForm(): void {}
+
+    private setupClientSearch(): void {
+        this.clientSearchSubject.pipe(takeUntil(this.destroy$), debounceTime(800), distinctUntilChanged()).subscribe((term) => {
+            this.clientsPage.set(1);
+            const page = 1;
+            const size = this.clientsPageSize;
+
+            if (term.trim() === '') {
+                this.loadClients(page);
+            } else {
+                this.searchClients(term, page, size);
+            }
+        });
+    }
+
+    private initMenuItems(): void {
         this.menuItems = [
             {
                 label: 'Editar',
@@ -156,35 +187,128 @@ export class FreightComponent implements OnInit {
         ];
     }
 
-    toggleMenu(event: Event, freight: FreightData): void {
+    // ==================== CARGA DE DATOS - FLETES ====================
+    loadFreights(): void {
+        this.freightService.loadFreights().subscribe({
+            next: (response) => {
+                if (response.statusCode === 200) {
+                    console.log('fletes cargados correctamente');
+                }
+            },
+            error: (error) => {
+                console.log('Hubo un error');
+            }
+        });
+    }
+
+    // ==================== CARGA DE DATOS - CLIENTES ====================
+    loadClients(page: number = 1): void {
+        if (this.loadingClients()) return;
+
+        this.loadingClients.set(true);
+        this.clientsPage.set(page);
+
+        this.companyService
+            .loadCompanies({
+                status: true,
+                page,
+                limit: this.clientsPageSize,
+                type: 'client'
+            })
+            .subscribe({
+                next: (response) => {
+                    if (response.data) {
+                        const newClients = response.data.map((company) => ({
+                            label: company.subject.name,
+                            value: company.id
+                        }));
+
+                        this.clients.set(newClients);
+
+                        if (response.pagination) {
+                            this.clientsTotalPages.set(response.pagination.totalPages);
+                            this.clientsTotalRecords.set(response.pagination.totalRecords);
+                        }
+                    }
+                    this.loadingClients.set(false);
+                },
+                error: () => {
+                    this.loadingClients.set(false);
+                }
+            });
+    }
+
+    searchClients(term: string, page: number = 1, limit: number = this.clientsPageSize): void {
+        if (this.loadingClients()) return;
+
+        this.loadingClients.set(true);
+        this.clientsPage.set(page);
+
+        this.companyService.searchCompanies(term, page, limit, 'client').subscribe({
+            next: (response) => {
+                if (response.data) {
+                    const newClients = response.data.map((company) => ({
+                        label: company.subject.name,
+                        value: company.id
+                    }));
+
+                    this.clients.set(newClients);
+
+                    if (response.pagination) {
+                        this.clientsTotalPages.set(response.pagination.totalPages);
+                        this.clientsTotalRecords.set(response.pagination.totalRecords);
+                    }
+                }
+                this.loadingClients.set(false);
+            },
+            error: () => {
+                this.loadingClients.set(false);
+            }
+        });
+    }
+
+    onClientSearchChange(): void {
+        this.clientSearchSubject.next(this.clientSearchTerm);
+    }
+
+    onClientsPageChange(event: any): void {
+        const page = event.page + 1;
+        const term = this.clientSearchTerm.trim();
+
+        if (term === '') {
+            this.loadClients(page);
+        } else {
+            this.searchClients(term, page, this.clientsPageSize);
+        }
+    }
+
+    // ==================== GESTIÓN DE MENÚ ====================
+    toggleMenu(event: Event, freight: FreightResponse): void {
         this.selectedFreight = freight;
         this.menu.toggle(event);
     }
 
-    openDialogFreight(freight?: FreightData): void {
+    // ==================== GESTIÓN DE DIÁLOGOS ====================
+    openDialogFreight(freight?: FreightResponse): void {
         this.freightForm.reset();
         this.editMode.set(!!freight);
-        this.currentStep = 1; // Resetear al primer paso
+        this.currentStep = 1;
 
         if (freight) {
-            // Cargar datos para edición
             this.freightForm.patchValue({
-                client: freight.clientName,
-                freightType: freight.freightType,
-                status: freight.status,
+                client: freight.clientId,
+                freightType: freight.type,
+                status: freight.freightStatus,
                 serialReference: freight.serialReference,
-                requestedDate: freight.requestedDate,
-                unitsRequired: freight.unitsRequired,
+                requestedDate: new Date(freight.requestedDate),
+                unitsRequired: freight.requestedUnits,
                 cargoUnitType: freight.cargoUnitType,
                 cargoCondition: freight.cargoCondition,
-                observations: freight.observations,
-                originProvince: freight.originProvince,
-                originCity: freight.originCity,
-                destinationProvince: freight.destinationProvince,
-                destinationCity: freight.destinationCity
+                observations: freight.remarks,
+                originReference: freight.originReference,
+                destinationReference: freight.destinationReference
             });
         } else {
-            // Valores por defecto para nuevo registro
             this.freightForm.patchValue({
                 status: 'PENDING',
                 requestedDate: new Date()
@@ -197,9 +321,10 @@ export class FreightComponent implements OnInit {
     closeDialogFreight(): void {
         this.dialogFreight.set(false);
         this.freightForm.reset();
-        this.currentStep = 1; // Resetear al primer paso
+        this.currentStep = 1;
     }
 
+    // ==================== OPERACIONES CRUD ====================
     onSubmitFreight(): void {
         if (this.freightForm.valid) {
             const formValue = this.freightForm.value;
@@ -212,26 +337,7 @@ export class FreightComponent implements OnInit {
                     life: 3000
                 });
             } else {
-                // Simular creación de nuevo flete
-                const newFreight: FreightData = {
-                    id: (this.freights().length + 1).toString(),
-                    clientName: '',
-                    freightType: formValue.freightType,
-                    status: formValue.status,
-                    serialReference: formValue.serialReference,
-                    requestedDate: formValue.requestedDate,
-                    unitsRequired: formValue.unitsRequired,
-                    cargoUnitType: formValue.cargoUnitType,
-                    cargoCondition: formValue.cargoCondition,
-                    originProvince: formValue.originProvince,
-                    originCity: formValue.originCity,
-                    destinationProvince: formValue.destinationProvince,
-                    destinationCity: formValue.destinationCity,
-                    observations: formValue.observations
-                };
-
-                this.freights.update((freights) => [...freights, newFreight]);
-
+                // TODO: Implementar creación de nuevo flete cuando el backend esté listo
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
@@ -251,7 +357,7 @@ export class FreightComponent implements OnInit {
         }
     }
 
-    viewFreightDetails(freight: FreightData): void {
+    viewFreightDetails(freight: FreightResponse): void {
         this.messageService.add({
             severity: 'info',
             summary: 'Información',
@@ -260,8 +366,8 @@ export class FreightComponent implements OnInit {
         });
     }
 
-    deleteFreight(freight: FreightData): void {
-        this.freights.update((freights) => freights.filter((f) => f.id !== freight.id));
+    deleteFreight(freight: FreightResponse): void {
+        // TODO: Implementar eliminación cuando el backend esté listo
         this.messageService.add({
             severity: 'success',
             summary: 'Éxito',
@@ -270,27 +376,7 @@ export class FreightComponent implements OnInit {
         });
     }
 
-    getStatusSeverity(status: string): string {
-        switch (status) {
-            case 'PENDING':
-                return 'warning';
-            case 'IN_PROGRESS':
-                return 'info';
-            case 'COMPLETED':
-                return 'success';
-            case 'CANCELLED':
-                return 'danger';
-            default:
-                return 'secondary';
-        }
-    }
-
-    onPageChange(event: any): void {
-        // Implementar paginación si es necesario
-        console.log('Page change:', event);
-    }
-
-    // Métodos para el stepper
+    // ==================== NAVEGACIÓN DE STEPPER ====================
     nextStep(): void {
         if (this.currentStep < 3) {
             this.currentStep++;
@@ -303,27 +389,24 @@ export class FreightComponent implements OnInit {
         }
     }
 
-    /*   isStep1Valid(): boolean {
-        const step1Fields = ['client', 'freightType', 'status', 'serialReference', 'requestedDate'];
-        return step1Fields.every((field) => {
-            const control = this.freightForm.get(field);
-            return control && control.valid;
-        });
+    // ==================== UTILIDADES ====================
+    getStatusSeverity(status: string): string {
+        switch (status.toLowerCase()) {
+            case 'pending':
+                return 'warning';
+            case 'in_transit':
+                return 'info';
+            case 'completed':
+                return 'success';
+            case 'canceled':
+            case 'delayed':
+                return 'danger';
+            default:
+                return 'secondary';
+        }
     }
 
-    isStep2Valid(): boolean {
-        const step2Fields = ['unitsRequired', 'cargoUnitType', 'cargoCondition'];
-        return step2Fields.every((field) => {
-            const control = this.freightForm.get(field);
-            return control && control.valid;
-        });
+    onPageChange(event: any): void {
+        console.log('Page change:', event);
     }
-
-    isStep3Valid(): boolean {
-        const step3Fields = ['originProvince', 'originCity', 'destinationProvince', 'destinationCity'];
-        return step3Fields.every((field) => {
-            const control = this.freightForm.get(field);
-            return control && control.valid;
-        });
-    }*/
 }

@@ -18,7 +18,7 @@ export enum CargaCondition {
     hazardous = 'hazardous'
 }
 
-export enum CargoUnitType {
+export enum CargaUnitType {
     STANDARD_20 = 'SD20',
     STANDARD_40 = 'SD40',
     HIGH_CUBE_40 = 'HC40',
