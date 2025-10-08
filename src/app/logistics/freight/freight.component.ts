@@ -200,7 +200,6 @@ export class FreightComponent implements OnInit, OnDestroy {
             }
         });
     }
-
     // ==================== CARGA DE DATOS - CLIENTES ====================
     loadClients(page: number = 1): void {
         if (this.loadingClients()) return;
@@ -314,7 +313,6 @@ export class FreightComponent implements OnInit, OnDestroy {
                 requestedDate: new Date()
             });
         }
-
         this.dialogFreight.set(true);
     }
 
