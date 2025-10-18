@@ -166,7 +166,7 @@
                             <label for="unitsRequired" class="text-sm">Nº unidades requeridas <span class="text-red-500">*</span></label>
                             <input pInputText id="unitsRequired" formControlName="unitsRequired" type="number" min="1" placeholder="Ingrese número de unidades" />
                         </div>
-                        <div class="flex flex-col grow basis-0 gap-1 min-w-0">
+                        <div class="flex flex-col grow basis-0 gap-1 ´min-w-0">
                             <label for="cargoUnitType" class="text-sm">Tipo de unidad de carga <span class="text-red-500">*</span></label>
                             <p-dropdown id="cargoUnitType" formControlName="cargoUnitType" [options]="cargoUnitTypes" optionLabel="label" optionValue="value" placeholder="Seleccione tipo de unidad" [showClear]="true" appendTo="body"></p-dropdown>
                         </div>
@@ -199,11 +199,37 @@
                         <div class="flex flex-wrap gap-4">
                             <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                                 <label for="originProvince" class="text-sm">Provincia de origen <span class="text-red-500">*</span></label>
-                                <p-dropdown id="originProvince" formControlName="originProvince" optionLabel="label" optionValue="value" placeholder="Seleccione provincia" [showClear]="true"></p-dropdown>
+                                <p-dropdown
+                                    id="originProvince"
+                                    [options]="provinces()"
+                                    formControlName="originProvince"
+                                    optionLabel="name"
+                                    [optionValue]="'id'"
+                                    placeholder="Seleccione provincia"
+                                    [loading]="isLoading()"
+                                    [showClear]="true"
+                                    [filter]="true"
+                                    [appendTo]="'body'"
+                                    class="w-full custom-select"
+                                    (onChange)="onProvinceOriginChange($event)"
+                                ></p-dropdown>
                             </div>
                             <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                                 <label for="originCity" class="text-sm">Ciudad de origen <span class="text-red-500">*</span></label>
-                                <p-dropdown id="originCity" formControlName="originCity" optionLabel="label" optionValue="value" placeholder="Seleccione ciudad" [showClear]="true"></p-dropdown>
+                                <p-dropdown
+                                    id="originCity"
+                                    [options]="originCities()"
+                                    formControlName="originCity"
+                                    optionLabel="name"
+                                    [optionValue]="'id'"
+                                    placeholder="Seleccione ciudad"
+                                    [showClear]="true"
+                                    [appendTo]="'body'"
+                                    [filter]="true"
+                                    filterPlaceholder="Buscar ciudad"
+                                    [loading]="isLoading()"
+                                    class="w-full custom-select"
+                                ></p-dropdown>
                             </div>
                         </div>
                         <div class="flex flex-wrap gap-4 mt-3">
@@ -238,7 +264,18 @@
                             </div>
                             <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                                 <label for="destinationDepot" class="text-sm">Depósito destino (opcional)</label>
-                                <p-dropdown id="destinationDepot" formControlName="destinationDepot" optionLabel="label" optionValue="value" placeholder="Seleccione depósito" [showClear]="true"></p-dropdown>
+                                <p-dropdown
+                                    id="destinationDepot"
+                                    [options]="depots()"
+                                    [appendTo]="'body'"
+                                    [filter]="true"
+                                    filterPlaceholder="Buscar depósito"
+                                    formControlName="destinationDepot"
+                                    optionLabel="name"
+                                    optionValue="id"
+                                    placeholder="Seleccione depósito"
+                                    [showClear]="true"
+                                ></p-dropdown>
                             </div>
                         </div>
                     </div>

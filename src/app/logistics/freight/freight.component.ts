@@ -13,7 +13,7 @@ import { TagModule } from 'primeng/tag';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
-import { PaginatorModule } from 'primeng/paginator';
+import { Paginator, PaginatorModule } from 'primeng/paginator';
 import { MenuModule } from 'primeng/menu';
 import { MenuItem, MessageService } from 'primeng/api';
 import { Menu } from 'primeng/menu';
@@ -23,6 +23,8 @@ import { CompanyService } from '../../pages/service/company.service';
 import { ApiResponse } from '../../pages/models/shared.model';
 import { CompanyResponse } from '../../pages/models/company.model';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
+import { RouteService } from '../../pages/service/route.service';
+import { DepotService } from '../../pages/service/depot.service';
 
 @Component({
     selector: 'app-freight',
@@ -54,6 +56,13 @@ export class FreightComponent implements OnInit, OnDestroy {
     // ==================== SERVICIOS ====================
     freightService = inject(FreightService);
     private companyService = inject(CompanyService);
+    private depotService = inject(DepotService);
+    private routeService = inject(RouteService);
+    provinces = this.routeService.provinceList;
+    originCities = this.routeService.originCityList;
+    destinationCities = this.routeService.destinationCitiesList;
+    depots = this.depotService.depotList;
+    isLoading = this.routeService.isLoading;
 
     // ==================== FORMULARIOS ====================
     freightForm: FormGroup;
@@ -63,6 +72,8 @@ export class FreightComponent implements OnInit, OnDestroy {
     first = signal(1);
     currentStep = 1;
     searchTerm = '';
+    searchOriginTerm = signal('');
+    searchDestinationTerm = signal('');
 
     // ==================== DIÁLOGOS ====================
     dialogFreight = signal(false);
@@ -70,6 +81,8 @@ export class FreightComponent implements OnInit, OnDestroy {
 
     // ==================== DATOS DE FLETES ====================
     selectedFreight?: FreightResponse;
+    selectedProvinceOriginId = signal<string | null>(null);
+    selectedProvinceDestinId = signal<string | null>(null);
 
     // ==================== DATOS DE CLIENTES ====================
     clients = signal<any[]>([]);
@@ -83,6 +96,7 @@ export class FreightComponent implements OnInit, OnDestroy {
     // ==================== MENÚS ====================
     menuItems: MenuItem[] = [];
     @ViewChild('menu') menu!: Menu;
+    @ViewChild('paginator') paginator!: Paginator;
 
     // ==================== OPCIONES PARA DROPDOWNS ====================
     freightTypes = this.freightService.getFreightTypes();
@@ -93,6 +107,8 @@ export class FreightComponent implements OnInit, OnDestroy {
     // ==================== RXJS ====================
     private destroy$ = new Subject<void>();
     private clientSearchSubject = new Subject<string>();
+    private searchOriginSubject = new Subject<string>();
+    private searchDestinationSubject = new Subject<string>();
 
     // ==================== CONSTRUCTOR ====================
     constructor(
@@ -114,11 +130,11 @@ export class FreightComponent implements OnInit, OnDestroy {
             observations: ['', Validators.maxLength(250)],
 
             // Paso 3: Origen y Destino
-            originProvince: ['', Validators.required],
+            originProvince: [null, Validators.required],
             originCity: ['', Validators.required],
             originReference: [''],
             originDepot: [''],
-            destinationProvince: ['', Validators.required],
+            destinationProvince: [null, Validators.required],
             destinationCity: ['', Validators.required],
             destinationReference: [''],
             destinationDepot: ['']
@@ -131,6 +147,10 @@ export class FreightComponent implements OnInit, OnDestroy {
         this.initMenuItems();
         this.loadFreights();
         this.loadClients();
+        this.loadAllProvinces();
+        this.freightForm.get('originCity')?.disable();
+        this.freightForm.get('destinationCity')?.disable();
+        this.loadDepots();
     }
 
     ngOnDestroy(): void {
@@ -279,6 +299,84 @@ export class FreightComponent implements OnInit, OnDestroy {
         } else {
             this.searchClients(term, page, this.clientsPageSize);
         }
+    }
+
+    //=================CARGA DE PROVINCIAS Y CIUDADES=========================
+    loadAllProvinces(): void {
+        this.routeService.loadProvinces().subscribe();
+    }
+
+    onProvinceOriginChange(event: { value: string }): void {
+        const provinceId = event.value;
+        this.selectedProvinceOriginId.set(provinceId);
+
+        if (provinceId) {
+            this.freightForm.get('originCity')?.enable();
+            const selectedOriginProvince = this.routeService.provinceList().find((p) => p.id === provinceId);
+            const provinceName = selectedOriginProvince?.id || '';
+            this.loadCitiesForProvinceOrigin(provinceName);
+        } else {
+            this.freightForm.get('originCity')?.disable();
+            this.freightForm.get('originCity')?.setValue(null);
+            this.routeService.clearCitiesOrigin();
+        }
+    }
+
+    loadCitiesForProvinceOrigin(term: string, page: number = 1, limit: number = 30): void {
+        this.routeService.loadCitiesForProvinceOrigin(term, { page, limit }).subscribe(() => {
+            if (this.paginator) {
+                if (page === 1) this.first.set(0);
+            }
+        });
+    }
+
+    onProvinceDestinChange(event: { value: string }): void {
+        const provinceId = event.value;
+        this.selectedProvinceDestinId.set(provinceId);
+
+        if (provinceId) {
+            this.freightForm.get('destinationCity')?.enable();
+            const selectedDestinProvince = this.routeService.provinceList().find((p) => p.id === provinceId);
+            const provinceName = selectedDestinProvince?.id || '';
+            this.loadCitiesForProvinceDestin(provinceName);
+        } else {
+            this.freightForm.get('destinationCity')?.disable();
+            this.freightForm.get('destinationCity')?.setValue(null);
+            this.routeService.clearCitiesDestination();
+        }
+    }
+
+    loadCitiesForProvinceDestin(term: string, page: number = 1, limit: number = 30): void {
+        this.routeService.loadCitiesForProvinceDestination(term, { page, limit }).subscribe(() => {
+            if (this.paginator) {
+                if (page === 1) this.first.set(0);
+            }
+        });
+    }
+
+    onSearchOriginChange(event: Event): void {
+        const value = (event.target as HTMLInputElement).value;
+        this.searchOriginSubject.next(value);
+    }
+
+    onSearchDestinationChange(event: Event): void {
+        const value = (event.target as HTMLInputElement).value;
+        this.searchDestinationSubject.next(value);
+    }
+
+    clearSearchOrigin(): void {
+        this.searchOriginTerm.set('');
+        this.searchOriginSubject.next('');
+    }
+
+    clearSearchDestination(): void {
+        this.searchDestinationTerm.set('');
+        this.searchDestinationSubject.next('');
+    }
+
+    //====================CARGA DE DEPOSITOS=========================
+    loadDepots(): void {
+        this.depotService.getDepots(1, 30).subscribe();
     }
 
     // ==================== GESTIÓN DE MENÚ ====================
