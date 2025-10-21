@@ -2,23 +2,24 @@ import { FreightStatus, FreightType, CargaUnitType, CargaCondition } from './sha
 
 export interface FreightData {
     id: string;
-    clientId: string;
+    clientId: string; //
     createdAt: string;
     freightStatus: FreightStatus;
     paymentStatus: string;
-    type: FreightType;
-    serialReference: string;
-    requestedDate: string;
-    requestedUnits: number;
-    cargoUnitType: CargaUnitType;
-    cargoCondition: CargaCondition;
-    originId: string;
-    originReference: string;
-    destinationId: string;
-    destinationReference: string;
-    originDepotId: string;
-    destinationDepotId: string;
-    remarks: string;
+    type: FreightType; //
+    serialReference?: string; //
+    requestedDate: string; //
+    requestedUnits: number; //
+    cargoUnitType: CargaUnitType; //
+    cargoCondition: CargaCondition; //
+    cargoDescription?: string; //
+    originId: string; //
+    originReference?: string; //
+    destinationId: string; //
+    destinationReference?: string; //
+    originDepotId?: string; //
+    destinationDepotId?: string; //
+    remarks?: string; //
 }
 
 export interface FreightResponse extends FreightData {}

@@ -1,6 +1,6 @@
 import { Injectable, signal } from '@angular/core';
 import { BaseHttpService } from './base-http.service';
-import { FreightResponse } from '../models/freight.model';
+import { FreightData, FreightResponse } from '../models/freight.model';
 import { environment } from '../../../environments/environment';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { MessageService } from 'primeng/api';
@@ -22,15 +22,35 @@ export class FreightService extends BaseHttpService<FreightResponse> {
         super();
     }
 
-    loadFreights(params?: { page?: number; limit?: number }): Observable<ApiResponse<FreightResponse[]>> {
+    loadFreights(filters?: {
+        page?: number;
+        limit?: number;
+        clientId?: string;
+        serialReference?: string;
+        startDate?: string;
+        endDate?: string;
+        freightStatus?: string;
+        freightType?: string;
+        originCity?: string;
+        destinationCity?: string;
+    }): Observable<ApiResponse<FreightResponse[]>> {
         this.loading.set(true);
         this.clearError();
 
-        let httpParams = new HttpParams();
-        if (params?.page) httpParams = httpParams.set('page', params.page.toString());
-        if (params?.limit) httpParams = httpParams.set('limit', params.limit.toString());
+        const filterBody = {
+            page: filters?.page || 1,
+            limit: filters?.limit || 10,
+            clientId: filters?.clientId,
+            serialReference: filters?.serialReference,
+            startDate: filters?.startDate,
+            endDate: filters?.endDate,
+            freightStatus: filters?.freightStatus,
+            freightType: filters?.freightType,
+            originCity: filters?.originCity,
+            destinationCity: filters?.destinationCity
+        };
 
-        return this.http.get<ApiResponse<FreightResponse[]>>(`${this.baseUrl}/freight`, { params: httpParams }).pipe(
+        return this.http.post<ApiResponse<FreightResponse[]>>(`${this.baseUrl}/freight/filter`, filterBody).pipe(
             tap((response) => {
                 if (this.handleApiResponse(response)) {
                     this.freights.set(response.data || []);
@@ -38,6 +58,16 @@ export class FreightService extends BaseHttpService<FreightResponse> {
                 }
             }),
             catchError(this.handleHttpError<ApiResponse<FreightResponse[]>>('Error al cargar fletes')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+
+    registerFreight(freightData: FreightData): Observable<ApiResponse<FreightResponse>> {
+        this.loading.set(true);
+        this.clearError();
+        return this.http.post<ApiResponse<FreightResponse>>(`${this.baseUrl}/freight`, freightData).pipe(
+            tap((response) => this.handleApiResponse(response)),
+            catchError(this.handleHttpError<ApiResponse<FreightResponse>>('Error al registrar el flete')),
             finalize(() => this.loading.set(false))
         );
     }

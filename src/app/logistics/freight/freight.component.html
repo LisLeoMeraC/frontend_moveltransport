@@ -5,6 +5,42 @@
 </p-toolbar>
 
 <div class="card mt-4 w-full">
+    <!-- Filtros -->
+    <div class="flex flex-wrap gap-4 p-4 border-b">
+        <div class="flex flex-col gap-1 min-w-0">
+            <label for="filterSerialReference" class="text-sm font-medium">Serial / Referencia</label>
+            <input pInputText id="filterSerialReference" [(ngModel)]="filters().serialReference" placeholder="Buscar por serial..." class="w-full" />
+        </div>
+        <div class="flex flex-col gap-1 min-w-0">
+            <label for="filterFreightType" class="text-sm font-medium">Tipo de Flete</label>
+            <p-dropdown id="filterFreightType" [options]="freightTypes" optionLabel="label" optionValue="value" [(ngModel)]="filters().freightType" placeholder="Todos" [showClear]="true" appendTo="body" class="w-full"></p-dropdown>
+        </div>
+        <div class="flex flex-col gap-1 min-w-0">
+            <label for="filterFreightStatus" class="text-sm font-medium">Estado Flete</label>
+            <p-dropdown id="filterFreightStatus" [options]="freightStatuses" optionLabel="label" optionValue="value" [(ngModel)]="filters().freightStatus" placeholder="Todos" [showClear]="true" appendTo="body" class="w-full"></p-dropdown>
+        </div>
+        <div class="flex flex-col gap-1 min-w-0">
+            <label for="filterStartDate" class="text-sm font-medium">Fecha Desde</label>
+            <p-calendar id="filterStartDate" [(ngModel)]="filters().startDate" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Seleccione fecha" appendTo="body"></p-calendar>
+        </div>
+        <div class="flex flex-col gap-1 min-w-0">
+            <label for="filterEndDate" class="text-sm font-medium">Fecha Hasta</label>
+            <p-calendar id="filterEndDate" [(ngModel)]="filters().endDate" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Seleccione fecha" appendTo="body"></p-calendar>
+        </div>
+        <div class="flex flex-col gap-1 min-w-0">
+            <label for="filterOriginCity" class="text-sm font-medium">Ciudad Origen</label>
+            <input pInputText id="filterOriginCity" [(ngModel)]="filters().originCity" placeholder="Buscar ciudad origen..." class="w-full" />
+        </div>
+        <div class="flex flex-col gap-1 min-w-0">
+            <label for="filterDestinationCity" class="text-sm font-medium">Ciudad Destino</label>
+            <input pInputText id="filterDestinationCity" [(ngModel)]="filters().destinationCity" placeholder="Buscar ciudad destino..." class="w-full" />
+        </div>
+        <div class="flex flex-col gap-4 items-end">
+            <button pButton label="Filtrar" icon="pi pi-filter" (click)="applyFilters()" class="p-button-primary"></button>
+            <button pButton label="Limpiar" icon="pi pi-times" (click)="clearFilters()" class="p-button-secondary"></button>
+        </div>
+    </div>
+
     <p-table [scrollable]="true" scrollHeight="550px" scrollDirection="both" styleClass="mt-4 w-full" [value]="freightService.freightsList()" [loading]="freightService.isLoading()">
         <ng-template #caption>
             <div class="flex justify-between items-center flex-column sm:flex-row gap-3">
@@ -70,8 +106,8 @@
                 <td>{{ freight.requestedDate | date: 'dd/MM/yyyy' }}</td>
                 <td>{{ freight.requestedUnits }}</td>
                 <td>{{ freight.cargoUnitType }}</td>
-                <td>{{ freight.originReference }}</td>
-                <td>{{ freight.destinationReference }}</td>
+                <td>{{ freight.origin?.name || freight.originReference }}</td>
+                <td>{{ freight.destination?.name || freight.destinationReference }}</td>
                 <td class="text-center">
                     <p-button label="Opciones" severity="secondary" icon="pi pi-angle-down" iconPos="right" class="p-button-text p-button-ro" (click)="toggleMenu($event, freight)" />
                     <p-menu #menu [popup]="true" [model]="menuItems" [appendTo]="'body'"></p-menu>
@@ -84,6 +120,15 @@
             </tr>
         </ng-template>
     </p-table>
+
+    <p-paginator
+        [rows]="pageSize()"
+        [first]="(freightService.paginationData().currentPage - 1) * pageSize()"
+        [totalRecords]="freightService.paginationData().totalRecords"
+        [rowsPerPageOptions]="[5, 10, 25, 100]"
+        (onPageChange)="onPageChange($event)"
+        styleClass="dark-paginator"
+    ></p-paginator>
 </div>
 
 <p-dialog header="{{ editMode() ? 'Editar Flete' : 'Registrar Flete' }}" [(visible)]="dialogFreight" [modal]="true" [style]="{ width: '50vw' }" [breakpoints]="{ '960px': '90vw' }" [closable]="true" (onHide)="closeDialogFreight()">
@@ -250,11 +295,37 @@
                         <div class="flex flex-wrap gap-4">
                             <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                                 <label for="destinationProvince" class="text-sm">Provincia de destino <span class="text-red-500">*</span></label>
-                                <p-dropdown id="destinationProvince" formControlName="destinationProvince" optionLabel="label" optionValue="value" placeholder="Seleccione provincia" [showClear]="true"></p-dropdown>
+                                <p-dropdown
+                                    id="destinationProvince"
+                                    [options]="provinces()"
+                                    formControlName="destinationProvince"
+                                    optionLabel="name"
+                                    [optionValue]="'id'"
+                                    placeholder="Seleccione provincia"
+                                    [loading]="isLoading()"
+                                    [showClear]="true"
+                                    [filter]="true"
+                                    [appendTo]="'body'"
+                                    class="w-full custom-select"
+                                    (onChange)="onProvinceDestinChange($event)"
+                                ></p-dropdown>
                             </div>
                             <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                                 <label for="destinationCity" class="text-sm">Ciudad de destino <span class="text-red-500">*</span></label>
-                                <p-dropdown id="destinationCity" formControlName="destinationCity" optionLabel="label" optionValue="value" placeholder="Seleccione ciudad" [showClear]="true"></p-dropdown>
+                                <p-dropdown
+                                    id="destinationCity"
+                                    [options]="destinationCities()"
+                                    formControlName="destinationCity"
+                                    optionLabel="name"
+                                    [optionValue]="'id'"
+                                    placeholder="Seleccione ciudad"
+                                    [showClear]="true"
+                                    [appendTo]="'body'"
+                                    [filter]="true"
+                                    filterPlaceholder="Buscar ciudad"
+                                    [loading]="isLoading()"
+                                    class="w-full custom-select"
+                                ></p-dropdown>
                             </div>
                         </div>
                         <div class="flex flex-wrap gap-4 mt-3">

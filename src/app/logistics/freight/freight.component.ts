@@ -18,7 +18,7 @@ import { MenuModule } from 'primeng/menu';
 import { MenuItem, MessageService } from 'primeng/api';
 import { Menu } from 'primeng/menu';
 import { FreightService } from '../../pages/service/freight.service';
-import { FreightResponse } from '../../pages/models/freight.model';
+import { FreightResponse, FreightData } from '../../pages/models/freight.model';
 import { CompanyService } from '../../pages/service/company.service';
 import { ApiResponse } from '../../pages/models/shared.model';
 import { CompanyResponse } from '../../pages/models/company.model';
@@ -75,6 +75,25 @@ export class FreightComponent implements OnInit, OnDestroy {
     searchOriginTerm = signal('');
     searchDestinationTerm = signal('');
 
+    // ==================== FILTROS ====================
+    filters = signal<{
+        serialReference: string;
+        freightType: string | null;
+        freightStatus: string | null;
+        startDate: Date | null;
+        endDate: Date | null;
+        originCity: string;
+        destinationCity: string;
+    }>({
+        serialReference: '',
+        freightType: null,
+        freightStatus: null,
+        startDate: null,
+        endDate: null,
+        originCity: '',
+        destinationCity: ''
+    });
+
     // ==================== DIÁLOGOS ====================
     dialogFreight = signal(false);
     editMode = signal(false);
@@ -120,7 +139,7 @@ export class FreightComponent implements OnInit, OnDestroy {
             client: ['', Validators.required],
             freightType: ['', Validators.required],
             status: ['PENDING', Validators.required],
-            serialReference: ['', [Validators.required, Validators.maxLength(25)]],
+            serialReference: ['', Validators.maxLength(25)],
             requestedDate: ['', Validators.required],
 
             // Paso 2: Carga
@@ -208,8 +227,8 @@ export class FreightComponent implements OnInit, OnDestroy {
     }
 
     // ==================== CARGA DE DATOS - FLETES ====================
-    loadFreights(): void {
-        this.freightService.loadFreights().subscribe({
+    loadFreights(filters?: { page?: number; limit?: number; clientId?: string; serialReference?: string; startDate?: string; endDate?: string; freightStatus?: string; freightType?: string; originCity?: string; destinationCity?: string }): void {
+        this.freightService.loadFreights(filters).subscribe({
             next: (response) => {
                 if (response.statusCode === 200) {
                     console.log('fletes cargados correctamente');
@@ -425,24 +444,47 @@ export class FreightComponent implements OnInit, OnDestroy {
         if (this.freightForm.valid) {
             const formValue = this.freightForm.value;
 
-            if (this.editMode()) {
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: 'Flete actualizado correctamente',
-                    life: 3000
-                });
-            } else {
-                // TODO: Implementar creación de nuevo flete cuando el backend esté listo
-                this.messageService.add({
-                    severity: 'success',
-                    summary: 'Éxito',
-                    detail: 'Flete registrado correctamente',
-                    life: 3000
-                });
-            }
+            // Mapear los valores del formulario al objeto que espera el backend
+            const freightData = {
+                type: formValue.freightType,
+                serialReference: formValue.serialReference || undefined,
+                requestedDate: formValue.requestedDate.toISOString().split('T')[0], // Formato YYYY-MM-DD
+                requestedUnits: formValue.unitsRequired,
+                cargoUnitType: formValue.cargoUnitType,
+                cargoCondition: formValue.cargoCondition,
+                cargoDescription: formValue.observations || undefined,
+                originId: formValue.originCity,
+                originReference: formValue.originReference || undefined,
+                destinationId: formValue.destinationCity,
+                destinationReference: formValue.destinationReference || undefined,
+                originDepotId: formValue.originDepot || undefined,
+                destinationDepotId: formValue.destinationDepot || undefined,
+                remarks: formValue.observations || undefined,
+                clientId: formValue.client
+            };
 
-            this.closeDialogFreight();
+            this.freightService.registerFreight(freightData as FreightData).subscribe({
+                next: (response) => {
+                    if (response.statusCode === 201) {
+                        this.messageService.add({
+                            severity: 'success',
+                            summary: 'Éxito',
+                            detail: 'Flete registrado correctamente',
+                            life: 3000
+                        });
+                        this.loadFreights(); // Recargar la lista de fletes
+                        this.closeDialogFreight();
+                    }
+                },
+                error: (error) => {
+                    this.messageService.add({
+                        severity: 'error',
+                        summary: 'Error',
+                        detail: 'Error al registrar el flete',
+                        life: 3000
+                    });
+                }
+            });
         } else {
             this.messageService.add({
                 severity: 'error',
@@ -503,6 +545,80 @@ export class FreightComponent implements OnInit, OnDestroy {
     }
 
     onPageChange(event: any): void {
-        console.log('Page change:', event);
+        const page = event.page + 1;
+        const rows = event.rows;
+        this.pageSize.set(rows);
+        const currentFilters = this.filters();
+        const filterParams: any = { page, limit: rows };
+
+        if (currentFilters.serialReference?.trim()) {
+            filterParams.serialReference = currentFilters.serialReference.trim();
+        }
+        if (currentFilters.freightType) {
+            filterParams.freightType = currentFilters.freightType;
+        }
+        if (currentFilters.freightStatus) {
+            filterParams.freightStatus = currentFilters.freightStatus;
+        }
+        if (currentFilters.startDate) {
+            filterParams.startDate = currentFilters.startDate.toISOString().split('T')[0];
+        }
+        if (currentFilters.endDate) {
+            filterParams.endDate = currentFilters.endDate.toISOString().split('T')[0];
+        }
+        if (currentFilters.originCity?.trim()) {
+            filterParams.originCity = currentFilters.originCity.trim();
+        }
+        if (currentFilters.destinationCity?.trim()) {
+            filterParams.destinationCity = currentFilters.destinationCity.trim();
+        }
+
+        this.loadFreights(filterParams);
+    }
+
+    // ==================== FILTROS ====================
+    applyFilters(): void {
+        const currentFilters = this.filters();
+        const filterParams: any = {
+            page: 1,
+            limit: this.pageSize()
+        };
+
+        if (currentFilters.serialReference?.trim()) {
+            filterParams.serialReference = currentFilters.serialReference.trim();
+        }
+        if (currentFilters.freightType) {
+            filterParams.freightType = currentFilters.freightType;
+        }
+        if (currentFilters.freightStatus) {
+            filterParams.freightStatus = currentFilters.freightStatus;
+        }
+        if (currentFilters.startDate) {
+            filterParams.startDate = currentFilters.startDate.toISOString().split('T')[0];
+        }
+        if (currentFilters.endDate) {
+            filterParams.endDate = currentFilters.endDate.toISOString().split('T')[0];
+        }
+        if (currentFilters.originCity?.trim()) {
+            filterParams.originCity = currentFilters.originCity.trim();
+        }
+        if (currentFilters.destinationCity?.trim()) {
+            filterParams.destinationCity = currentFilters.destinationCity.trim();
+        }
+
+        this.loadFreights(filterParams);
+    }
+
+    clearFilters(): void {
+        this.filters.set({
+            serialReference: '',
+            freightType: null,
+            freightStatus: null,
+            startDate: null,
+            endDate: null,
+            originCity: '',
+            destinationCity: ''
+        });
+        this.loadFreights({ page: 1, limit: this.pageSize() });
     }
 }
