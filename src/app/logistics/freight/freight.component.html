@@ -359,3 +359,155 @@
         </div>
     </form>
 </p-dialog>
+
+<!-- Diálogo de Detalles del Flete -->
+<p-dialog header="Detalles del Flete" [(visible)]="dialogFreightDetails" [modal]="true" [style]="{ width: '80vw', maxWidth: '900px' }" [breakpoints]="{ '960px': '95vw' }" [closable]="true" (onHide)="dialogFreightDetails.set(false)">
+    <div class="freight-details-report" *ngIf="selectedFreight">
+        <!-- Header Section -->
+        <div class="report-header mb-4">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="pi pi-truck text-3xl text-primary"></i>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 m-0">{{ selectedFreight.serialReference || 'Sin referencia' }}</h2>
+                        <p class="text-gray-600 m-0">Cliente: {{ selectedFreight.id || 'No especificado' }}</p>
+                    </div>
+                </div>
+                <p-tag
+                    [value]="
+                        getStatusSeverity(selectedFreight.freightStatus) === 'success'
+                            ? 'Completado'
+                            : getStatusSeverity(selectedFreight.freightStatus) === 'info'
+                              ? 'En Tránsito'
+                              : getStatusSeverity(selectedFreight.freightStatus) === 'warning'
+                                ? 'Pendiente'
+                                : 'Cancelado'
+                    "
+                    [severity]="getStatusSeverity(selectedFreight.freightStatus)"
+                    class="text-lg px-3 py-2"
+                ></p-tag>
+            </div>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-section mb-4">
+            <h4 class="text-lg font-semibold mb-2">Progreso del Flete</h4>
+            <p-progressBar [value]="getStatusProgress(selectedFreight.freightStatus)" [showValue]="false" styleClass="h-3"></p-progressBar>
+            <div class="flex justify-between text-sm text-gray-600 mt-1">
+                <span>Pendiente</span>
+                <span>En Tránsito</span>
+                <span>Completado</span>
+            </div>
+        </div>
+
+        <!-- Main Content Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <!-- Información General -->
+            <p-card header="Información General" class="shadow-sm">
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <i class="pi pi-calendar text-blue-500"></i>
+                        <div>
+                            <span class="font-medium">Fecha Solicitada:</span>
+                            <p class="m-0 text-gray-700">{{ selectedFreight.requestedDate | date: 'dd/MM/yyyy' }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="pi pi-tag text-green-500"></i>
+                        <div>
+                            <span class="font-medium">Tipo de Flete:</span>
+                            <p class="m-0 text-gray-700">{{ getFreightTypeLabel(selectedFreight.type) }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="pi pi-money-bill text-yellow-500"></i>
+                        <div>
+                            <span class="font-medium">Estado de Pago:</span>
+                            <p-tag
+                                [value]="selectedFreight.paymentStatus === 'pending' ? 'Pendiente' : selectedFreight.paymentStatus === 'paid' ? 'Pagado' : 'Vencido'"
+                                [severity]="selectedFreight.paymentStatus === 'pending' ? 'warning' : selectedFreight.paymentStatus === 'paid' ? 'success' : 'danger'"
+                            ></p-tag>
+                        </div>
+                    </div>
+                </div>
+            </p-card>
+
+            <!-- Información de Carga -->
+            <p-card header="Información de Carga" class="shadow-sm">
+                <div class="space-y-3">
+                    <div class="flex items-center gap-3">
+                        <i class="pi pi-box text-purple-500"></i>
+                        <div>
+                            <span class="font-medium">Unidades Requeridas:</span>
+                            <p class="m-0 text-gray-700">{{ selectedFreight.requestedUnits }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="pi pi-cog text-orange-500"></i>
+                        <div>
+                            <span class="font-medium">Tipo de Unidad:</span>
+                            <p class="m-0 text-gray-700">{{ getCargoUnitTypeLabel(selectedFreight.cargoUnitType) }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <i class="pi pi-shield text-red-500"></i>
+                        <div>
+                            <span class="font-medium">Condición de Carga:</span>
+                            <p class="m-0 text-gray-700">{{ getCargoConditionLabel(selectedFreight.cargoCondition) }}</p>
+                        </div>
+                    </div>
+                </div>
+            </p-card>
+
+            <!-- Origen -->
+            <p-card header="Origen" class="shadow-sm">
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3">
+                        <i class="pi pi-map-marker text-red-500 mt-1"></i>
+                        <div class="flex-1">
+                            <span class="font-medium">Ciudad:</span>
+                            <p class="m-0 text-gray-700">{{ getCityName(selectedFreight.originId) || 'No especificado' }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3" *ngIf="selectedFreight.originReference">
+                        <i class="pi pi-info-circle text-blue-500 mt-1"></i>
+                        <div class="flex-1">
+                            <span class="font-medium">Referencia:</span>
+                            <p class="m-0 text-gray-700">{{ selectedFreight.originReference }}</p>
+                        </div>
+                    </div>
+                </div>
+            </p-card>
+
+            <!-- Destino -->
+            <p-card header="Destino" class="shadow-sm">
+                <div class="space-y-3">
+                    <div class="flex items-start gap-3">
+                        <i class="pi pi-map-marker text-green-500 mt-1"></i>
+                        <div class="flex-1">
+                            <span class="font-medium">Ciudad:</span>
+                            <p class="m-0 text-gray-700">{{ getCityName(selectedFreight.destinationId) || 'No especificado' }}</p>
+                        </div>
+                    </div>
+                    <div class="flex items-start gap-3" *ngIf="selectedFreight.destinationReference">
+                        <i class="pi pi-info-circle text-blue-500 mt-1"></i>
+                        <div class="flex-1">
+                            <span class="font-medium">Referencia:</span>
+                            <p class="m-0 text-gray-700">{{ selectedFreight.destinationReference }}</p>
+                        </div>
+                    </div>
+                </div>
+            </p-card>
+        </div>
+
+        <!-- Observaciones -->
+        <p-card header="Observaciones" class="shadow-sm mt-6" *ngIf="selectedFreight.remarks || selectedFreight.cargoDescription">
+            <div class="flex items-start gap-3">
+                <i class="pi pi-comment text-gray-500 mt-1"></i>
+                <div class="flex-1">
+                    <p class="m-0 text-gray-700 whitespace-pre-line">{{ selectedFreight.remarks || selectedFreight.cargoDescription || 'Sin observaciones' }}</p>
+                </div>
+            </div>
+        </p-card>
+    </div>
+</p-dialog>

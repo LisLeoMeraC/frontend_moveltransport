@@ -25,6 +25,8 @@ import { CompanyResponse } from '../../pages/models/company.model';
 import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { RouteService } from '../../pages/service/route.service';
 import { DepotService } from '../../pages/service/depot.service';
+import { CardModule } from 'primeng/card';
+import { ProgressBarModule } from 'primeng/progressbar';
 
 @Component({
     selector: 'app-freight',
@@ -46,7 +48,9 @@ import { DepotService } from '../../pages/service/depot.service';
         ToolbarModule,
         PaginatorModule,
         MenuModule,
-        TagModule
+        TagModule,
+        CardModule,
+        ProgressBarModule
     ],
     templateUrl: './freight.component.html',
     styleUrl: './freight.component.scss',
@@ -96,6 +100,7 @@ export class FreightComponent implements OnInit, OnDestroy {
 
     // ==================== DIÁLOGOS ====================
     dialogFreight = signal(false);
+    dialogFreightDetails = signal(false);
     editMode = signal(false);
 
     // ==================== DATOS DE FLETES ====================
@@ -502,6 +507,8 @@ export class FreightComponent implements OnInit, OnDestroy {
             detail: `Viendo detalles del flete: ${freight.serialReference}`,
             life: 3000
         });
+        this.selectedFreight = freight;
+        this.dialogFreightDetails.set(true);
     }
 
     deleteFreight(freight: FreightResponse): void {
@@ -542,6 +549,83 @@ export class FreightComponent implements OnInit, OnDestroy {
             default:
                 return 'secondary';
         }
+    }
+
+    getStatusProgress(status: string): number {
+        switch (status.toLowerCase()) {
+            case 'pending':
+                return 25;
+            case 'in_transit':
+                return 75;
+            case 'completed':
+                return 100;
+            case 'canceled':
+            case 'delayed':
+                return 0;
+            default:
+                return 0;
+        }
+    }
+
+    getFreightTypeLabel(type: string): string {
+        switch (type) {
+            case 'export':
+                return 'Exportación';
+            case 'import':
+                return 'Importación';
+            case 'internal':
+                return 'Interno';
+            case 'rescue':
+                return 'Rescate';
+            default:
+                return type;
+        }
+    }
+
+    getCargoConditionLabel(condition: string): string {
+        switch (condition) {
+            case 'dry':
+                return 'Seco';
+            case 'refrigerated':
+                return 'Refrigerado';
+            case 'hazardous':
+                return 'Peligroso';
+            default:
+                return condition;
+        }
+    }
+
+    getCargoUnitTypeLabel(unitType: string): string {
+        switch (unitType) {
+            case 'SD20':
+                return "Contenedor 20' Estándar";
+            case 'SD40':
+                return "Contenedor 40' Estándar";
+            case 'HC40':
+                return "Contenedor 40' High Cube";
+            case 'DUMP':
+                return 'Volquete';
+            case 'FLTB':
+                return 'Plataforma';
+            case 'TANK':
+                return 'Tanque';
+            case 'DRYV':
+                return 'Caja Seca';
+            default:
+                return unitType;
+        }
+    }
+
+    getCityName(cityId: string): string {
+        // Buscar en las ciudades de origen
+        const originCity = this.originCities().find((c) => c.id === cityId);
+        if (originCity) return originCity.name;
+
+        // Buscar en las ciudades de destino
+        const destinationCity = this.destinationCities().find((c) => c.id === cityId);
+        if (destinationCity) return destinationCity.name;
+
+        return 'No especificado';
     }
 
     onPageChange(event: any): void {
