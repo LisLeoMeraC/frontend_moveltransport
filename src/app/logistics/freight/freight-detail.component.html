@@ -1,0 +1,161 @@
+<p-toast></p-toast>
+<p-toolbar styleClass="p-toolbar p-component mb-0 py-2">
+  <h3 class="m-0 flex align-items-center">Detalles del Flete</h3>
+  <button pButton label="Volver" icon="pi pi-arrow-left" class="p-button-text" (click)="goBack()"></button>
+</p-toolbar>
+
+
+<div class="card mt-4 w-full">
+  <ng-container *ngIf="freightService.freightItem() as selectedFreight">
+    <div class="freight-details-report">
+      <div class="report-header mb-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-4">
+            <i class="pi pi-truck truck-icon" aria-hidden="true"></i>
+            <div class="flex flex-col">
+              <div class="text-2xl font-bold text-gray-800 leading-tight">{{ selectedFreight.client?.subject?.name || 'Cliente no especificado' }}</div>
+              <div class="flex flex-wrap items-center gap-2 mt-1">
+                <p-tag severity="info" [value]="'Serial: ' + (selectedFreight.serialReference || 'N/A')" styleClass="text-xs"></p-tag>
+                <p-tag severity="secondary" [value]="getFreightTypeLabel(selectedFreight.type)" styleClass="text-xs"></p-tag>
+              </div>
+            </div>
+          </div>
+          <p-tag [value]="
+              getStatusSeverity(selectedFreight.freightStatus) === 'success'
+                ? 'Completado'
+                : getStatusSeverity(selectedFreight.freightStatus) === 'info'
+                  ? 'En Tránsito'
+                  : getStatusSeverity(selectedFreight.freightStatus) === 'warning'
+                    ? 'Pendiente'
+                    : 'Cancelado'
+            " [severity]="getStatusSeverity(selectedFreight.freightStatus)" class="text-lg px-3 py-2 rounded-full"></p-tag>
+        </div>
+      </div>
+
+      <div class="progress-section mb-4">
+        <div class="flex items-center justify-between mb-3">
+          <h4 class="text-lg font-semibold m-0">Progreso del Flete</h4>
+        </div>
+
+        <div class="progress-track">
+          <div class="progress-fill" [style.width.%]="getStatusProgress(selectedFreight.freightStatus)"></div>
+          <span class="progress-truck" [ngClass]="{ moving: selectedFreight.freightStatus === 'in_transit' }" [style.left.%]="getStatusProgress(selectedFreight.freightStatus)" aria-hidden="true">
+            <i class="pi pi-truck"></i>
+          </span>
+        </div>
+        <div class="flex justify-between text-xs text-gray-600 mt-2">
+          <span class="status-label" [ngClass]="{active: selectedFreight.freightStatus === 'pending'}">Pendiente</span>
+          <span class="status-label" [ngClass]="{active: selectedFreight.freightStatus === 'in_transit'}">En Tránsito</span>
+          <span class="status-label" [ngClass]="{active: selectedFreight.freightStatus === 'completed'}">Completado</span>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+        <p-card header="Información General" class="shadow-sm h-full">
+          <div class="space-y-3">
+            <div class="flex items-center gap-3">
+              <i class="pi pi-calendar text-blue-500"></i>
+              <div>
+                <span class="font-medium">Fecha Solicitada:</span>
+                <p class="m-0 text-gray-700">{{ selectedFreight.requestedDate | date: 'dd/MM/yyyy' }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <i class="pi pi-tag text-green-500"></i>
+              <div>
+                <span class="font-medium">Tipo de Flete:</span>
+                <p class="m-0 text-gray-700">{{ getFreightTypeLabel(selectedFreight.type) }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <i class="pi pi-money-bill text-yellow-500"></i>
+              <div>
+                <span class="font-medium">Estado de Pago:</span>
+                <p-tag
+                  [value]="selectedFreight.paymentStatus === 'pending' ? 'Pendiente' : selectedFreight.paymentStatus === 'paid' ? 'Pagado' : 'Vencido'"
+                  [severity]="selectedFreight.paymentStatus === 'pending' ? 'warning' : selectedFreight.paymentStatus === 'paid' ? 'success' : 'danger'"></p-tag>
+              </div>
+            </div>
+          </div>
+        </p-card>
+
+        <p-card header="Información de Carga" class="shadow-sm h-full">
+          <div class="space-y-3">
+            <div class="flex items-center gap-3">
+              <i class="pi pi-box text-purple-500"></i>
+              <div>
+                <span class="font-medium">Unidades Requeridas:</span>
+                <p class="m-0 text-gray-700">{{ selectedFreight.requestedUnits }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <i class="pi pi-cog text-orange-500"></i>
+              <div>
+                <span class="font-medium">Tipo de Unidad:</span>
+                <p class="m-0 text-gray-700">{{ getCargoUnitTypeLabel(selectedFreight.cargoUnitType) }}</p>
+              </div>
+            </div>
+            <div class="flex items-center gap-3">
+              <i class="pi pi-shield text-red-500"></i>
+              <div>
+                <span class="font-medium">Condición de Carga:</span>
+                <p class="m-0 text-gray-700">{{ getCargoConditionLabel(selectedFreight.cargoCondition) }}</p>
+              </div>
+            </div>
+          </div>
+        </p-card>
+
+        <p-card header="Origen" class="shadow-sm h-full">
+          <div class="space-y-3">
+            <div class="flex items-start gap-3">
+              <i class="pi pi-map-marker text-red-500 mt-1"></i>
+              <div class="flex-1">
+                <span class="font-medium">Ciudad:</span>
+                <p class="m-0 text-gray-700">{{ selectedFreight.origin?.name || selectedFreight.originReference ||
+                  selectedFreight.originId || 'No especificado' }}</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3" *ngIf="selectedFreight.originReference">
+              <i class="pi pi-info-circle text-blue-500 mt-1"></i>
+              <div class="flex-1">
+                <span class="font-medium">Referencia:</span>
+                <p class="m-0 text-gray-700">{{ selectedFreight.originReference }}</p>
+              </div>
+            </div>
+          </div>
+        </p-card>
+
+        <p-card header="Destino" class="shadow-sm h-full">
+          <div class="space-y-3">
+            <div class="flex items-start gap-3">
+              <i class="pi pi-map-marker text-green-500 mt-1"></i>
+              <div class="flex-1">
+                <span class="font-medium">Ciudad:</span>
+                <p class="m-0 text-gray-700">{{ selectedFreight.destination?.name ||
+                  selectedFreight.destinationReference || selectedFreight.destinationId || 'No especificado' }}</p>
+              </div>
+            </div>
+            <div class="flex items-start gap-3" *ngIf="selectedFreight.destinationReference">
+              <i class="pi pi-info-circle text-blue-500 mt-1"></i>
+              <div class="flex-1">
+                <span class="font-medium">Referencia:</span>
+                <p class="m-0 text-gray-700">{{ selectedFreight.destinationReference }}</p>
+              </div>
+            </div>
+          </div>
+        </p-card>
+      </div>
+
+      <p-card header="Observaciones" class="shadow-sm mt-6"
+        *ngIf="selectedFreight.remarks || selectedFreight.cargoDescription">
+        <div class="flex items-start gap-3">
+          <i class="pi pi-comment text-gray-500 mt-1"></i>
+          <div class="flex-1">
+            <p class="m-0 text-gray-700 whitespace-pre-line">{{ selectedFreight.remarks ||
+              selectedFreight.cargoDescription || 'Sin observaciones' }}</p>
+          </div>
+        </div>
+      </p-card>
+    </div>
+  </ng-container>
+</div>

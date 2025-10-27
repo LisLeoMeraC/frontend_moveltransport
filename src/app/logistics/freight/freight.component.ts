@@ -1,4 +1,5 @@
 import { Component, inject, OnInit, OnDestroy, signal, ViewChild } from '@angular/core';
+import { ActivatedRoute, Router } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
@@ -137,7 +138,9 @@ export class FreightComponent implements OnInit, OnDestroy {
     // ==================== CONSTRUCTOR ====================
     constructor(
         private fb: FormBuilder,
-        private messageService: MessageService
+        private messageService: MessageService,
+        private router: Router,
+        private route: ActivatedRoute
     ) {
         this.freightForm = this.fb.group({
             // Paso 1: Datos del Cliente
@@ -507,8 +510,7 @@ export class FreightComponent implements OnInit, OnDestroy {
             detail: `Viendo detalles del flete: ${freight.serialReference}`,
             life: 3000
         });
-        this.selectedFreight = freight;
-        this.dialogFreightDetails.set(true);
+        this.router.navigate([freight.id], { relativeTo: this.route });
     }
 
     deleteFreight(freight: FreightResponse): void {

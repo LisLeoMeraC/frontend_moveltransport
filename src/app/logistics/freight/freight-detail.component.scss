@@ -1,0 +1,109 @@
+/* styles for freight detail screen */
+
+.progress-track {
+  position: relative;
+  width: 100%;
+  height: 20px;
+  border-radius: 9999px;
+  background: linear-gradient(90deg, rgba(0,0,0,0.06), rgba(0,0,0,0.03));
+  border: 1px solid rgba(0,0,0,0.06);
+  overflow: hidden;
+}
+
+.progress-fill {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--primary-color) 92%, #4ea1ff), color-mix(in srgb, var(--primary-color) 70%, #e3f2ff));
+  transition: width 300ms ease;
+  z-index: 1;
+}
+
+.progress-truck {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  color: var(--primary-color);
+  transition: left 300ms ease;
+  z-index: 2;
+  width: 38px;
+  height: 38px;
+  border-radius: 9999px;
+  background: #ffffff;
+  border: 2px solid var(--primary-color);
+  box-shadow: 0 3px 8px rgba(0,0,0,0.15);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.progress-truck i {
+  font-size: 1.25rem;
+}
+
+.status-label {
+  opacity: 0.7;
+}
+
+.status-label.active {
+  opacity: 1;
+  font-weight: 600;
+  color: var(--primary-color);
+}
+
+/* Truck icon in header */
+.truck-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  color: var(--primary-color);
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));
+  font-size: 1.8rem;
+}
+
+.truck-icon-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 0;
+  background: transparent;
+  color: var(--primary-color);
+  border: 0;
+  box-shadow: none;
+}
+
+.truck-icon-badge .pi {
+  font-size: 1.8rem;
+}
+
+/* Flat image icon (no background) for header */
+.truck-icon-img {
+  width: 44px;
+  height: 44px;
+  object-fit: contain;
+  display: inline-block;
+}
+
+/* Animations for in_transit */
+@keyframes wheel-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes bob {
+  0%, 100% { transform: translate(-50%, -50%) translateY(0); }
+  50% { transform: translate(-50%, -50%) translateY(-2px); }
+}
+
+.progress-truck.moving {
+  animation: bob 1.2s ease-in-out infinite;
+}
+
+.progress-truck.moving .wheel {
+  transform-origin: center;
+  animation: wheel-spin 0.6s linear infinite;
+}

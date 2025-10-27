@@ -9,6 +9,7 @@ import { VehicleOwnerComponent } from './vehicle-owner/vehicle-owner.component';
 import { RouteComponent } from './route/route.component';
 import { DepotComponent } from './depot/depot.component';
 import { FreightComponent } from './freight/freight.component';
+import { FreightDetailComponent } from './freight/freight-detail.component';
 
 export default [
     { path: '', redirectTo: 'vehiculos', pathMatch: 'full' },
@@ -20,5 +21,6 @@ export default [
     { path: 'routes', data: { breadcrumb: 'Rutas' }, component: RouteComponent },
     { path: 'depot', data: { breadcrumb: 'Depósitos' }, component: DepotComponent },
     { path: 'freight', data: { breadcrumb: 'Fletes' }, component: FreightComponent },
+    { path: 'freight/:id', data: { breadcrumb: 'Detalle Flete' }, component: FreightDetailComponent },
     { path: '**', redirectTo: '/app/notfound' }
 ] as Routes;

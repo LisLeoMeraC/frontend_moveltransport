@@ -14,6 +14,8 @@ export class FreightService extends BaseHttpService<FreightResponse> {
     private readonly baseUrl = environment.apiUrl;
     private freights = signal<FreightResponse[]>([]);
     readonly freightsList = this.freights.asReadonly();
+    private freight = signal<FreightResponse | null>(null);
+    readonly freightItem = this.freight.asReadonly();
 
     constructor(
         private http: HttpClient,
@@ -58,6 +60,20 @@ export class FreightService extends BaseHttpService<FreightResponse> {
                 }
             }),
             catchError(this.handleHttpError<ApiResponse<FreightResponse[]>>('Error al cargar fletes')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+
+    getFreightById(id: string): Observable<ApiResponse<FreightResponse>> {
+        this.loading.set(true);
+        this.clearError();
+        return this.http.get<ApiResponse<FreightResponse>>(`${this.baseUrl}/freight/${id}`).pipe(
+            tap((response) => {
+                if (this.handleApiResponse(response)) {
+                    this.freight.set(response.data || null);
+                }
+            }),
+            catchError(this.handleHttpError<ApiResponse<FreightResponse>>('Error al cargar el flete')),
             finalize(() => this.loading.set(false))
         );
     }
