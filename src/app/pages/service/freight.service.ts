@@ -88,6 +88,16 @@ export class FreightService extends BaseHttpService<FreightResponse> {
         );
     }
 
+    updateFreight(id: string, freightData: Partial<FreightData>): Observable<ApiResponse<FreightResponse>> {
+        this.loading.set(true);
+        this.clearError();
+        return this.http.put<ApiResponse<FreightResponse>>(`${this.baseUrl}/freight/${id}`, freightData).pipe(
+            tap((response) => this.handleApiResponse(response)),
+            catchError(this.handleHttpError<ApiResponse<FreightResponse>>('Error al actualizar el flete')),
+            finalize(() => this.loading.set(false))
+        );
+    }
+
     getFreightTypes(): { label: string; value: FreightType }[] {
         return [
             { label: 'Exportación', value: FreightType.EXPORT },

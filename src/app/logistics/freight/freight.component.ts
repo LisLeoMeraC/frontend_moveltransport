@@ -1,23 +1,22 @@
 import { Component, inject, OnInit, OnDestroy, signal, ViewChild } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ButtonModule } from 'primeng/button';
 import { DialogModule } from 'primeng/dialog';
-import { DropdownModule } from 'primeng/dropdown';
+import { SelectModule } from 'primeng/select';
 import { IconFieldModule } from 'primeng/iconfield';
 import { InputIconModule } from 'primeng/inputicon';
 import { InputTextModule } from 'primeng/inputtext';
-import { CalendarModule } from 'primeng/calendar';
+import { DatePickerModule } from 'primeng/datepicker';
 import { StepperModule } from 'primeng/stepper';
 import { TagModule } from 'primeng/tag';
 import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { Paginator, PaginatorModule } from 'primeng/paginator';
-import { MenuModule } from 'primeng/menu';
-import { MenuItem, MessageService } from 'primeng/api';
-import { Menu } from 'primeng/menu';
+import { Textarea } from 'primeng/textarea';
+import { MessageService } from 'primeng/api';
 import { FreightService } from '../../pages/service/freight.service';
 import { FreightResponse, FreightData } from '../../pages/models/freight.model';
 import { CompanyService } from '../../pages/service/company.service';
@@ -38,20 +37,21 @@ import { ProgressBarModule } from 'primeng/progressbar';
         ReactiveFormsModule,
         ButtonModule,
         DialogModule,
-        DropdownModule,
+        SelectModule,
         IconFieldModule,
         InputIconModule,
         InputTextModule,
-        CalendarModule,
+        DatePickerModule,
         StepperModule,
         TableModule,
         ToastModule,
         ToolbarModule,
         PaginatorModule,
-        MenuModule,
         TagModule,
         CardModule,
-        ProgressBarModule
+        ProgressBarModule,
+        Textarea,
+        RouterModule
     ],
     templateUrl: './freight.component.html',
     styleUrl: './freight.component.scss',
@@ -102,7 +102,6 @@ export class FreightComponent implements OnInit, OnDestroy {
     // ==================== DIÁLOGOS ====================
     dialogFreight = signal(false);
     dialogFreightDetails = signal(false);
-    editMode = signal(false);
 
     // ==================== DATOS DE FLETES ====================
     selectedFreight?: FreightResponse;
@@ -118,9 +117,6 @@ export class FreightComponent implements OnInit, OnDestroy {
     loadingClients = signal(false);
     clientSearchTerm = '';
 
-    // ==================== MENÚS ====================
-    menuItems: MenuItem[] = [];
-    @ViewChild('menu') menu!: Menu;
     @ViewChild('paginator') paginator!: Paginator;
 
     // ==================== OPCIONES PARA DROPDOWNS ====================
@@ -146,7 +142,6 @@ export class FreightComponent implements OnInit, OnDestroy {
             // Paso 1: Datos del Cliente
             client: ['', Validators.required],
             freightType: ['', Validators.required],
-            status: ['PENDING', Validators.required],
             serialReference: ['', Validators.maxLength(25)],
             requestedDate: ['', Validators.required],
 
@@ -155,6 +150,7 @@ export class FreightComponent implements OnInit, OnDestroy {
             cargoUnitType: ['', Validators.required],
             cargoCondition: ['', Validators.required],
             observations: ['', Validators.maxLength(250)],
+            cargoDescription: ['', Validators.maxLength(250)],
 
             // Paso 3: Origen y Destino
             originProvince: [null, Validators.required],
@@ -171,7 +167,6 @@ export class FreightComponent implements OnInit, OnDestroy {
 
     // ==================== CICLO DE VIDA ====================
     ngOnInit(): void {
-        this.initMenuItems();
         this.loadFreights();
         this.loadClients();
         this.loadAllProvinces();
@@ -202,37 +197,6 @@ export class FreightComponent implements OnInit, OnDestroy {
         });
     }
 
-    private initMenuItems(): void {
-        this.menuItems = [
-            {
-                label: 'Editar',
-                icon: 'pi pi-pencil',
-                command: () => {
-                    if (this.selectedFreight) {
-                        this.openDialogFreight(this.selectedFreight);
-                    }
-                }
-            },
-            {
-                label: 'Ver Detalles',
-                icon: 'pi pi-eye',
-                command: () => {
-                    if (this.selectedFreight) {
-                        this.viewFreightDetails(this.selectedFreight);
-                    }
-                }
-            },
-            {
-                label: 'Eliminar',
-                icon: 'pi pi-trash',
-                command: () => {
-                    if (this.selectedFreight) {
-                        this.deleteFreight(this.selectedFreight);
-                    }
-                }
-            }
-        ];
-    }
 
     // ==================== CARGA DE DATOS - FLETES ====================
     loadFreights(filters?: { page?: number; limit?: number; clientId?: string; serialReference?: string; startDate?: string; endDate?: string; freightStatus?: string; freightType?: string; originCity?: string; destinationCity?: string }): void {
@@ -406,38 +370,14 @@ export class FreightComponent implements OnInit, OnDestroy {
         this.depotService.getDepots(1, 30).subscribe();
     }
 
-    // ==================== GESTIÓN DE MENÚ ====================
-    toggleMenu(event: Event, freight: FreightResponse): void {
-        this.selectedFreight = freight;
-        this.menu.toggle(event);
-    }
 
     // ==================== GESTIÓN DE DIÁLOGOS ====================
-    openDialogFreight(freight?: FreightResponse): void {
+    openDialogFreight(): void {
         this.freightForm.reset();
-        this.editMode.set(!!freight);
         this.currentStep = 1;
-
-        if (freight) {
-            this.freightForm.patchValue({
-                client: freight.clientId,
-                freightType: freight.type,
-                status: freight.freightStatus,
-                serialReference: freight.serialReference,
-                requestedDate: new Date(freight.requestedDate),
-                unitsRequired: freight.requestedUnits,
-                cargoUnitType: freight.cargoUnitType,
-                cargoCondition: freight.cargoCondition,
-                observations: freight.remarks,
-                originReference: freight.originReference,
-                destinationReference: freight.destinationReference
-            });
-        } else {
-            this.freightForm.patchValue({
-                status: 'PENDING',
-                requestedDate: new Date()
-            });
-        }
+        this.freightForm.patchValue({
+            requestedDate: new Date()
+        });
         this.dialogFreight.set(true);
     }
 
@@ -460,7 +400,7 @@ export class FreightComponent implements OnInit, OnDestroy {
                 requestedUnits: formValue.unitsRequired,
                 cargoUnitType: formValue.cargoUnitType,
                 cargoCondition: formValue.cargoCondition,
-                cargoDescription: formValue.observations || undefined,
+                cargoDescription: formValue.cargoDescription || undefined,
                 originId: formValue.originCity,
                 originReference: formValue.originReference || undefined,
                 destinationId: formValue.destinationCity,

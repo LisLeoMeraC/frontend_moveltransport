@@ -1,161 +1,291 @@
 <p-toast></p-toast>
 <p-toolbar styleClass="p-toolbar p-component mb-0 py-2">
   <h3 class="m-0 flex align-items-center">Detalles del Flete</h3>
-  <button pButton label="Volver" icon="pi pi-arrow-left" class="p-button-text" (click)="goBack()"></button>
 </p-toolbar>
-
 
 <div class="card mt-4 w-full">
   <ng-container *ngIf="freightService.freightItem() as selectedFreight">
-    <div class="freight-details-report">
-      <div class="report-header mb-4">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-4">
-            <i class="pi pi-truck truck-icon" aria-hidden="true"></i>
-            <div class="flex flex-col">
-              <div class="text-2xl font-bold text-gray-800 leading-tight">{{ selectedFreight.client?.subject?.name || 'Cliente no especificado' }}</div>
-              <div class="flex flex-wrap items-center gap-2 mt-1">
-                <p-tag severity="info" [value]="'Serial: ' + (selectedFreight.serialReference || 'N/A')" styleClass="text-xs"></p-tag>
-                <p-tag severity="secondary" [value]="getFreightTypeLabel(selectedFreight.type)" styleClass="text-xs"></p-tag>
-              </div>
+    <!-- Header always visible (client name, tags, status, toggle, back) -->
+    <div class="report-header mb-3">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4">
+          <i class="pi pi-truck truck-icon" aria-hidden="true"></i>
+          <div class="flex flex-col">
+            <div class="text-2xl font-bold text-gray-800 leading-tight">{{ selectedFreight.client?.subject?.name || 'Cliente no especificado' }}</div>
+            <div class="flex flex-wrap items-center gap-2 mt-1">
+              <p-tag severity="info" [value]="'Serial: ' + (selectedFreight.serialReference || 'N/A')" styleClass="text-xs"></p-tag>
+              <p-tag severity="secondary" [value]="getFreightTypeLabel(selectedFreight.type)" styleClass="text-xs"></p-tag>
             </div>
           </div>
+        </div>
+        <div class="flex flex-col items-end gap-2">
           <p-tag [value]="
-              getStatusSeverity(selectedFreight.freightStatus) === 'success'
-                ? 'Completado'
-                : getStatusSeverity(selectedFreight.freightStatus) === 'info'
-                  ? 'En Tránsito'
-                  : getStatusSeverity(selectedFreight.freightStatus) === 'warning'
-                    ? 'Pendiente'
-                    : 'Cancelado'
-            " [severity]="getStatusSeverity(selectedFreight.freightStatus)" class="text-lg px-3 py-2 rounded-full"></p-tag>
+            getStatusSeverity(selectedFreight.freightStatus) === 'success'
+              ? 'Completado'
+              : getStatusSeverity(selectedFreight.freightStatus) === 'info'
+                ? 'En Tránsito'
+                : getStatusSeverity(selectedFreight.freightStatus) === 'warning'
+                  ? 'Pendiente'
+                  : 'Cancelado'
+          " [severity]="getStatusSeverity(selectedFreight.freightStatus)" class="text-lg px-3 py-2 rounded-full"></p-tag>
+          <div class="flex items-center gap-3">
+            <div class="flex items-center gap-1 px-2 py-1 rounded-md border border-blue-300 bg-blue-50 text-blue-600 shadow-sm">
+              <i class="pi pi-pencil text-xs"></i>
+              <span class="text-[11px] font-medium">Edición</span>
+            </div>
+            <p-inputSwitch [ngModel]="editMode()" (onChange)="toggleEdit()"></p-inputSwitch>
+            <button *ngIf="!editMode()" pButton label="Volver" icon="pi pi-arrow-left" class="p-button-text p-button-sm" (click)="goBack()"></button>
+          </div>
         </div>
       </div>
-
-      <div class="progress-section mb-4">
-        <div class="flex items-center justify-between mb-3">
-          <h4 class="text-lg font-semibold m-0">Progreso del Flete</h4>
-        </div>
-
-        <div class="progress-track">
-          <div class="progress-fill" [style.width.%]="getStatusProgress(selectedFreight.freightStatus)"></div>
-          <span class="progress-truck" [ngClass]="{ moving: selectedFreight.freightStatus === 'in_transit' }" [style.left.%]="getStatusProgress(selectedFreight.freightStatus)" aria-hidden="true">
-            <i class="pi pi-truck"></i>
-          </span>
-        </div>
-        <div class="flex justify-between text-xs text-gray-600 mt-2">
-          <span class="status-label" [ngClass]="{active: selectedFreight.freightStatus === 'pending'}">Pendiente</span>
-          <span class="status-label" [ngClass]="{active: selectedFreight.freightStatus === 'in_transit'}">En Tránsito</span>
-          <span class="status-label" [ngClass]="{active: selectedFreight.freightStatus === 'completed'}">Completado</span>
-        </div>
-      </div>
-
-      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
-        <p-card header="Información General" class="shadow-sm h-full">
-          <div class="space-y-3">
-            <div class="flex items-center gap-3">
-              <i class="pi pi-calendar text-blue-500"></i>
-              <div>
-                <span class="font-medium">Fecha Solicitada:</span>
-                <p class="m-0 text-gray-700">{{ selectedFreight.requestedDate | date: 'dd/MM/yyyy' }}</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="pi pi-tag text-green-500"></i>
-              <div>
-                <span class="font-medium">Tipo de Flete:</span>
-                <p class="m-0 text-gray-700">{{ getFreightTypeLabel(selectedFreight.type) }}</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="pi pi-money-bill text-yellow-500"></i>
-              <div>
-                <span class="font-medium">Estado de Pago:</span>
-                <p-tag
-                  [value]="selectedFreight.paymentStatus === 'pending' ? 'Pendiente' : selectedFreight.paymentStatus === 'paid' ? 'Pagado' : 'Vencido'"
-                  [severity]="selectedFreight.paymentStatus === 'pending' ? 'warning' : selectedFreight.paymentStatus === 'paid' ? 'success' : 'danger'"></p-tag>
-              </div>
-            </div>
-          </div>
-        </p-card>
-
-        <p-card header="Información de Carga" class="shadow-sm h-full">
-          <div class="space-y-3">
-            <div class="flex items-center gap-3">
-              <i class="pi pi-box text-purple-500"></i>
-              <div>
-                <span class="font-medium">Unidades Requeridas:</span>
-                <p class="m-0 text-gray-700">{{ selectedFreight.requestedUnits }}</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="pi pi-cog text-orange-500"></i>
-              <div>
-                <span class="font-medium">Tipo de Unidad:</span>
-                <p class="m-0 text-gray-700">{{ getCargoUnitTypeLabel(selectedFreight.cargoUnitType) }}</p>
-              </div>
-            </div>
-            <div class="flex items-center gap-3">
-              <i class="pi pi-shield text-red-500"></i>
-              <div>
-                <span class="font-medium">Condición de Carga:</span>
-                <p class="m-0 text-gray-700">{{ getCargoConditionLabel(selectedFreight.cargoCondition) }}</p>
-              </div>
-            </div>
-          </div>
-        </p-card>
-
-        <p-card header="Origen" class="shadow-sm h-full">
-          <div class="space-y-3">
-            <div class="flex items-start gap-3">
-              <i class="pi pi-map-marker text-red-500 mt-1"></i>
-              <div class="flex-1">
-                <span class="font-medium">Ciudad:</span>
-                <p class="m-0 text-gray-700">{{ selectedFreight.origin?.name || selectedFreight.originReference ||
-                  selectedFreight.originId || 'No especificado' }}</p>
-              </div>
-            </div>
-            <div class="flex items-start gap-3" *ngIf="selectedFreight.originReference">
-              <i class="pi pi-info-circle text-blue-500 mt-1"></i>
-              <div class="flex-1">
-                <span class="font-medium">Referencia:</span>
-                <p class="m-0 text-gray-700">{{ selectedFreight.originReference }}</p>
-              </div>
-            </div>
-          </div>
-        </p-card>
-
-        <p-card header="Destino" class="shadow-sm h-full">
-          <div class="space-y-3">
-            <div class="flex items-start gap-3">
-              <i class="pi pi-map-marker text-green-500 mt-1"></i>
-              <div class="flex-1">
-                <span class="font-medium">Ciudad:</span>
-                <p class="m-0 text-gray-700">{{ selectedFreight.destination?.name ||
-                  selectedFreight.destinationReference || selectedFreight.destinationId || 'No especificado' }}</p>
-              </div>
-            </div>
-            <div class="flex items-start gap-3" *ngIf="selectedFreight.destinationReference">
-              <i class="pi pi-info-circle text-blue-500 mt-1"></i>
-              <div class="flex-1">
-                <span class="font-medium">Referencia:</span>
-                <p class="m-0 text-gray-700">{{ selectedFreight.destinationReference }}</p>
-              </div>
-            </div>
-          </div>
-        </p-card>
-      </div>
-
-      <p-card header="Observaciones" class="shadow-sm mt-6"
-        *ngIf="selectedFreight.remarks || selectedFreight.cargoDescription">
-        <div class="flex items-start gap-3">
-          <i class="pi pi-comment text-gray-500 mt-1"></i>
-          <div class="flex-1">
-            <p class="m-0 text-gray-700 whitespace-pre-line">{{ selectedFreight.remarks ||
-              selectedFreight.cargoDescription || 'Sin observaciones' }}</p>
-          </div>
-        </div>
-      </p-card>
     </div>
+
+    <ng-container *ngIf="!editMode(); else editFormTpl">
+      <div class="freight-details-report">
+
+        <div class="progress-section mb-4">
+          <div class="flex items-center justify-between mb-3">
+            <h4 class="text-lg font-semibold m-0">Progreso del Flete</h4>
+          </div>
+
+          <div class="progress-track">
+            <div class="progress-fill" [style.width.%]="getStatusProgress(selectedFreight.freightStatus)"></div>
+            <span class="progress-truck" [ngClass]="{ moving: selectedFreight.freightStatus === 'in_transit' }" [style.left.%]="getStatusProgress(selectedFreight.freightStatus)" aria-hidden="true">
+              <i class="pi pi-truck"></i>
+            </span>
+          </div>
+          <div class="flex justify-between text-xs text-gray-600 mt-2">
+            <span class="status-label" [ngClass]="{active: selectedFreight.freightStatus === 'pending'}">Pendiente</span>
+            <span class="status-label" [ngClass]="{active: selectedFreight.freightStatus === 'in_transit'}">En Tránsito</span>
+            <span class="status-label" [ngClass]="{active: selectedFreight.freightStatus === 'completed'}">Completado</span>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
+          <p-card header="Información General" class="shadow-sm h-full">
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <i class="pi pi-calendar text-blue-500"></i>
+                <div>
+                  <span class="font-medium">Fecha Solicitada:</span>
+                  <p class="m-0 text-gray-700">{{ selectedFreight.requestedDate | date: 'dd/MM/yyyy' }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <i class="pi pi-tag text-green-500"></i>
+                <div>
+                  <span class="font-medium">Tipo de Flete:</span>
+                  <p class="m-0 text-gray-700">{{ getFreightTypeLabel(selectedFreight.type) }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <i class="pi pi-money-bill text-yellow-500"></i>
+                <div>
+                  <span class="font-medium">Estado de Pago:</span>
+                  <p-tag
+                    [value]="selectedFreight.paymentStatus === 'pending' ? 'Pendiente' : selectedFreight.paymentStatus === 'paid' ? 'Pagado' : 'Vencido'"
+                    [severity]="selectedFreight.paymentStatus === 'pending' ? 'warning' : selectedFreight.paymentStatus === 'paid' ? 'success' : 'danger'"></p-tag>
+                </div>
+              </div>
+            </div>
+          </p-card>
+
+          <p-card header="Información de Carga" class="shadow-sm h-full">
+            <div class="space-y-3">
+              <div class="flex items-center gap-3">
+                <i class="pi pi-box text-purple-500"></i>
+                <div>
+                  <span class="font-medium">Unidades Requeridas:</span>
+                  <p class="m-0 text-gray-700">{{ selectedFreight.requestedUnits }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <i class="pi pi-cog text-orange-500"></i>
+                <div>
+                  <span class="font-medium">Tipo de Unidad:</span>
+                  <p class="m-0 text-gray-700">{{ getCargoUnitTypeLabel(selectedFreight.cargoUnitType) }}</p>
+                </div>
+              </div>
+              <div class="flex items-center gap-3">
+                <i class="pi pi-shield text-red-500"></i>
+                <div>
+                  <span class="font-medium">Condición de Carga:</span>
+                  <p class="m-0 text-gray-700">{{ getCargoConditionLabel(selectedFreight.cargoCondition) }}</p>
+                </div>
+              </div>
+            </div>
+          </p-card>
+
+          <p-card header="Origen" class="shadow-sm h-full">
+            <div class="space-y-3">
+              <div class="flex items-start gap-3">
+                <i class="pi pi-map-marker text-red-500 mt-1"></i>
+                <div class="flex-1">
+                  <span class="font-medium">Ciudad:</span>
+                  <p class="m-0 text-gray-700">{{ selectedFreight.origin?.name || selectedFreight.originReference ||
+                    selectedFreight.originId || 'No especificado' }}</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3" *ngIf="selectedFreight.originReference">
+                <i class="pi pi-info-circle text-blue-500 mt-1"></i>
+                <div class="flex-1">
+                  <span class="font-medium">Referencia:</span>
+                  <p class="m-0 text-gray-700">{{ selectedFreight.originReference }}</p>
+                </div>
+              </div>
+            </div>
+          </p-card>
+
+          <p-card header="Destino" class="shadow-sm h-full">
+            <div class="space-y-3">
+              <div class="flex items-start gap-3">
+                <i class="pi pi-map-marker text-green-500 mt-1"></i>
+                <div class="flex-1">
+                  <span class="font-medium">Ciudad:</span>
+                  <p class="m-0 text-gray-700">{{ selectedFreight.destination?.name ||
+                    selectedFreight.destinationReference || selectedFreight.destinationId || 'No especificado' }}</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3" *ngIf="selectedFreight.destinationReference">
+                <i class="pi pi-info-circle text-blue-500 mt-1"></i>
+                <div class="flex-1">
+                  <span class="font-medium">Referencia:</span>
+                  <p class="m-0 text-gray-700">{{ selectedFreight.destinationReference }}</p>
+                </div>
+              </div>
+            </div>
+          </p-card>
+        </div>
+
+        <!-- Read-only: Descripción y Observaciones en un mismo card -->
+        <div class="grid grid-cols-1 mt-4" *ngIf="selectedFreight.remarks || selectedFreight.cargoDescription">
+          <p-card header="Descripción y Observaciones" class="shadow-sm h-full">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
+              <div class="flex items-start gap-3">
+                <i class="pi pi-align-left text-gray-500 mt-1"></i>
+                <div class="flex-1">
+                  <span class="font-medium">Descripción</span>
+                  <p class="m-0 text-gray-700 whitespace-pre-line">{{ selectedFreight.cargoDescription || 'Sin descripción' }}</p>
+                </div>
+              </div>
+              <div class="flex items-start gap-3">
+                <i class="pi pi-comment text-gray-500 mt-1"></i>
+                <div class="flex-1">
+                  <span class="font-medium">Observaciones</span>
+                  <p class="m-0 text-gray-700 whitespace-pre-line">{{ selectedFreight.remarks || 'Sin observaciones' }}</p>
+                </div>
+              </div>
+            </div>
+          </p-card>
+        </div>
+      </div>
+    </ng-container>
+
+    <ng-template #editFormTpl>
+      <form [formGroup]="freightForm" class="space-y-2">
+        <!-- Single row with 4 columns: Datos, Carga, Origen(+depósito), Destino(+depósito) -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+          <p-card header="Datos Generales" styleClass="p-3">
+            <div class="grid grid-cols-1 gap-2">
+              <div class="flex flex-col gap-1">
+                <label>Estado del Flete</label>
+                <p-dropdown formControlName="freightStatus" [options]="freightStatuses" optionLabel="label" optionValue="value" placeholder="Seleccione"></p-dropdown>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label>Tipo de Flete</label>
+                <p-dropdown formControlName="type" [options]="freightTypes" optionLabel="label" optionValue="value" placeholder="Seleccione"></p-dropdown>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label>Serial</label>
+                <input pInputText type="text" formControlName="serialReference" />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label>Fecha Solicitada</label>
+                <p-calendar formControlName="requestedDate" dateFormat="dd/mm/yy" inputId="requestedDate"></p-calendar>
+              </div>
+            </div>
+          </p-card>
+
+          <p-card header="Carga" styleClass="p-3">
+            <div class="grid grid-cols-1 gap-2">
+              <div class="flex flex-col gap-1">
+                <label>Unidades</label>
+                <input pInputText type="number" formControlName="requestedUnits" min="1" />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label>Tipo de Unidad</label>
+                <p-dropdown formControlName="cargoUnitType" [options]="cargoUnitTypes" optionLabel="label" optionValue="value" placeholder="Seleccione"></p-dropdown>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label>Condición de la Carga</label>
+                <p-dropdown formControlName="cargoCondition" [options]="cargoConditions" optionLabel="label" optionValue="value" placeholder="Seleccione"></p-dropdown>
+              </div>
+            </div>
+          </p-card>
+
+          <p-card header="Origen" styleClass="p-3">
+            <div class="grid grid-cols-1 gap-2">
+              <div class="flex flex-col gap-1">
+                <label>Provincia</label>
+                <p-dropdown formControlName="originProvince" [options]="provinces()" optionLabel="name" optionValue="id" (onChange)="onProvinceOriginChange($event)" placeholder="Seleccione"></p-dropdown>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label>Ciudad</label>
+                <p-dropdown formControlName="originId" [options]="originCities()" optionLabel="name" optionValue="id" placeholder="Seleccione"></p-dropdown>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label>Referencia</label>
+                <input pInputText type="text" formControlName="originReference" />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label>Depósito Origen</label>
+                <p-dropdown formControlName="originDepotId" [options]="depots()" optionLabel="name" optionValue="id" [showClear]="true" placeholder="Seleccione"></p-dropdown>
+              </div>
+            </div>
+          </p-card>
+
+          <p-card header="Destino" styleClass="p-3">
+            <div class="grid grid-cols-1 gap-2">
+              <div class="flex flex-col gap-1">
+                <label>Provincia</label>
+                <p-dropdown formControlName="destinationProvince" [options]="provinces()" optionLabel="name" optionValue="id" (onChange)="onProvinceDestinChange($event)" placeholder="Seleccione"></p-dropdown>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label>Ciudad</label>
+                <p-dropdown formControlName="destinationId" [options]="destinationCities()" optionLabel="name" optionValue="id" placeholder="Seleccione"></p-dropdown>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label>Referencia</label>
+                <input pInputText type="text" formControlName="destinationReference" />
+              </div>
+              <div class="flex flex-col gap-1">
+                <label>Depósito Destino</label>
+                <p-dropdown formControlName="destinationDepotId" [options]="depots()" optionLabel="name" optionValue="id" [showClear]="true" placeholder="Seleccione"></p-dropdown>
+              </div>
+            </div>
+          </p-card>
+        </div>
+
+        <!-- Bottom: Descripción y Observaciones en un mismo card -->
+        <div class="grid grid-cols-1 gap-2">
+          <p-card header="Descripción y Observaciones" styleClass="p-3">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-2">
+              <div class="flex flex-col gap-1">
+                <label>Descripción</label>
+                <textarea pInputTextarea rows="4" formControlName="cargoDescription"></textarea>
+              </div>
+              <div class="flex flex-col gap-1">
+                <label>Observaciones</label>
+                <textarea pInputTextarea rows="4" formControlName="remarks"></textarea>
+              </div>
+            </div>
+          </p-card>
+        </div>
+
+        <div class="flex justify-end gap-2 pt-1">
+          <button pButton type="button" label="Guardar" icon="pi pi-save" class="p-button-sm" (click)="saveChanges()" [disabled]="freightForm.invalid"></button>
+        </div>
+      </form>
+    </ng-template>
   </ng-container>
 </div>
