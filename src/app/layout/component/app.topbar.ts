@@ -18,7 +18,7 @@ import { LayoutService } from '../service/layout.service';
             
 
             <a class="layout-topbar-logo" routerLink="/">
-            <img src="logo.png" alt="Logo" style="height: 5rem;" width="80" height="80">
+            <img src="/logo.png" alt="Logo" style="height: 40px; width: auto;" />
 </a>
 
 
