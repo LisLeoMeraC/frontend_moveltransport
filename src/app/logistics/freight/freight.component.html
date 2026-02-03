@@ -156,6 +156,11 @@
                     <div class="stepper-number">3</div>
                     <div class="stepper-title">Origen y Destino</div>
                 </div>
+                <div class="stepper-separator"></div>
+                <div class="stepper-item" [class.active]="currentStep === 4" [class.completed]="currentStep > 4">
+                    <div class="stepper-number">4</div>
+                    <div class="stepper-title">Resumen</div>
+                </div>
             </div>
         </div>
 
@@ -193,7 +198,7 @@
                         </div>
                         <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                             <label for="requestedDate" class="text-sm">Fecha Solicitada <span class="text-red-500">*</span></label>
-                            <p-datepicker id="requestedDate" formControlName="requestedDate" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Seleccione fecha"></p-datepicker>
+                            <p-datepicker id="requestedDate" formControlName="requestedDate" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Seleccione fecha" [appendTo]="'body'"></p-datepicker>
                         </div>
                     </div>
                 </div>
@@ -369,6 +374,93 @@
                         </div>
                     </div>
                 </div>
+                <div class="flex justify-between mt-4">
+                    <button pButton label="Anterior" icon="pi pi-arrow-left" type="button" (click)="previousStep()" class="p-button-secondary"></button>
+                    <button pButton label="Siguiente" icon="pi pi-arrow-right" iconPos="right" type="button" (click)="nextStep()"></button>
+                </div>
+            </div>
+
+            <!-- Paso 4: Resumen y Documentos -->
+            <div *ngIf="currentStep === 4" class="step-content">
+                <h4 class="step-header">Resumen</h4>
+
+                <div class="flex flex-col gap-4">
+                    <div class="border border-gray-200 rounded-lg p-3">
+                        <div class="flex items-center justify-between mb-2">
+                            <h5 class="text-sm font-semibold text-gray-700 m-0">Detalle del Flete</h5>
+                            <span class="text-xs text-gray-500">Revisa antes de registrar</span>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-x-4 gap-y-2 text-sm">
+                            <div class="min-w-0">
+                                <div class="text-[11px] text-gray-500">Cliente</div>
+                                <div class="font-medium text-gray-800 truncate">{{ getClientName(freightForm.get('client')?.value) }}</div>
+                            </div>
+
+                            <div class="min-w-0">
+                                <div class="text-[11px] text-gray-500">Fecha solicitada</div>
+                                <div class="font-medium text-gray-800">{{ freightForm.get('requestedDate')?.value | date: 'dd/MM/yyyy' }}</div>
+                            </div>
+
+                            <div class="min-w-0">
+                                <div class="text-[11px] text-gray-500">Tipo de flete</div>
+                                <div class="font-medium text-gray-800">{{ getFreightTypeLabel(freightForm.get('freightType')?.value) }}</div>
+                            </div>
+
+                            <div class="min-w-0">
+                                <div class="text-[11px] text-gray-500">Unidades</div>
+                                <div class="font-medium text-gray-800">{{ freightForm.get('unitsRequired')?.value }}</div>
+                            </div>
+
+                            <div class="min-w-0">
+                                <div class="text-[11px] text-gray-500">Origen (ciudad)</div>
+                                <div class="font-medium text-gray-800 truncate">{{ getCityName(freightForm.get('originCity')?.value) }}</div>
+                            </div>
+
+                            <div class="min-w-0">
+                                <div class="text-[11px] text-gray-500">Destino (ciudad)</div>
+                                <div class="font-medium text-gray-800 truncate">{{ getCityName(freightForm.get('destinationCity')?.value) }}</div>
+                            </div>
+
+                            <div class="min-w-0">
+                                <div class="text-[11px] text-gray-500">Depósito origen</div>
+                                <div class="font-medium text-gray-800 truncate">{{ getDepotName(freightForm.get('originDepot')?.value) }}</div>
+                            </div>
+
+                            <div class="min-w-0">
+                                <div class="text-[11px] text-gray-500">Depósito destino</div>
+                                <div class="font-medium text-gray-800 truncate">{{ getDepotName(freightForm.get('destinationDepot')?.value) }}</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <h5 class="text-base font-semibold text-gray-700 mb-3">Documentos (opcional)</h5>
+                        <p-fileupload
+                            name="files[]"
+                            [multiple]="true"
+                            [customUpload]="true"
+                            [showUploadButton]="false"
+                            [showCancelButton]="false"
+                            accept="image/*,.pdf,.doc,.docx,.xls,.xlsx,.csv"
+                            [maxFileSize]="5000000"
+                            (onSelect)="onFilesSelect($event)"
+                            (onClear)="onFilesClear()"
+                        >
+                            <ng-template #empty>
+                                <div class="text-sm text-gray-600">Selecciona uno o varios archivos (máx 5MB c/u).</div>
+                            </ng-template>
+                        </p-fileupload>
+
+                        <div *ngIf="selectedFiles.length" class="mt-3">
+                            <div class="text-sm font-medium text-gray-700 mb-2">Archivos seleccionados:</div>
+                            <ul class="text-sm text-gray-700 pl-5">
+                                <li *ngFor="let f of selectedFiles">{{ f.name }}</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="flex justify-between mt-4">
                     <button pButton label="Anterior" icon="pi pi-arrow-left" type="button" (click)="previousStep()" class="p-button-secondary"></button>
                     <button pButton label="Registrar" icon="pi pi-save" type="submit"></button>

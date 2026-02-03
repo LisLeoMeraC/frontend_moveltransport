@@ -178,6 +178,24 @@
             </div>
           </p-card>
         </div>
+
+        <div class="grid grid-cols-1 mt-4" *ngIf="documents().length">
+          <p-card header="Documentos" class="shadow-sm h-full">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div *ngFor="let doc of documents()" class="border border-gray-100 rounded-md p-3 flex items-center justify-between gap-3">
+                <div class="min-w-0">
+                  <div class="text-sm font-medium text-gray-800 truncate">{{ doc.name }}</div>
+                </div>
+                <div class="flex items-center gap-1 shrink-0">
+                  <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm" (click)="openDocument(doc.url)"></button>
+                  <a [href]="doc.url" target="_blank" rel="noopener noreferrer" [attr.download]="doc.name" class="p-button p-button-text p-button-sm">
+                    <span class="p-button-icon pi pi-download" aria-hidden="true"></span>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </p-card>
+        </div>
       </div>
     </ng-container>
 

@@ -78,14 +78,35 @@ export class FreightService extends BaseHttpService<FreightResponse> {
         );
     }
 
-    registerFreight(freightData: FreightData): Observable<ApiResponse<FreightResponse>> {
+    registerFreight(freightData: FreightData, files: File[] = []): Observable<ApiResponse<FreightResponse>> {
         this.loading.set(true);
         this.clearError();
-        return this.http.post<ApiResponse<FreightResponse>>(`${this.baseUrl}/freight`, freightData).pipe(
+
+        const hasFiles = Array.isArray(files) && files.length > 0;
+        const body: FreightData | FormData = hasFiles ? this.buildFreightFormData(freightData, files) : freightData;
+
+        return this.http.post<ApiResponse<FreightResponse>>(`${this.baseUrl}/freight`, body).pipe(
             tap((response) => this.handleApiResponse(response)),
             catchError(this.handleHttpError<ApiResponse<FreightResponse>>('Error al registrar el flete')),
             finalize(() => this.loading.set(false))
         );
+    }
+
+    private buildFreightFormData(freightData: FreightData, files: File[]): FormData {
+        const formData = new FormData();
+
+        (Object.keys(freightData) as (keyof FreightData)[]).forEach((key) => {
+            const value = freightData[key];
+            if (value !== undefined && value !== null) {
+                formData.append(String(key), String(value));
+            }
+        });
+
+        files.forEach((file) => {
+            formData.append('files', file, file.name);
+        });
+
+        return formData;
     }
 
     updateFreight(id: string, freightData: Partial<FreightData>): Observable<ApiResponse<FreightResponse>> {

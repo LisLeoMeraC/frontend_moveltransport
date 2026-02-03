@@ -27,6 +27,7 @@ import { RouteService } from '../../pages/service/route.service';
 import { DepotService } from '../../pages/service/depot.service';
 import { CardModule } from 'primeng/card';
 import { ProgressBarModule } from 'primeng/progressbar';
+import { FileUploadModule } from 'primeng/fileupload';
 
 @Component({
     selector: 'app-freight',
@@ -51,6 +52,7 @@ import { ProgressBarModule } from 'primeng/progressbar';
         CardModule,
         ProgressBarModule,
         Textarea,
+        FileUploadModule,
         RouterModule
     ],
     templateUrl: './freight.component.html',
@@ -71,6 +73,9 @@ export class FreightComponent implements OnInit, OnDestroy {
 
     // ==================== FORMULARIOS ====================
     freightForm: FormGroup;
+
+    // ==================== ARCHIVOS ====================
+    selectedFiles: File[] = [];
 
     // ==================== ESTADOS DE UI ====================
     pageSize = signal(5);
@@ -375,6 +380,7 @@ export class FreightComponent implements OnInit, OnDestroy {
     openDialogFreight(): void {
         this.freightForm.reset();
         this.currentStep = 1;
+        this.selectedFiles = [];
         this.freightForm.patchValue({
             requestedDate: new Date()
         });
@@ -385,6 +391,16 @@ export class FreightComponent implements OnInit, OnDestroy {
         this.dialogFreight.set(false);
         this.freightForm.reset();
         this.currentStep = 1;
+        this.selectedFiles = [];
+    }
+
+    onFilesSelect(event: any): void {
+        const files: File[] = event?.files || [];
+        this.selectedFiles = [...files];
+    }
+
+    onFilesClear(): void {
+        this.selectedFiles = [];
     }
 
     // ==================== OPERACIONES CRUD ====================
@@ -411,7 +427,7 @@ export class FreightComponent implements OnInit, OnDestroy {
                 clientId: formValue.client
             };
 
-            this.freightService.registerFreight(freightData as FreightData).subscribe({
+            this.freightService.registerFreight(freightData as FreightData, this.selectedFiles).subscribe({
                 next: (response) => {
                     if (response.statusCode === 201) {
                         this.messageService.add({
@@ -465,7 +481,7 @@ export class FreightComponent implements OnInit, OnDestroy {
 
     // ==================== NAVEGACIÓN DE STEPPER ====================
     nextStep(): void {
-        if (this.currentStep < 3) {
+        if (this.currentStep < 4) {
             this.currentStep++;
         }
     }
@@ -474,6 +490,18 @@ export class FreightComponent implements OnInit, OnDestroy {
         if (this.currentStep > 1) {
             this.currentStep--;
         }
+    }
+
+    getClientName(clientId: string | null | undefined): string {
+        if (!clientId) return 'No especificado';
+        const client = this.clients().find((c) => c.value === clientId);
+        return client?.label || 'No especificado';
+    }
+
+    getDepotName(depotId: string | null | undefined): string {
+        if (!depotId) return 'N/A';
+        const depot = this.depots().find((d: any) => d.id === depotId);
+        return depot?.name || 'N/A';
     }
 
     // ==================== UTILIDADES ====================
@@ -559,6 +587,7 @@ export class FreightComponent implements OnInit, OnDestroy {
     }
 
     getCityName(cityId: string): string {
+        if (!cityId) return 'No especificado';
         // Buscar en las ciudades de origen
         const originCity = this.originCities().find((c) => c.id === cityId);
         if (originCity) return originCity.name;

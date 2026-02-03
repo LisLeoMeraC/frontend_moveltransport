@@ -69,6 +69,23 @@ export class FreightDetailComponent implements OnInit, OnDestroy {
     selectedProvinceOriginId = signal<string | null>(null);
     selectedProvinceDestinId = signal<string | null>(null);
 
+    documents = computed(() => {
+        const item: any = this.freightService.freightItem();
+        if (!item) return [] as Array<{ name: string; url: string }>;
+
+        const raw = item.files as Array<any>;
+        if (!Array.isArray(raw)) return [] as Array<{ name: string; url: string }>;
+
+        return raw
+            .map((d) => {
+                const url = d?.storageUrl ? String(d.storageUrl).trim() : '';
+                if (!url) return null;
+                const name = d?.fileName ? String(d.fileName) : 'documento';
+                return { name, url };
+            })
+            .filter((x): x is { name: string; url: string } => Boolean(x));
+    });
+
     freightForm: FormGroup = this.fb.group({
         freightStatus: ['', Validators.required],
         type: ['', Validators.required],
@@ -115,6 +132,11 @@ export class FreightDetailComponent implements OnInit, OnDestroy {
     }
 
     ngOnDestroy(): void {}
+
+    openDocument(url: string): void {
+        if (!url) return;
+        window.open(url, '_blank', 'noopener,noreferrer');
+    }
 
     getStatusSeverity(status: string): string {
         switch ((status || '').toLowerCase()) {

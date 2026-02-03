@@ -29,6 +29,19 @@ export interface FreightResponse extends FreightData {
             name: string;
         };
     };
+    files?: Array<
+        | string
+        | {
+              id: string;
+              createdAt?: string;
+              fileName: string;
+              mimeType?: string;
+              sizeInBytes?: number;
+              storagePath?: string;
+              storageUrl: string;
+              metadata?: Record<string, any>;
+          }
+    >;
     origin?: {
         id: string;
         name: string;
