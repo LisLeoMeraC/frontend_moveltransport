@@ -1,6 +1,11 @@
 <p-toast></p-toast>
 <p-toolbar styleClass="p-toolbar p-component mb-0 py-2">
-  <h3 class="m-0 flex align-items-center">Detalles del Flete</h3>
+  <ng-template pTemplate="left">
+    <h3 class="m-0 flex align-items-center">Detalles del Flete</h3>
+  </ng-template>
+  <ng-template pTemplate="right">
+    <button pButton label="Volver" icon="pi pi-arrow-left" class="p-button-text p-button-sm" (click)="goBack()"></button>
+  </ng-template>
 </p-toolbar>
 
 <div class="card mt-4 w-full">
@@ -15,27 +20,32 @@
             <div class="flex flex-wrap items-center gap-2 mt-1">
               <p-tag severity="info" [value]="'Serial: ' + (selectedFreight.serialReference || 'N/A')" styleClass="text-xs"></p-tag>
               <p-tag severity="secondary" [value]="getFreightTypeLabel(selectedFreight.type)" styleClass="text-xs"></p-tag>
+              <p-tag
+                [value]="
+                  getStatusSeverity(selectedFreight.freightStatus) === 'success'
+                    ? 'Completado'
+                    : getStatusSeverity(selectedFreight.freightStatus) === 'info'
+                      ? 'En Tránsito'
+                      : getStatusSeverity(selectedFreight.freightStatus) === 'warning'
+                        ? 'Pendiente'
+                        : 'Cancelado'
+                "
+                [severity]="getStatusSeverity(selectedFreight.freightStatus)"
+                styleClass="text-xs"
+              ></p-tag>
             </div>
           </div>
         </div>
-        <div class="flex flex-col items-end gap-2">
-          <p-tag [value]="
-            getStatusSeverity(selectedFreight.freightStatus) === 'success'
-              ? 'Completado'
-              : getStatusSeverity(selectedFreight.freightStatus) === 'info'
-                ? 'En Tránsito'
-                : getStatusSeverity(selectedFreight.freightStatus) === 'warning'
-                  ? 'Pendiente'
-                  : 'Cancelado'
-          " [severity]="getStatusSeverity(selectedFreight.freightStatus)" class="text-lg px-3 py-2 rounded-full"></p-tag>
-          <div class="flex items-center gap-3">
-            <div class="flex items-center gap-1 px-2 py-1 rounded-md border border-blue-300 bg-blue-50 text-blue-600 shadow-sm">
-              <i class="pi pi-pencil text-xs"></i>
-              <span class="text-[11px] font-medium">Edición</span>
-            </div>
-            <p-inputSwitch [ngModel]="editMode()" (onChange)="toggleEdit()"></p-inputSwitch>
-            <button *ngIf="!editMode()" pButton label="Volver" icon="pi pi-arrow-left" class="p-button-text p-button-sm" (click)="goBack()"></button>
-          </div>
+        <div class="flex items-center justify-end gap-2">
+          <button
+            pButton
+            type="button"
+            [label]="editMode() ? 'Salir de edición' : 'Editar'"
+            [icon]="editMode() ? 'pi pi-times' : 'pi pi-pencil'"
+            [ngClass]="editMode() ? 'p-button-danger p-button-raised' : 'p-button-primary p-button-raised'"
+            class="p-button-sm font-medium shadow-sm"
+            (click)="toggleEdit()"
+          ></button>
         </div>
       </div>
     </div>
@@ -158,7 +168,7 @@
         </div>
 
         <!-- Read-only: Descripción y Observaciones en un mismo card -->
-        <div class="grid grid-cols-1 mt-4" *ngIf="selectedFreight.remarks || selectedFreight.cargoDescription">
+        <div class="grid grid-cols-1 mt-4">
           <p-card header="Descripción y Observaciones" class="shadow-sm h-full">
             <div class="grid grid-cols-1 lg:grid-cols-2 gap-3">
               <div class="flex items-start gap-3">
@@ -179,21 +189,71 @@
           </p-card>
         </div>
 
-        <div class="grid grid-cols-1 mt-4" *ngIf="documents().length">
+        <div class="grid grid-cols-1 mt-4">
           <p-card header="Documentos" class="shadow-sm h-full">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              <div *ngFor="let doc of documents()" class="border border-gray-100 rounded-md p-3 flex items-center justify-between gap-3">
-                <div class="min-w-0">
-                  <div class="text-sm font-medium text-gray-800 truncate">{{ doc.name }}</div>
-                </div>
-                <div class="flex items-center gap-1 shrink-0">
-                  <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm" (click)="openDocument(doc.url)"></button>
-                  <a [href]="doc.url" target="_blank" rel="noopener noreferrer" [attr.download]="doc.name" class="p-button p-button-text p-button-sm">
-                    <span class="p-button-icon pi pi-download" aria-hidden="true"></span>
-                  </a>
+            <ng-container *ngIf="documents().length; else noDocumentsTpl">
+              <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
+                <div class="text-xs text-gray-500 dark:text-gray-400">Selecciona uno o varios documentos para quitarlos.</div>
+                <div class="flex items-center gap-2">
+                  <button
+                    pButton
+                    type="button"
+                    label="Quitar seleccionados"
+                    icon="pi pi-trash"
+                    class="p-button-danger p-button-sm"
+                    (click)="removeSelectedDocuments()"
+                    [disabled]="!selectedDocumentIds().size"
+                  ></button>
+                  <button
+                    pButton
+                    type="button"
+                    label="Limpiar selección"
+                    class="p-button-text p-button-sm"
+                    (click)="clearDocumentSelection()"
+                    [disabled]="!selectedDocumentIds().size"
+                  ></button>
                 </div>
               </div>
-            </div>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div *ngFor="let doc of documents()" class="border border-gray-100 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-900/60">
+                  <div class="flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-2 min-w-0">
+                      <input
+                        type="checkbox"
+                        class="mt-1"
+                        [checked]="isDocumentSelected(doc.id)"
+                        (change)="toggleDocumentSelection(doc.id, ($any($event.target).checked))"
+                        [disabled]="!doc.canRemove"
+                      />
+                      <div class="min-w-0">
+                        <div class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ doc.name }}</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400" *ngIf="doc.canRemove; else noRemoveTpl">Seleccionable</div>
+                        <ng-template #noRemoveTpl>
+                          <div class="text-xs text-gray-500 dark:text-gray-400">No removable</div>
+                        </ng-template>
+                      </div>
+                    </div>
+
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm" (click)="openDocument(doc.url)"></button>
+                      <button
+                        *ngIf="doc.canRemove"
+                        pButton
+                        type="button"
+                        icon="pi pi-trash"
+                        class="p-button-text p-button-sm p-button-danger"
+                        (click)="removeDocument(doc.id)"
+                      ></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </ng-container>
+
+            <ng-template #noDocumentsTpl>
+              <div class="text-sm text-gray-500 dark:text-gray-400">Sin documentos</div>
+            </ng-template>
           </p-card>
         </div>
       </div>

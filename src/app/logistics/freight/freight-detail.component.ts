@@ -36,8 +36,7 @@ import { DepotService } from '../../pages/service/depot.service';
         DropdownModule,
         CalendarModule,
         InputTextModule,
-        InputTextarea,
-        InputSwitch
+        InputTextarea
     ],
     templateUrl: './freight-detail.component.html',
     styleUrls: ['./freight-detail.component.scss'],
@@ -69,21 +68,25 @@ export class FreightDetailComponent implements OnInit, OnDestroy {
     selectedProvinceOriginId = signal<string | null>(null);
     selectedProvinceDestinId = signal<string | null>(null);
 
+    selectedDocumentIds = signal<Set<string>>(new Set());
+
     documents = computed(() => {
         const item: any = this.freightService.freightItem();
-        if (!item) return [] as Array<{ name: string; url: string }>;
+        if (!item) return [] as Array<{ id: string; name: string; url: string; canRemove: boolean }>;
 
         const raw = item.files as Array<any>;
-        if (!Array.isArray(raw)) return [] as Array<{ name: string; url: string }>;
+        if (!Array.isArray(raw)) return [] as Array<{ id: string; name: string; url: string; canRemove: boolean }>;
 
         return raw
             .map((d) => {
                 const url = d?.storageUrl ? String(d.storageUrl).trim() : '';
                 if (!url) return null;
                 const name = d?.fileName ? String(d.fileName) : 'documento';
-                return { name, url };
+                const id = d?.id ? String(d.id) : url;
+                const canRemove = Boolean(d?.id);
+                return { id, name, url, canRemove };
             })
-            .filter((x): x is { name: string; url: string } => Boolean(x));
+            .filter((x): x is { id: string; name: string; url: string; canRemove: boolean } => Boolean(x));
     });
 
     freightForm: FormGroup = this.fb.group({
@@ -136,6 +139,40 @@ export class FreightDetailComponent implements OnInit, OnDestroy {
     openDocument(url: string): void {
         if (!url) return;
         window.open(url, '_blank', 'noopener,noreferrer');
+    }
+
+    isDocumentSelected(id: string): boolean {
+        return this.selectedDocumentIds().has(id);
+    }
+
+    toggleDocumentSelection(id: string, checked: boolean): void {
+        const next = new Set(this.selectedDocumentIds());
+        if (checked) next.add(id);
+        else next.delete(id);
+        this.selectedDocumentIds.set(next);
+    }
+
+    clearDocumentSelection(): void {
+        this.selectedDocumentIds.set(new Set());
+    }
+
+    removeDocument(_docId: string): void {
+        this.messageService.add({
+            severity: 'warn',
+            summary: 'Pendiente',
+            detail: 'No funca XXXXXXXDDDDDDDD.',
+            life: 3500
+        });
+    }
+
+    removeSelectedDocuments(): void {
+        if (!this.selectedDocumentIds().size) return;
+        this.messageService.add({
+            severity: 'warn',
+            summary: 'Pendiente',
+            detail: 'No Funca  XXXXXXXDDDDDDDD.',
+            life: 3500
+        });
     }
 
     getStatusSeverity(status: string): string {

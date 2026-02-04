@@ -257,3 +257,56 @@
     font-size: 0.875rem;
     margin-top: 0.25rem;
 }
+
+.fileupload-stable-label {
+    .p-fileupload-filename {
+        display: none;
+    }
+}
+
+.fileupload-dropzone {
+    .p-fileupload-buttonbar {
+        background: transparent;
+        border: 0;
+        padding: 0;
+    }
+
+    .p-fileupload-content {
+        background: transparent;
+        border: 0;
+        padding: 0;
+        min-height: 170px;
+    }
+
+    .dropzone-area {
+        min-height: 170px;
+    }
+
+    .p-fileupload-files,
+    .p-fileupload-row {
+        display: none;
+    }
+}
+
+:host ::ng-deep .fileupload-dropzone {
+    .p-fileupload-files,
+    .p-fileupload-row {
+        display: none !important;
+    }
+
+    .p-fileupload-content {
+        .p-fileupload-file,
+        .p-fileupload-file-row,
+        .p-fileupload-file-name,
+        .p-fileupload-file-size,
+        .p-fileupload-file-badge,
+        ul,
+        li {
+            display: none !important;
+        }
+
+        .dropzone-area {
+            display: flex !important;
+        }
+    }
+}

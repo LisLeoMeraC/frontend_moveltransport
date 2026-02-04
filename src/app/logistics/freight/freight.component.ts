@@ -396,11 +396,34 @@ export class FreightComponent implements OnInit, OnDestroy {
 
     onFilesSelect(event: any): void {
         const files: File[] = event?.files || [];
-        this.selectedFiles = [...files];
+        const merged = [...this.selectedFiles, ...files];
+        const unique = new Map<string, File>();
+        merged.forEach((f) => {
+            const key = `${f.name}__${f.size}__${f.lastModified}`;
+            unique.set(key, f);
+        });
+        this.selectedFiles = Array.from(unique.values());
     }
 
     onFilesClear(): void {
         this.selectedFiles = [];
+    }
+
+    removeSelectedFile(file: File): void {
+        this.selectedFiles = this.selectedFiles.filter((f) => f !== file);
+    }
+
+    formatFileSize(bytes: number): string {
+        if (!Number.isFinite(bytes) || bytes < 0) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let size = bytes;
+        let unitIndex = 0;
+        while (size >= 1024 && unitIndex < units.length - 1) {
+            size /= 1024;
+            unitIndex++;
+        }
+        const formatted = unitIndex === 0 ? Math.round(size).toString() : size.toFixed(size >= 10 ? 1 : 2);
+        return `${formatted} ${units[unitIndex]}`;
     }
 
     // ==================== OPERACIONES CRUD ====================
