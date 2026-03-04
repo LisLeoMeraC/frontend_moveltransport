@@ -57,29 +57,29 @@
 
         <ng-template pTemplate="header">
             <tr>
-                <th>Serial / Referencia</th>
-                <th>Tipo</th>
-                <th>Estado Flete</th>
-                <th>Estado Pago</th>
-                <th>Fecha Solicitada</th>
-                <th>Unidades</th>
-                <th>Tipo Carga</th>
-                <th>Origen</th>
-                <th>Destino</th>
-                <th>Acciones</th>
+                <th class="text-left" style="text-align: left;">Serial / Referencia</th>
+                <th class="text-center" style="text-align: center;">Tipo</th>
+                <th class="text-center" style="text-align: center;">Estado Flete</th>
+                <th class="text-center" style="text-align: center;">Estado Pago</th>
+                <th class="text-center" style="text-align: center;">Fecha Solicitada</th>
+                <th class="text-center" style="text-align: center;">Unidades</th>
+                <th class="text-center" style="text-align: center;">Tipo Carga</th>
+                <th class="text-left" style="text-align: left;">Origen</th>
+                <th class="text-left" style="text-align: left;">Destino</th>
+                <th class="text-center" style="text-align: center;">Acciones</th>
             </tr>
         </ng-template>
         <ng-template pTemplate="body" let-freight>
             <tr>
-                <td>{{ freight.serialReference }}</td>
-                <td>
+                <td class="text-left" style="text-align: left;">{{ freight.serialReference }}</td>
+                <td class="text-center" style="text-align: center;">
                     <p-tag
                         [value]="freight.type === 'export' ? 'Exportación' : freight.type === 'import' ? 'Importación' : freight.type === 'internal' ? 'Interno' : 'Rescate'"
                         [severity]="freight.type === 'export' ? 'info' : freight.type === 'import' ? 'success' : 'warning'"
                     >
                     </p-tag>
                 </td>
-                <td>
+                <td class="text-center" style="text-align: center;">
                     <p-tag
                         [value]="
                             freight.freightStatus === 'pending'
@@ -96,19 +96,19 @@
                     >
                     </p-tag>
                 </td>
-                <td>
+                <td class="text-center" style="text-align: center;">
                     <p-tag
                         [value]="freight.paymentStatus === 'pending' ? 'Pendiente' : freight.paymentStatus === 'paid' ? 'Pagado' : 'Vencido'"
                         [severity]="freight.paymentStatus === 'pending' ? 'warning' : freight.paymentStatus === 'paid' ? 'success' : 'danger'"
                     >
                     </p-tag>
                 </td>
-                <td>{{ freight.requestedDate | date: 'dd/MM/yyyy' }}</td>
-                <td>{{ freight.requestedUnits }}</td>
-                <td>{{ freight.cargoUnitType }}</td>
-                <td>{{ freight.origin?.name || freight.originReference }}</td>
-                <td>{{ freight.destination?.name || freight.destinationReference }}</td>
-                <td class="text-center">
+                <td class="text-center" style="text-align: center;">{{ freight.requestedDate | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td class="text-center" style="text-align: center;">{{ freight.requestedUnits }}</td>
+                <td class="text-center" style="text-align: center;">{{ freight.cargoUnitType }}</td>
+                <td class="text-left" style="text-align: left;">{{ freight.origin?.name || freight.originReference }}</td>
+                <td class="text-left" style="text-align: left;">{{ freight.destination?.name || freight.destinationReference }}</td>
+                <td class="text-center" style="text-align: center;">
                     <a pButton
                        label="Ver detalles"
                        severity="secondary"
@@ -198,7 +198,16 @@
                         </div>
                         <div class="flex flex-col grow basis-0 gap-1 min-w-0">
                             <label for="requestedDate" class="text-sm">Fecha Solicitada <span class="text-red-500">*</span></label>
-                            <p-datepicker id="requestedDate" formControlName="requestedDate" dateFormat="dd/mm/yy" [showIcon]="true" placeholder="Seleccione fecha" [appendTo]="'body'"></p-datepicker>
+                            <p-datepicker
+                              id="requestedDate"
+                              formControlName="requestedDate"
+                              dateFormat="dd/mm/yy"
+                              [showTime]="true"
+                              hourFormat="24"
+                              [showIcon]="true"
+                              placeholder="Seleccione fecha y hora"
+                              [appendTo]="'body'"
+                            ></p-datepicker>
                         </div>
                     </div>
                 </div>
@@ -404,7 +413,7 @@
 
                             <span class="inline-flex items-center gap-2 text-xs bg-gray-50 dark:bg-gray-900/70 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-full px-3 py-1">
                                 <span class="text-gray-500 dark:text-gray-400">Fecha:</span>
-                                <span class="font-semibold">{{ freightForm.get('requestedDate')?.value | date: 'dd/MM/yyyy' }}</span>
+                                <span class="font-semibold">{{ freightForm.get('requestedDate')?.value | date: 'dd/MM/yyyy HH:mm' }}</span>
                             </span>
 
                             <span class="inline-flex items-center gap-2 text-xs bg-gray-50 dark:bg-gray-900/70 text-gray-700 dark:text-gray-200 border border-gray-200 dark:border-gray-700 rounded-full px-3 py-1">

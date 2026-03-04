@@ -12,7 +12,7 @@ import { TableModule } from 'primeng/table';
 import { ToastModule } from 'primeng/toast';
 import { ToolbarModule } from 'primeng/toolbar';
 import { Menu, MenuModule } from 'primeng/menu';
-import { Paginator, PaginatorModule } from 'primeng/paginator';
+import { PaginatorModule } from 'primeng/paginator';
 import { DepotService } from '../../pages/service/depot.service';
 import { DepotResponse } from '../../pages/models/depot.model';
 import { debounceTime, distinctUntilChanged, Subject, takeUntil } from 'rxjs';
@@ -31,18 +31,15 @@ export class DepotComponent implements OnInit, OnDestroy {
 
     // Estados reactivos
     pageSize = signal(5);
-    first = signal(1);
 
     // Flags y controles de UI
     editMode = false;
 
     // Diálogos
     dialogDepot: boolean = false;
-    dialogDeleteDepot: boolean = false;
 
     // Selecciones actuales
     depotId: string | null = null;
-    depotToDelete: DepotResponse | null = null;
     selectedDepot?: DepotResponse;
 
     //Datos y servicios
@@ -60,7 +57,6 @@ export class DepotComponent implements OnInit, OnDestroy {
 
     // ViewChilds
     @ViewChild('menu') menu!: Menu;
-    @ViewChild('paginator') paginator!: Paginator;
 
     constructor(
         private fb: FormBuilder,
@@ -103,6 +99,7 @@ export class DepotComponent implements OnInit, OnDestroy {
 
     ngOnDestroy(): void {
         this.destroy$.next();
+        this.destroy$.complete();
     }
 
     // Inicialización del menú
@@ -127,18 +124,16 @@ export class DepotComponent implements OnInit, OnDestroy {
     }
 
     //Listar depositos
-    loadDepots(page: number = this.first(), limit: number = this.pageSize()): void {
-        this.depotService.getDepots(page, limit).subscribe(() => {
-            if (this.paginator) {
-                if (page === 1) this.first.set(0);
-            }
-        });
+    private fetchDepots(page: number, limit: number, term?: string): void {
+        this.depotService.getDepots(page, limit, term).subscribe();
+    }
+
+    loadDepots(page: number = 1, limit: number = this.pageSize()): void {
+        this.fetchDepots(page, limit);
     }
 
     searchDepots(term: string, page: number = 1, limit: number = this.pageSize()): void {
-        this.depotService.getDepots(page, limit, term).subscribe(() => {
-            if (page === 1) this.first.set(0);
-        });
+        this.fetchDepots(page, limit, term);
     }
 
     onSearchChange(): void {
@@ -169,7 +164,7 @@ export class DepotComponent implements OnInit, OnDestroy {
                 address: depot.address,
                 phone: depot.phone,
                 email: depot.email,
-                remark: depot.remarks
+                remarks: depot.remarks
             });
         }
     }
@@ -182,7 +177,7 @@ export class DepotComponent implements OnInit, OnDestroy {
     onSubmitDepot() {
         const nameControl = this.formDepot.get('name');
         const addressControl = this.formDepot.get('address');
-        const contactControl = this.formDepot.get('contact');
+        const phoneControl = this.formDepot.get('phone');
         const emailControl = this.formDepot.get('email');
 
         // Marcar todos los campos como tocados para mostrar errores
@@ -200,7 +195,7 @@ export class DepotComponent implements OnInit, OnDestroy {
         }
 
         // Validar longitud del contacto
-        if (contactControl && contactControl.hasError('maxlength')) {
+        if (phoneControl && phoneControl.hasError('maxlength')) {
             this.messageService.add({
                 severity: 'error',
                 summary: 'Error',

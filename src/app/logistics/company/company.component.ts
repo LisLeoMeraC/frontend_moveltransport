@@ -9,7 +9,7 @@ import { InputTextModule } from 'primeng/inputtext';
 import { CompanyService } from '../../pages/service/company.service';
 import { ConfirmationService, MenuItem, MessageService } from 'primeng/api';
 import { ToastModule } from 'primeng/toast';
-import { MatPaginator, MatPaginatorIntl, MatPaginatorModule } from '@angular/material/paginator';
+import { MatPaginatorIntl, MatPaginatorModule } from '@angular/material/paginator';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { getSpanishPaginatorIntl } from '../../config/getSpanishPaginatorIntl';
 import { SelectButtonModule } from 'primeng/selectbutton';
@@ -27,7 +27,6 @@ import { IdentificationType } from '../../pages/models/shared.model';
 import { BaseHttpService } from '../../pages/service/base-http.service';
 import { RouteService } from '../../pages/service/route.service';
 import { ClientRateResponse, CreateRateClientData, RateClientData, RouteResponse, UpdateRateClientData } from '../../pages/models/routess.model';
-import { fakeAsync } from '@angular/core/testing';
 
 @Component({
     selector: 'app-company',
@@ -60,7 +59,7 @@ import { fakeAsync } from '@angular/core/testing';
 })
 export class CompanyComponent implements OnInit, OnDestroy {
     // Formularios
-    registerFormCompany: FormGroup;
+    formCompany: FormGroup;
     formRoute: FormGroup;
 
     // Estados reactivos
@@ -73,7 +72,8 @@ export class CompanyComponent implements OnInit, OnDestroy {
     showNumberOnlyWarning = false;
     isSubmitted = true;
     hasSearchedIdentification = false;
-    editMode = false;
+    companyEditMode = false;
+    rateEditMode = false;
 
     // Diálogos
     dialogCompany = false;
@@ -81,7 +81,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
     dialogEnableCompany = false;
     dialogRatesClient = false;
     dialogDeleteRate = false;
-    dialogRoutes = signal(false);
+    dialogRoutes = false;
 
     // Selecciones actuales
     selectedType: string | undefined;
@@ -95,7 +95,6 @@ export class CompanyComponent implements OnInit, OnDestroy {
     selectedProvinceDestinId = signal<string | null>(null);
     rateId: string | null = null;
     selectedRoute?: RouteResponse;
-    invalidRateComparison = signal(false);
 
     // Datos y servicios
     private companyService = inject(CompanyService);
@@ -140,7 +139,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
         private fb: FormBuilder,
         private messageService: MessageService
     ) {
-        this.registerFormCompany = this.fb.group({
+        this.formCompany = this.fb.group({
             type: ['', Validators.required],
             identificationType: ['', Validators.required],
             identification: ['', [Validators.required, Validators.maxLength(13), this.validarIdentificacion.bind(this)]],
@@ -176,7 +175,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
         });
 
         // Reiniciar advertencia al cambiar tipo de identificación
-        this.registerFormCompany.get('identificationType')?.valueChanges.subscribe(() => {
+        this.formCompany.get('identificationType')?.valueChanges.subscribe(() => {
             this.showNumberOnlyWarning = false;
         });
 
@@ -289,12 +288,10 @@ export class CompanyComponent implements OnInit, OnDestroy {
 
     selectCompany(company: CompanyResponse): void {
         this.selectedCompany = company;
-        console.log('Compañía seleccionada:', company.id);
     }
 
     selectRate(rate: ClientRateResponse): void {
         this.selectedRate = rate;
-        console.log('route selecionada:', rate.id);
     }
 
     // -------------------- Carga y búsqueda --------------------
@@ -327,7 +324,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
         const page = event.page + 1;
         const rows = event.rows;
         this.pageSize.set(rows);
-        this.searchTerm.trim() === '' ? this.loadCompanies(page, rows) : this.searchCompanies(this.searchTerm, page, rows);
+        this.searchTerm.trim() === '' ? this.loadCompanies(page, rows, this.selectedType) : this.searchCompanies(this.searchTerm, page, rows, this.selectedType);
     }
 
     loadAllProvinces(): void {
@@ -383,19 +380,19 @@ export class CompanyComponent implements OnInit, OnDestroy {
     }
     // -------------------- Registro / Edición --------------------
     openDialogCompany(company?: CompanyResponse): void {
-        this.registerFormCompany.reset();
-        this.editMode = !!company;
+        this.formCompany.reset();
+        this.companyEditMode = !!company;
         this.companyId = company?.id || null;
         this.isSubmitted = false;
 
         if (company) {
             // En modo edición, cargar los datos y habilitar campos editables
             this.habilitarControles(false);
-            this.registerFormCompany.get('type')?.enable();
-            this.registerFormCompany.get('name')?.enable();
-            this.registerFormCompany.get('address')?.enable();
-            this.registerFormCompany.get('phone')?.enable();
-            this.registerFormCompany.get('email')?.enable();
+            this.formCompany.get('type')?.enable();
+            this.formCompany.get('name')?.enable();
+            this.formCompany.get('address')?.enable();
+            this.formCompany.get('phone')?.enable();
+            this.formCompany.get('email')?.enable();
 
             const formData = {
                 type: company.type,
@@ -406,11 +403,11 @@ export class CompanyComponent implements OnInit, OnDestroy {
                 phone: company.subject.phone,
                 email: company.subject.email || null
             };
-            setTimeout(() => this.registerFormCompany.patchValue(formData, { emitEvent: false }));
+            setTimeout(() => this.formCompany.patchValue(formData, { emitEvent: false }));
         } else {
             // En modo agregar, deshabilitar todos los controles excepto identificación
             this.habilitarControles(false);
-            this.registerFormCompany.get('identification')?.enable();
+            this.formCompany.get('identification')?.enable();
         }
 
         this.dialogCompany = true;
@@ -421,7 +418,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
     }
 
     onSubmitCompany(): void {
-        if (!this.hasSearchedIdentification && !this.editMode) {
+        if (!this.hasSearchedIdentification && !this.companyEditMode) {
             this.messageService.add({
                 severity: 'warn',
                 summary: 'Advertencia',
@@ -434,7 +431,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
         if (!this.checkFormValidity()) return;
 
         this.isSubmitted = true;
-        const formValue = this.registerFormCompany.getRawValue();
+        const formValue = this.formCompany.getRawValue();
         let companyData: any = {
             name: formValue.name,
             address: formValue.address || null,
@@ -443,7 +440,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
             type: formValue.type
         };
 
-        if (!this.editMode) {
+        if (!this.companyEditMode) {
             companyData = {
                 ...companyData,
                 identification: formValue.identification?.trim(),
@@ -451,18 +448,18 @@ export class CompanyComponent implements OnInit, OnDestroy {
             };
         }
 
-        const operation = this.editMode && this.companyId ? this.companyService.updateCompany(this.companyId, companyData) : this.companyService.registerCompany(companyData);
+        const operation = this.companyEditMode && this.companyId ? this.companyService.updateCompany(this.companyId, companyData) : this.companyService.registerCompany(companyData);
 
         operation.subscribe({
             next: () => {
-                this.registerFormCompany.reset();
+                this.formCompany.reset();
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
-                    detail: this.editMode ? 'Compañía actualizada correctamente' : 'Compañía registrada correctamente',
+                    detail: this.companyEditMode ? 'Compañía actualizada correctamente' : 'Compañía registrada correctamente',
                     life: 5000
                 });
-                this.editMode = false;
+                this.companyEditMode = false;
                 this.companyId = null;
                 this.dialogCompany = false;
                 this.isSubmitted = false;
@@ -601,7 +598,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
     }
     deleteRate(): void {
         if (!this.rateToDelete) return;
-        this.isDeleting = signal(true);
+        this.isDeleting.set(true);
 
         this.routeService.deleteRouteClientRate(this.rateToDelete.id).subscribe({
             next: (response) => {
@@ -611,7 +608,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
                     detail: 'Tarifa eliminada correctamente',
                     life: 5000
                 });
-                this.isDeleting = signal(false);
+                this.isDeleting.set(false);
                 this.dialogDeleteRate = false;
                 this.routeService.getRoutesClientRates(1, 10, '', '', this.selectedCompany?.id).subscribe();
             },
@@ -622,6 +619,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
                     detail: 'No se pudo eliminar la tarifa',
                     life: 5000
                 });
+                this.isDeleting.set(false);
             }
         });
     }
@@ -633,7 +631,8 @@ export class CompanyComponent implements OnInit, OnDestroy {
         this.selectedProvinceOriginId.set(null);
         this.routeService.clearCitiesOrigin();
         this.routeService.clearCitiesDestination();
-        (this.editMode = !!rate), (this.rateId = rate ? rate.id : null);
+        this.rateEditMode = !!rate;
+        this.rateId = rate ? rate.id : null;
         this.isSubmitted = false;
 
         if (rate) {
@@ -666,10 +665,10 @@ export class CompanyComponent implements OnInit, OnDestroy {
             this.formRoute.get('distanceInKm')?.enable();
         }
         this.loadAllProvinces();
-        this.dialogRoutes.set(true);
+        this.dialogRoutes = true;
     }
     closeDialogRoutes(): void {
-        this.dialogRoutes.set(false);
+        this.dialogRoutes = false;
         this.formRoute.reset();
     }
 
@@ -698,14 +697,14 @@ export class CompanyComponent implements OnInit, OnDestroy {
             rate: formValue.rate
         };
 
-        const operation = this.editMode && this.rateId ? this.routeService.updateRouteClientRate(this.rateId, updateDate) : this.routeService.registerRouteClientRate(createData);
+        const operation = this.rateEditMode && this.rateId ? this.routeService.updateRouteClientRate(this.rateId, updateDate) : this.routeService.registerRouteClientRate(createData);
 
         operation.subscribe({
             next: () => {
                 this.messageService.add({
                     severity: 'success',
                     summary: 'Éxito',
-                    detail: this.editMode ? 'La tarifa ha sido actualizada correctamente.' : 'La ruta ha sido creada correctamente',
+                    detail: this.rateEditMode ? 'La tarifa ha sido actualizada correctamente.' : 'La ruta ha sido creada correctamente',
                     life: 3000
                 });
                 this.closeDialogRoutes();
@@ -767,7 +766,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
     // -------------------- Validaciones e input --------------------
 
     validarIdentificacion(control: AbstractControl): ValidationErrors | null {
-        const tipoIdentificacion = this.registerFormCompany?.get('identificationType')?.value;
+        const tipoIdentificacion = this.formCompany?.get('identificationType')?.value;
         const value = control.value;
 
         if (!value || tipoIdentificacion === IdentificationType.passport) return null;
@@ -776,7 +775,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
     }
 
     onKeyPressIdentificacion(event: KeyboardEvent): void {
-        const type = this.registerFormCompany.get('identificationType')?.value;
+        const type = this.formCompany.get('identificationType')?.value;
         const char = String.fromCharCode(event.charCode);
         if ([IdentificationType.ruc, IdentificationType.dni].includes(type) && !/[0-9]/.test(char)) {
             this.showNumberOnlyWarning = true;
@@ -790,7 +789,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
         const invalidFields: string[] = [];
 
         required.forEach((field) => {
-            const control = this.registerFormCompany.get(field);
+            const control = this.formCompany.get(field);
             if (control?.invalid) {
                 control.markAsTouched();
                 invalidFields.push(field);
@@ -798,7 +797,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
         });
 
         ['phone', 'email'].forEach((field) => {
-            const control = this.registerFormCompany.get(field);
+            const control = this.formCompany.get(field);
             if (control?.invalid) {
                 control.markAsTouched();
                 invalidFields.push(field);
@@ -820,7 +819,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
 
     buscarIdentificacion(): void {
         this.hasSearchedIdentification = false;
-        const identification = this.registerFormCompany.get('identification')?.value;
+        const identification = this.formCompany.get('identification')?.value;
         if (!identification) {
             this.messageService.add({ severity: 'warn', summary: 'Advertencia', detail: 'Ingrese un número de identificación', life: 5000 });
             return;
@@ -841,7 +840,7 @@ export class CompanyComponent implements OnInit, OnDestroy {
                         this.patchFormWithOwnerData(data.company);
                         this.messageService.add({ severity: 'warn', summary: 'Advertencia', detail: 'No está registrado como compañía, elija tipo', life: 5000 });
                         this.habilitarControles(false);
-                        this.registerFormCompany.get('type')?.enable();
+                        this.formCompany.get('type')?.enable();
                     } else {
                         this.handleNuevoRegistro();
                     }
@@ -858,16 +857,16 @@ export class CompanyComponent implements OnInit, OnDestroy {
     }
 
     private handleNuevoRegistro(): void {
-        const currentId = this.registerFormCompany.get('identification')?.value;
-        const currentType = this.registerFormCompany.get('identificationType')?.value;
+        const currentId = this.formCompany.get('identification')?.value;
+        const currentType = this.formCompany.get('identificationType')?.value;
 
-        this.registerFormCompany.reset();
-        this.registerFormCompany.patchValue({ identification: currentId, identificationType: currentType });
+        this.formCompany.reset();
+        this.formCompany.patchValue({ identification: currentId, identificationType: currentType });
 
         this.messageService.add({ severity: 'info', summary: 'Información', detail: 'No se encontró un registro. Puede registrar uno nuevo.', life: 5000 });
 
         this.habilitarControles(true);
-        this.editMode = false;
+        this.companyEditMode = false;
         this.companyId = null;
     }
 
@@ -881,19 +880,19 @@ export class CompanyComponent implements OnInit, OnDestroy {
             email: data.subject.email || null,
             type: data.type || null
         };
-        this.registerFormCompany.patchValue(formData, { emitEvent: false });
+        this.formCompany.patchValue(formData, { emitEvent: false });
     }
 
     limpiarIdentificacion(): void {
-        this.registerFormCompany.reset();
+        this.formCompany.reset();
         this.habilitarControles(false);
-        this.registerFormCompany.get('identification')?.enable();
+        this.formCompany.get('identification')?.enable();
     }
 
     habilitarControles(estado: boolean): void {
         const controls = ['identification', 'identificationType', 'type', 'name', 'address', 'phone', 'email'];
         controls.forEach((field) => {
-            const control = this.registerFormCompany.get(field);
+            const control = this.formCompany.get(field);
             estado ? control?.enable() : control?.disable();
         });
     }
@@ -901,57 +900,21 @@ export class CompanyComponent implements OnInit, OnDestroy {
     checkFormValidities(): boolean {
         const required = ['distanceInKm', 'originId', 'destinationId'];
         let isValid = true;
-        const invalidFields = [];
 
         for (const field of required) {
             const control = this.formRoute.get(field);
             if (control?.invalid) {
                 control.markAsTouched();
                 isValid = false;
-                invalidFields.push(field);
             }
         }
 
-        const clientRate = this.formRoute.get('clientRate');
-        if (clientRate?.invalid) {
-            clientRate.markAsTouched();
-            isValid = false;
-            invalidFields.push('clientRate');
-        }
-
-        const carrierRate = this.formRoute.get('carrierRate');
-        if (carrierRate?.invalid) {
-            carrierRate.markAsTouched();
-            isValid = false;
-            invalidFields.push('carrierRate');
-        }
-
-        if (this.invalidRateComparison()) {
+        const rate = this.formRoute.get('rate');
+        if (rate?.invalid) {
+            rate.markAsTouched();
             isValid = false;
         }
-
         return isValid;
-    }
-
-    private validateRateComparison(formGroup: FormGroup): ValidationErrors | null {
-        const clientRate = formGroup.get('clientRate')?.value;
-        const carrierRate = formGroup.get('carrierRate')?.value;
-
-        if (clientRate !== null && carrierRate !== null && typeof clientRate === 'number' && typeof carrierRate === 'number') {
-            return carrierRate > clientRate ? { invalidRateComparison: true } : null;
-        }
-        return null;
-    }
-
-    private checkRateComparison(): void {
-        const clientRate = this.formRoute.get('clientRate')?.value;
-        const carrierRate = this.formRoute.get('carrierRate')?.value;
-
-        if (clientRate !== null && carrierRate !== null && !isNaN(clientRate) && !isNaN(carrierRate)) {
-            this.invalidRateComparison.set(Number(carrierRate) > Number(clientRate));
-        } else {
-            this.invalidRateComparison.set(false);
-        }
     }
 
     allowOnlyDecimal(event: KeyboardEvent): void {

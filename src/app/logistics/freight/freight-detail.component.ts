@@ -263,13 +263,35 @@ export class FreightDetailComponent implements OnInit, OnDestroy {
     toggleEdit(): void {
         this.editMode.set(!this.editMode());
         if (this.editMode()) {
+            const selected: any = this.freightService.freightItem();
+            // eslint-disable-next-line no-console
+            console.log('[FreightDetail] Enter edit mode - freightItem', selected);
+            // eslint-disable-next-line no-console
+            console.log('[FreightDetail] Enter edit mode - geo ids', {
+                originProvinceId: selected?.origin?.provinceId ?? null,
+                destinationProvinceId: selected?.destination?.provinceId ?? null,
+                originId: selected?.originId ?? null,
+                destinationId: selected?.destinationId ?? null
+            });
+            // eslint-disable-next-line no-console
+            console.log('[FreightDetail] Enter edit mode - list sizes (before load)', {
+                provinces: Array.isArray(this.provinces()) ? this.provinces().length : 0,
+                originCities: Array.isArray(this.originCities()) ? this.originCities().length : 0,
+                destinationCities: Array.isArray(this.destinationCities()) ? this.destinationCities().length : 0
+            });
             this.patchFormFromData();
+            this.loadInitialGeodata();
+            // eslint-disable-next-line no-console
+            console.log('[FreightDetail] Enter edit mode - form raw value', this.freightForm.getRawValue());
         }
     }
 
     private patchFormFromData(): void {
         const selected = this.freightService.freightItem();
         if (!selected) return;
+
+        const originProvinceId = selected.origin?.provinceId || null;
+        const destinationProvinceId = selected.destination?.provinceId || null;
         this.freightForm.patchValue({
             freightStatus: selected.freightStatus,
             type: selected.type,
@@ -279,8 +301,10 @@ export class FreightDetailComponent implements OnInit, OnDestroy {
             cargoUnitType: selected.cargoUnitType,
             cargoCondition: selected.cargoCondition,
             cargoDescription: selected.cargoDescription,
+            originProvince: originProvinceId,
             originId: selected.originId,
             originReference: selected.originReference,
+            destinationProvince: destinationProvinceId,
             destinationId: selected.destinationId,
             destinationReference: selected.destinationReference,
             originDepotId: selected.originDepotId || null,
@@ -309,7 +333,8 @@ export class FreightDetailComponent implements OnInit, OnDestroy {
             this.freightForm.get('originProvince')?.setValue(originProvinceId);
             this.freightForm.get('originId')?.enable();
             this.routeService.loadCitiesForProvinceOrigin(originProvinceId, { page: 1, limit: 50 }).subscribe(() => {
-                // keep selected origin city
+                const originId = selected.originId || null;
+                if (originId) this.freightForm.get('originId')?.setValue(originId, { emitEvent: false });
             });
         }
 
@@ -318,7 +343,8 @@ export class FreightDetailComponent implements OnInit, OnDestroy {
             this.freightForm.get('destinationProvince')?.setValue(destinationProvinceId);
             this.freightForm.get('destinationId')?.enable();
             this.routeService.loadCitiesForProvinceDestination(destinationProvinceId, { page: 1, limit: 50 }).subscribe(() => {
-                // keep selected destination city
+                const destinationId = selected.destinationId || null;
+                if (destinationId) this.freightForm.get('destinationId')?.setValue(destinationId, { emitEvent: false });
             });
         }
     }
@@ -362,7 +388,7 @@ export class FreightDetailComponent implements OnInit, OnDestroy {
             freightStatus: v.freightStatus,
             type: v.type,
             serialReference: v.serialReference?.toString().trim() || undefined,
-            requestedDate: v.requestedDate ? new Date(v.requestedDate).toISOString().split('T')[0] : undefined,
+            requestedDate: v.requestedDate ? new Date(v.requestedDate).toISOString() : undefined,
             requestedUnits: v.requestedUnits != null ? Number(v.requestedUnits) : undefined,
             cargoUnitType: v.cargoUnitType,
             cargoCondition: v.cargoCondition,

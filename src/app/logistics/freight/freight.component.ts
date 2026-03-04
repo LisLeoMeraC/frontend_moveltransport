@@ -435,7 +435,7 @@ export class FreightComponent implements OnInit, OnDestroy {
             const freightData = {
                 type: formValue.freightType,
                 serialReference: formValue.serialReference || undefined,
-                requestedDate: formValue.requestedDate.toISOString().split('T')[0], // Formato YYYY-MM-DD
+                requestedDate: formValue.requestedDate.toISOString(),
                 requestedUnits: formValue.unitsRequired,
                 cargoUnitType: formValue.cargoUnitType,
                 cargoCondition: formValue.cargoCondition,

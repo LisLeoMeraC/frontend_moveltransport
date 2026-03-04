@@ -72,13 +72,13 @@
         </div>
 
         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 items-stretch">
-          <p-card header="Información General" class="shadow-sm h-full">
+          <p-card header="Información General" styleClass="shadow-sm h-full">
             <div class="space-y-3">
               <div class="flex items-center gap-3">
                 <i class="pi pi-calendar text-blue-500"></i>
                 <div>
                   <span class="font-medium">Fecha Solicitada:</span>
-                  <p class="m-0 text-gray-700">{{ selectedFreight.requestedDate | date: 'dd/MM/yyyy' }}</p>
+                  <p class="m-0 text-gray-700">{{ selectedFreight.requestedDate | date: 'dd/MM/yyyy HH:mm' }}</p>
                 </div>
               </div>
               <div class="flex items-center gap-3">
@@ -100,7 +100,7 @@
             </div>
           </p-card>
 
-          <p-card header="Información de Carga" class="shadow-sm h-full">
+          <p-card header="Información de Carga" styleClass="shadow-sm h-full">
             <div class="space-y-3">
               <div class="flex items-center gap-3">
                 <i class="pi pi-box text-purple-500"></i>
@@ -126,7 +126,7 @@
             </div>
           </p-card>
 
-          <p-card header="Origen" class="shadow-sm h-full">
+          <p-card header="Origen" styleClass="shadow-sm h-full">
             <div class="space-y-3">
               <div class="flex items-start gap-3">
                 <i class="pi pi-map-marker text-red-500 mt-1"></i>
@@ -146,7 +146,7 @@
             </div>
           </p-card>
 
-          <p-card header="Destino" class="shadow-sm h-full">
+          <p-card header="Destino" styleClass="shadow-sm h-full">
             <div class="space-y-3">
               <div class="flex items-start gap-3">
                 <i class="pi pi-map-marker text-green-500 mt-1"></i>
@@ -279,7 +279,7 @@
               </div>
               <div class="flex flex-col gap-1">
                 <label>Fecha Solicitada</label>
-                <p-calendar formControlName="requestedDate" dateFormat="dd/mm/yy" inputId="requestedDate"></p-calendar>
+                <p-calendar formControlName="requestedDate" dateFormat="dd/mm/yy" [showTime]="true" hourFormat="24" inputId="requestedDate"></p-calendar>
               </div>
             </div>
           </p-card>
@@ -305,7 +305,7 @@
             <div class="grid grid-cols-1 gap-2">
               <div class="flex flex-col gap-1">
                 <label>Provincia</label>
-                <p-dropdown formControlName="originProvince" [options]="provinces()" optionLabel="name" optionValue="id" (onChange)="onProvinceOriginChange($event)" placeholder="Seleccione"></p-dropdown>
+                <p-dropdown formControlName="originProvince" [options]="provinces()" optionLabel="name" optionValue="value" (onChange)="onProvinceOriginChange($event)" placeholder="Seleccione"></p-dropdown>
               </div>
               <div class="flex flex-col gap-1">
                 <label>Ciudad</label>
