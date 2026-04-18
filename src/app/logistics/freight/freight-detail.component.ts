@@ -268,8 +268,8 @@ export class FreightDetailComponent implements OnInit, OnDestroy {
             console.log('[FreightDetail] Enter edit mode - freightItem', selected);
             // eslint-disable-next-line no-console
             console.log('[FreightDetail] Enter edit mode - geo ids', {
-                originProvinceId: selected?.origin?.provinceId ?? null,
-                destinationProvinceId: selected?.destination?.provinceId ?? null,
+                originProvinceId: selected?.origin?.province?.id ?? selected?.origin?.provinceId ?? null,
+                destinationProvinceId: selected?.destination?.province?.id ?? selected?.destination?.provinceId ?? null,
                 originId: selected?.originId ?? null,
                 destinationId: selected?.destinationId ?? null
             });
@@ -290,8 +290,8 @@ export class FreightDetailComponent implements OnInit, OnDestroy {
         const selected = this.freightService.freightItem();
         if (!selected) return;
 
-        const originProvinceId = selected.origin?.provinceId || null;
-        const destinationProvinceId = selected.destination?.provinceId || null;
+        const originProvinceId = selected.origin?.province?.id || selected.origin?.provinceId || null;
+        const destinationProvinceId = selected.destination?.province?.id || selected.destination?.provinceId || null;
         this.freightForm.patchValue({
             freightStatus: selected.freightStatus,
             type: selected.type,
@@ -325,8 +325,8 @@ export class FreightDetailComponent implements OnInit, OnDestroy {
         const selected = this.freightService.freightItem();
         if (!selected) return;
         // pre-select and load cities by province if available in response
-        const originProvinceId = selected.origin?.provinceId || null;
-        const destinationProvinceId = selected.destination?.provinceId || null;
+        const originProvinceId = selected.origin?.province?.id || selected.origin?.provinceId || null;
+        const destinationProvinceId = selected.destination?.province?.id || selected.destination?.provinceId || null;
 
         if (originProvinceId) {
             this.selectedProvinceOriginId.set(originProvinceId);

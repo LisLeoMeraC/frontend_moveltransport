@@ -46,11 +46,19 @@ export interface FreightResponse extends FreightData {
         id: string;
         name: string;
         provinceId?: string;
+        province?: {
+            id: string;
+            name: string;
+        };
     };
     destination?: {
         id: string;
         name: string;
         provinceId?: string;
+        province?: {
+            id: string;
+            name: string;
+        };
     };
     originDepot?: {
         id: string;
