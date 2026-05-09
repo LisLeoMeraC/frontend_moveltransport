@@ -4,7 +4,8 @@
     <h3 class="m-0 flex align-items-center">Detalles del Flete</h3>
   </ng-template>
   <ng-template pTemplate="right">
-    <button pButton label="Volver" icon="pi pi-arrow-left" class="p-button-text p-button-sm" (click)="goBack()"></button>
+    <button pButton label="Volver" icon="pi pi-arrow-left" class="p-button-text p-button-sm"
+      (click)="goBack()"></button>
   </ng-template>
 </p-toolbar>
 
@@ -16,12 +17,14 @@
         <div class="flex items-center gap-4">
           <i class="pi pi-truck truck-icon" aria-hidden="true"></i>
           <div class="flex flex-col">
-            <div class="text-2xl font-bold text-gray-800 leading-tight">{{ selectedFreight.client?.subject?.name || 'Cliente no especificado' }}</div>
+            <div class="text-2xl font-bold text-gray-800 leading-tight">{{ selectedFreight.client?.subject?.name ||
+              'Cliente no especificado' }}</div>
             <div class="flex flex-wrap items-center gap-2 mt-1">
-              <p-tag severity="info" [value]="'Serial: ' + (selectedFreight.serialReference || 'N/A')" styleClass="text-xs"></p-tag>
-              <p-tag severity="secondary" [value]="getFreightTypeLabel(selectedFreight.type)" styleClass="text-xs"></p-tag>
-              <p-tag
-                [value]="
+              <p-tag severity="info" [value]="'Serial: ' + (selectedFreight.serialReference || 'N/A')"
+                styleClass="text-xs"></p-tag>
+              <p-tag severity="secondary" [value]="getFreightTypeLabel(selectedFreight.type)"
+                styleClass="text-xs"></p-tag>
+              <p-tag [value]="
                   getStatusSeverity(selectedFreight.freightStatus) === 'success'
                     ? 'Completado'
                     : getStatusSeverity(selectedFreight.freightStatus) === 'info'
@@ -29,25 +32,17 @@
                       : getStatusSeverity(selectedFreight.freightStatus) === 'warning'
                         ? 'Pendiente'
                         : 'Cancelado'
-                "
-                [severity]="getStatusSeverity(selectedFreight.freightStatus)"
-                styleClass="text-xs"
-              ></p-tag>
+                " [severity]="getStatusSeverity(selectedFreight.freightStatus)" styleClass="text-xs"></p-tag>
             </div>
           </div>
         </div>
         <div class="flex items-center justify-end gap-2">
-          <button
-            pButton
-            type="button"
-            [label]="editMode() ? 'Salir de edición' : 'Editar'"
+          <button pButton type="button" [label]="editMode() ? 'Salir de edición' : 'Editar'"
             [icon]="editMode() ? 'pi pi-times' : 'pi pi-pencil'"
             [ngClass]="editMode() ? 'p-button-danger p-button-raised' : 'p-button-primary p-button-raised'"
-            class="p-button-sm font-medium shadow-sm"
-            (click)="toggleEdit()"
-          ></button>
+            class="p-button-sm font-medium shadow-sm" (click)="toggleEdit()"></button>
         </div>
-      </div>
+      </div> rjr
     </div>
 
     <ng-container *ngIf="!editMode(); else editFormTpl">
@@ -60,14 +55,18 @@
 
           <div class="progress-track">
             <div class="progress-fill" [style.width.%]="getStatusProgress(selectedFreight.freightStatus)"></div>
-            <span class="progress-truck" [ngClass]="{ moving: selectedFreight.freightStatus === 'in_transit' }" [style.left.%]="getStatusProgress(selectedFreight.freightStatus)" aria-hidden="true">
+            <span class="progress-truck" [ngClass]="{ moving: selectedFreight.freightStatus === 'in_transit' }"
+              [style.left.%]="getStatusProgress(selectedFreight.freightStatus)" aria-hidden="true">
               <i class="pi pi-truck"></i>
             </span>
           </div>
           <div class="flex justify-between text-xs text-gray-600 mt-2">
-            <span class="status-label" [ngClass]="{active: selectedFreight.freightStatus === 'pending'}">Pendiente</span>
-            <span class="status-label" [ngClass]="{active: selectedFreight.freightStatus === 'in_transit'}">En Tránsito</span>
-            <span class="status-label" [ngClass]="{active: selectedFreight.freightStatus === 'completed'}">Completado</span>
+            <span class="status-label"
+              [ngClass]="{active: selectedFreight.freightStatus === 'pending'}">Pendiente</span>
+            <span class="status-label" [ngClass]="{active: selectedFreight.freightStatus === 'in_transit'}">En
+              Tránsito</span>
+            <span class="status-label"
+              [ngClass]="{active: selectedFreight.freightStatus === 'completed'}">Completado</span>
           </div>
         </div>
 
@@ -175,14 +174,16 @@
                 <i class="pi pi-align-left text-gray-500 mt-1"></i>
                 <div class="flex-1">
                   <span class="font-medium">Descripción</span>
-                  <p class="m-0 text-gray-700 whitespace-pre-line">{{ selectedFreight.cargoDescription || 'Sin descripción' }}</p>
+                  <p class="m-0 text-gray-700 whitespace-pre-line">{{ selectedFreight.cargoDescription || 'Sin
+                    descripción' }}</p>
                 </div>
               </div>
               <div class="flex items-start gap-3">
                 <i class="pi pi-comment text-gray-500 mt-1"></i>
                 <div class="flex-1">
                   <span class="font-medium">Observaciones</span>
-                  <p class="m-0 text-gray-700 whitespace-pre-line">{{ selectedFreight.remarks || 'Sin observaciones' }}</p>
+                  <p class="m-0 text-gray-700 whitespace-pre-line">{{ selectedFreight.remarks || 'Sin observaciones' }}
+                  </p>
                 </div>
               </div>
             </div>
@@ -193,42 +194,29 @@
           <p-card header="Documentos" class="shadow-sm h-full">
             <ng-container *ngIf="documents().length; else noDocumentsTpl">
               <div class="flex flex-wrap items-center justify-between gap-2 mb-3">
-                <div class="text-xs text-gray-500 dark:text-gray-400">Selecciona uno o varios documentos para quitarlos.</div>
+                <div class="text-xs text-gray-500 dark:text-gray-400">Selecciona uno o varios documentos para quitarlos.
+                </div>
                 <div class="flex items-center gap-2">
-                  <button
-                    pButton
-                    type="button"
-                    label="Quitar seleccionados"
-                    icon="pi pi-trash"
-                    class="p-button-danger p-button-sm"
-                    (click)="removeSelectedDocuments()"
-                    [disabled]="!selectedDocumentIds().size"
-                  ></button>
-                  <button
-                    pButton
-                    type="button"
-                    label="Limpiar selección"
-                    class="p-button-text p-button-sm"
-                    (click)="clearDocumentSelection()"
-                    [disabled]="!selectedDocumentIds().size"
-                  ></button>
+                  <button pButton type="button" label="Quitar seleccionados" icon="pi pi-trash"
+                    class="p-button-danger p-button-sm" (click)="removeSelectedDocuments()"
+                    [disabled]="!selectedDocumentIds().size"></button>
+                  <button pButton type="button" label="Limpiar selección" class="p-button-text p-button-sm"
+                    (click)="clearDocumentSelection()" [disabled]="!selectedDocumentIds().size"></button>
                 </div>
               </div>
 
               <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                <div *ngFor="let doc of documents()" class="border border-gray-100 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-900/60">
+                <div *ngFor="let doc of documents()"
+                  class="border border-gray-100 dark:border-gray-700 rounded-lg p-3 bg-white dark:bg-gray-900/60">
                   <div class="flex items-start justify-between gap-3">
                     <div class="flex items-start gap-2 min-w-0">
-                      <input
-                        type="checkbox"
-                        class="mt-1"
-                        [checked]="isDocumentSelected(doc.id)"
+                      <input type="checkbox" class="mt-1" [checked]="isDocumentSelected(doc.id)"
                         (change)="toggleDocumentSelection(doc.id, ($any($event.target).checked))"
-                        [disabled]="!doc.canRemove"
-                      />
+                        [disabled]="!doc.canRemove" />
                       <div class="min-w-0">
                         <div class="text-sm font-medium text-gray-800 dark:text-gray-100 truncate">{{ doc.name }}</div>
-                        <div class="text-xs text-gray-500 dark:text-gray-400" *ngIf="doc.canRemove; else noRemoveTpl">Seleccionable</div>
+                        <div class="text-xs text-gray-500 dark:text-gray-400" *ngIf="doc.canRemove; else noRemoveTpl">
+                          Seleccionable</div>
                         <ng-template #noRemoveTpl>
                           <div class="text-xs text-gray-500 dark:text-gray-400">No removable</div>
                         </ng-template>
@@ -236,15 +224,10 @@
                     </div>
 
                     <div class="flex items-center gap-1 shrink-0">
-                      <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm" (click)="openDocument(doc.url)"></button>
-                      <button
-                        *ngIf="doc.canRemove"
-                        pButton
-                        type="button"
-                        icon="pi pi-trash"
-                        class="p-button-text p-button-sm p-button-danger"
-                        (click)="removeDocument(doc.id)"
-                      ></button>
+                      <button pButton type="button" icon="pi pi-external-link" class="p-button-text p-button-sm"
+                        (click)="openDocument(doc.url)"></button>
+                      <button *ngIf="doc.canRemove" pButton type="button" icon="pi pi-trash"
+                        class="p-button-text p-button-sm p-button-danger" (click)="removeDocument(doc.id)"></button>
                     </div>
                   </div>
                 </div>
@@ -267,11 +250,13 @@
             <div class="grid grid-cols-1 gap-2">
               <div class="flex flex-col gap-1">
                 <label>Estado del Flete</label>
-                <p-dropdown formControlName="freightStatus" [options]="freightStatuses" optionLabel="label" optionValue="value" placeholder="Seleccione"></p-dropdown>
+                <p-dropdown formControlName="freightStatus" [options]="freightStatuses" optionLabel="label"
+                  optionValue="value" placeholder="Seleccione"></p-dropdown>
               </div>
               <div class="flex flex-col gap-1">
                 <label>Tipo de Flete</label>
-                <p-dropdown formControlName="type" [options]="freightTypes" optionLabel="label" optionValue="value" placeholder="Seleccione"></p-dropdown>
+                <p-dropdown formControlName="type" [options]="freightTypes" optionLabel="label" optionValue="value"
+                  placeholder="Seleccione"></p-dropdown>
               </div>
               <div class="flex flex-col gap-1">
                 <label>Serial</label>
@@ -279,7 +264,8 @@
               </div>
               <div class="flex flex-col gap-1">
                 <label>Fecha Solicitada</label>
-                <p-calendar formControlName="requestedDate" dateFormat="dd/mm/yy" [showTime]="true" hourFormat="24" inputId="requestedDate"></p-calendar>
+                <p-calendar formControlName="requestedDate" dateFormat="dd/mm/yy" [showTime]="true" hourFormat="24"
+                  inputId="requestedDate"></p-calendar>
               </div>
             </div>
           </p-card>
@@ -292,11 +278,13 @@
               </div>
               <div class="flex flex-col gap-1">
                 <label>Tipo de Unidad</label>
-                <p-dropdown formControlName="cargoUnitType" [options]="cargoUnitTypes" optionLabel="label" optionValue="value" placeholder="Seleccione"></p-dropdown>
+                <p-dropdown formControlName="cargoUnitType" [options]="cargoUnitTypes" optionLabel="label"
+                  optionValue="value" placeholder="Seleccione"></p-dropdown>
               </div>
               <div class="flex flex-col gap-1">
                 <label>Condición de la Carga</label>
-                <p-dropdown formControlName="cargoCondition" [options]="cargoConditions" optionLabel="label" optionValue="value" placeholder="Seleccione"></p-dropdown>
+                <p-dropdown formControlName="cargoCondition" [options]="cargoConditions" optionLabel="label"
+                  optionValue="value" placeholder="Seleccione"></p-dropdown>
               </div>
             </div>
           </p-card>
@@ -305,11 +293,13 @@
             <div class="grid grid-cols-1 gap-2">
               <div class="flex flex-col gap-1">
                 <label>Provincia</label>
-                <p-dropdown formControlName="originProvince" [options]="provinces()" optionLabel="name" optionValue="id" (onChange)="onProvinceOriginChange($event)" placeholder="Seleccione"></p-dropdown>
+                <p-dropdown formControlName="originProvince" [options]="provinces()" optionLabel="name" optionValue="id"
+                  (onChange)="onProvinceOriginChange($event)" placeholder="Seleccione"></p-dropdown>
               </div>
               <div class="flex flex-col gap-1">
                 <label>Ciudad</label>
-                <p-dropdown formControlName="originId" [options]="originCities()" optionLabel="name" optionValue="id" placeholder="Seleccione"></p-dropdown>
+                <p-dropdown formControlName="originId" [options]="originCities()" optionLabel="name" optionValue="id"
+                  placeholder="Seleccione"></p-dropdown>
               </div>
               <div class="flex flex-col gap-1">
                 <label>Referencia</label>
@@ -317,7 +307,8 @@
               </div>
               <div class="flex flex-col gap-1">
                 <label>Depósito Origen</label>
-                <p-dropdown formControlName="originDepotId" [options]="depots()" optionLabel="name" optionValue="id" [showClear]="true" placeholder="Seleccione"></p-dropdown>
+                <p-dropdown formControlName="originDepotId" [options]="depots()" optionLabel="name" optionValue="id"
+                  [showClear]="true" placeholder="Seleccione"></p-dropdown>
               </div>
             </div>
           </p-card>
@@ -326,11 +317,13 @@
             <div class="grid grid-cols-1 gap-2">
               <div class="flex flex-col gap-1">
                 <label>Provincia</label>
-                <p-dropdown formControlName="destinationProvince" [options]="provinces()" optionLabel="name" optionValue="id" (onChange)="onProvinceDestinChange($event)" placeholder="Seleccione"></p-dropdown>
+                <p-dropdown formControlName="destinationProvince" [options]="provinces()" optionLabel="name"
+                  optionValue="id" (onChange)="onProvinceDestinChange($event)" placeholder="Seleccione"></p-dropdown>
               </div>
               <div class="flex flex-col gap-1">
                 <label>Ciudad</label>
-                <p-dropdown formControlName="destinationId" [options]="destinationCities()" optionLabel="name" optionValue="id" placeholder="Seleccione"></p-dropdown>
+                <p-dropdown formControlName="destinationId" [options]="destinationCities()" optionLabel="name"
+                  optionValue="id" placeholder="Seleccione"></p-dropdown>
               </div>
               <div class="flex flex-col gap-1">
                 <label>Referencia</label>
@@ -338,7 +331,8 @@
               </div>
               <div class="flex flex-col gap-1">
                 <label>Depósito Destino</label>
-                <p-dropdown formControlName="destinationDepotId" [options]="depots()" optionLabel="name" optionValue="id" [showClear]="true" placeholder="Seleccione"></p-dropdown>
+                <p-dropdown formControlName="destinationDepotId" [options]="depots()" optionLabel="name"
+                  optionValue="id" [showClear]="true" placeholder="Seleccione"></p-dropdown>
               </div>
             </div>
           </p-card>
@@ -361,7 +355,8 @@
         </div>
 
         <div class="flex justify-end gap-2 pt-1">
-          <button pButton type="button" label="Guardar" icon="pi pi-save" class="p-button-sm" (click)="saveChanges()" [disabled]="freightForm.invalid"></button>
+          <button pButton type="button" label="Guardar" icon="pi pi-save" class="p-button-sm" (click)="saveChanges()"
+            [disabled]="freightForm.invalid"></button>
         </div>
       </form>
     </ng-template>
